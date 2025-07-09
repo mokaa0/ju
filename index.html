@@ -1,1 +1,66 @@
-h
+import json
+import asyncio
+import discord
+from discord.ext import commands
+
+# تحميل التوكنات
+with open("tokens.json", "r") as f:
+    tokens = json.load(f)
+
+# تحميل معرفات غرف الصوت
+with open("voice.json", "r") as f:
+    voice_channels = json.load(f)
+
+intents = discord.Intents.default()
+intents.voice_states = True
+intents.guilds = True
+intents.members = True
+intents.presences = True
+
+async def run_bot(token, mode, voice_channel_id=None):
+    bot = commands.Bot(command_prefix="!", intents=intents)
+
+    @bot.event
+    async def on_ready():
+        print(f"{bot.user} is ready. Mode: {mode}")
+        if mode == "voice" and voice_channel_id:
+            for guild in bot.guilds:
+                channel = guild.get_channel(int(voice_channel_id))
+                if channel and isinstance(channel, discord.VoiceChannel):
+                    try:
+                        await channel.connect()
+                        print(f"{bot.user} joined voice channel {channel.name}")
+                    except Exception as e:
+                        print(f"Failed to join voice: {e}")
+
+    try:
+        await bot.start(token)
+    except Exception as e:
+        print(f"Error starting bot: {e}")
+
+async def main():
+    tasks = []
+    for index, entry in enumerate(tokens):
+        token = entry.get("token", "").strip()
+        mode = entry.get("mode", "online").strip().lower()
+
+        if not token:
+            print(f"[{index}] Skipped empty token")
+            continue
+
+        if mode == "voice":
+            voice_channel_id = voice_channels[index].strip() if index < len(voice_channels) else None
+            if not voice_channel_id:
+                print(f"[{index}] Voice mode but no voice_channel_id, skipping.")
+                continue
+            task = asyncio.create_task(run_bot(token, mode, voice_channel_id))
+        else:
+            task = asyncio.create_task(run_bot(token, mode))
+
+        tasks.append(task)
+        await asyncio.sleep(1)  # منع الضغط على API
+
+    await asyncio.gather(*tasks)
+
+if __name__ == "__main__":
+    asyncio.run(main())
