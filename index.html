@@ -1,74 +1,71 @@
-from flask import Flask, request, jsonify
+import tkinter as tk
 import requests
-import threading
-import random
-import time
-import websocket
-import json
 
-app = Flask(__name__)
-VALID_TOKENS = []
-INVALID_TOKENS = []
+# عدلها حسب IP و بورت VPS عندك
+VPS_URL = "http://YOUR_VPS_IP:7869/upload_tokens"  # ← غير هنا
 
-def start_discord_session(token, status_type):
-    ws = websocket.WebSocket()
-    try:
-        ws.connect("wss://gateway.discord.gg/?v=9&encoding=json")
-
-        # Identify payload
-        payload = {
-            "op": 2,
-            "d": {
-                "token": token,
-                "properties": {
-                    "$os": "windows",
-                    "$browser": "chrome",
-                    "$device": "pc"
-                },
-                "presence": {
-                    "status": status_type,
-                    "activities": [],
-                    "afk": False
-                }
-            }
-        }
-
-        ws.send(json.dumps(payload))
-        # تخليه شغال 24/7
-        while True:
-            time.sleep(60)
-    except Exception as e:
-        print(f"[!] Failed token: {token[:10]}...")
-
-@app.route("/upload_tokens", methods=["POST"])
 def upload_tokens():
-    data = request.json
-    tokens = data.get("tokens", [])
+    tokens_raw = text_box.get("1.0", "end").strip()
+    tokens = [t.strip() for t in tokens_raw.splitlines() if t.strip()]
 
-    VALID_TOKENS.clear()
-    INVALID_TOKENS.clear()
+    if not tokens:
+        status_label.config(text="❌ Please enter tokens.", fg="red")
+        return
 
-    for token in tokens:
-        headers = {"Authorization": token}
-        res = requests.get("https://discord.com/api/v9/users/@me", headers=headers)
+    status_label.config(text="🟡 Connecting valid accounts...", fg="yellow")
+    root.update_idletasks()
 
-        if res.status_code == 200:
-            user = res.json()
-            username = f"{user['username']}#{user['discriminator']}"
-            status_type = random.choice(["online", "idle", "dnd"])
-            VALID_TOKENS.append({"token": token, "username": username, "status": status_type})
+    try:
+        res = requests.post(VPS_URL, json={"tokens": tokens})
+        res.raise_for_status()
+        result = res.json()
 
-            # Start WebSocket session
-            threading.Thread(target=start_discord_session, args=(token, status_type)).start()
-        else:
-            INVALID_TOKENS.append(token)
+        valid_users = result.get("valid_users", [])
+        valid_count = result.get("valid_count", 0)
+        invalid_count = result.get("invalid_count", 0)
 
-    return jsonify({
-        "status": "done",
-        "valid_count": len(VALID_TOKENS),
-        "invalid_count": len(INVALID_TOKENS),
-        "valid_users": VALID_TOKENS
-    })
+        if valid_count == 0:
+            status_label.config(text="❌ No valid tokens found.", fg="red")
+            state_output.delete("1.0", "end")
+            return
 
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=7869)
+        status_label.config(text=f"✅ Loaded {valid_count} tokens.", fg="lime")
+        state_output.delete("1.0", "end")
+
+        for user in valid_users:
+            username = user.get("username", "UnknownUser")
+            status = user.get("status", "online")
+            state_output.insert(tk.END, f"{username}: {status}\n")
+            state_output.see("end")
+
+        state_output.insert(tk.END, "\n✅ All Accounts initialized.\n")
+        state_output.insert(tk.END, f"\n❌ Invalid tokens: {invalid_count}\n", "invalid")
+        state_output.tag_config("invalid", foreground="red")
+
+    except Exception as e:
+        status_label.config(text=f"❌ Failed to send tokens or connect.", fg="red")
+        state_output.delete("1.0", "end")
+
+root = tk.Tk()
+root.title("2050 Studio - Advanced Status Manager")
+root.configure(bg="black")
+root.geometry("700x600")
+
+tk.Label(root, text="2050", fg="lime", bg="black", font=("Courier", 40, "bold")).pack(pady=(10, 0))
+tk.Label(root, text="2050 Studio - Advanced Status Manager", fg="skyblue", bg="black", font=("Arial", 12)).pack()
+tk.Label(root, text="Developed by .884.", fg="yellow", bg="black", font=("Arial", 10)).pack()
+tk.Label(root, text="Loading tool...", fg="lime", bg="black", font=("Arial", 10)).pack(pady=(5, 10))
+
+text_box = tk.Text(root, height=10, width=70, bg="white", fg="black", font=("Consolas", 10))
+text_box.pack(pady=5)
+
+upload_button = tk.Button(root, text="Upload Tokens", command=upload_tokens, bg="gray20", fg="white")
+upload_button.pack(pady=5)
+
+status_label = tk.Label(root, text="", fg="white", bg="black", font=("Arial", 10))
+status_label.pack(pady=5)
+
+state_output = tk.Text(root, height=10, width=70, bg="black", fg="cyan", font=("Consolas", 10))
+state_output.pack(pady=5)
+
+root.mainloop()
