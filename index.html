@@ -1,71 +1,115 @@
-import tkinter as tk
-import requests
+from PyQt5 import QtWidgets, QtGui, QtCore
+import sys
+import paramiko
+import time
+import json
 
-# عدلها حسب IP و بورت VPS عندك
-VPS_URL = "http://YOUR_VPS_IP:7869/upload_tokens"  # ← غير هنا
+# معلومات الـ VPS (غيرها حسب بياناتك)
+VPS_IP = "YOUR.VPS.IP"
+VPS_USER = "root"
+VPS_PASSWORD = "your_password"
+REMOTE_DIR = "/root/discord-bot"
 
-def upload_tokens():
-    tokens_raw = text_box.get("1.0", "end").strip()
-    tokens = [t.strip() for t in tokens_raw.splitlines() if t.strip()]
+class MainWindow(QtWidgets.QWidget):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("2050 - Discord Tool")
+        self.setGeometry(300, 200, 600, 500)
+        self.setStyleSheet("background-color: black;")
+        layout = QtWidgets.QVBoxLayout()
 
-    if not tokens:
-        status_label.config(text="❌ Please enter tokens.", fg="red")
-        return
+        title = QtWidgets.QLabel("2050")
+        title.setStyleSheet("font-size: 60px; font-weight: bold; color: limegreen;")
+        title.setAlignment(QtCore.Qt.AlignLeft)
+        layout.addWidget(title)
 
-    status_label.config(text="🟡 Connecting valid accounts...", fg="yellow")
-    root.update_idletasks()
+        subtitle = QtWidgets.QLabel("2050 - Online accounts")
+        subtitle.setStyleSheet("color: lightblue; font-size: 18px;")
+        layout.addWidget(subtitle)
 
-    try:
-        res = requests.post(VPS_URL, json={"tokens": tokens})
-        res.raise_for_status()
-        result = res.json()
+        dev = QtWidgets.QLabel("Developed by .884.  |  Random Status")
+        dev.setStyleSheet("color: yellow;")
+        layout.addWidget(dev)
 
-        valid_users = result.get("valid_users", [])
-        valid_count = result.get("valid_count", 0)
-        invalid_count = result.get("invalid_count", 0)
+        self.log_label = QtWidgets.QLabel("Loading Tool ..")
+        self.log_label.setStyleSheet("color: limegreen; font-size: 16px;")
+        layout.addWidget(self.log_label)
 
-        if valid_count == 0:
-            status_label.config(text="❌ No valid tokens found.", fg="red")
-            state_output.delete("1.0", "end")
+        self.token_box = QtWidgets.QPlainTextEdit()
+        self.token_box.setPlaceholderText("[+] tokens : up to 200 tokens, one per line")
+        self.token_box.setStyleSheet("background-color: #222; color: white;")
+        layout.addWidget(self.token_box)
+
+        self.start_btn = QtWidgets.QPushButton("Start")
+        self.start_btn.setStyleSheet("background-color: green; color: white; font-size: 18px;")
+        self.start_btn.clicked.connect(self.start_tool)
+        layout.addWidget(self.start_btn)
+
+        self.status_output = QtWidgets.QTextEdit()
+        self.status_output.setReadOnly(True)
+        self.status_output.setStyleSheet("background-color: #111; color: white;")
+        layout.addWidget(self.status_output)
+
+        self.setLayout(layout)
+
+    def log(self, msg, color="white"):
+        self.status_output.append(f"<span style='color:{color}'>{msg}</span>")
+
+    def start_tool(self):
+        tokens = self.token_box.toPlainText().splitlines()
+        tokens = [t.strip() for t in tokens if t.strip()]
+        if len(tokens) > 200:
+            self.log("⚠️ Max 200 tokens only.", "red")
             return
 
-        status_label.config(text=f"✅ Loaded {valid_count} tokens.", fg="lime")
-        state_output.delete("1.0", "end")
+        self.log("Uploading tokens to VPS...", "yellow")
+        try:
+            ssh = paramiko.SSHClient()
+            ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            ssh.connect(VPS_IP, username=VPS_USER, password=VPS_PASSWORD)
 
-        for user in valid_users:
-            username = user.get("username", "UnknownUser")
-            status = user.get("status", "online")
-            state_output.insert(tk.END, f"{username}: {status}\n")
-            state_output.see("end")
+            sftp = ssh.open_sftp()
+            with sftp.file(f"{REMOTE_DIR}/tokens.txt", 'w') as f:
+                f.write("\n".join(tokens))
+            sftp.close()
 
-        state_output.insert(tk.END, "\n✅ All Accounts initialized.\n")
-        state_output.insert(tk.END, f"\n❌ Invalid tokens: {invalid_count}\n", "invalid")
-        state_output.tag_config("invalid", foreground="red")
+            self.log("Running script on VPS...", "lightblue")
+            ssh.exec_command(f"python3 {REMOTE_DIR}/token_runner.py")
 
-    except Exception as e:
-        status_label.config(text=f"❌ Failed to send tokens or connect.", fg="red")
-        state_output.delete("1.0", "end")
+            time.sleep(10)  # انتظر شوي
 
-root = tk.Tk()
-root.title("2050 Studio - Advanced Status Manager")
-root.configure(bg="black")
-root.geometry("700x600")
+            sftp = ssh.open_sftp()
+            with sftp.file(f"{REMOTE_DIR}/results.json", 'r') as f:
+                results = json.load(f)
 
-tk.Label(root, text="2050", fg="lime", bg="black", font=("Courier", 40, "bold")).pack(pady=(10, 0))
-tk.Label(root, text="2050 Studio - Advanced Status Manager", fg="skyblue", bg="black", font=("Arial", 12)).pack()
-tk.Label(root, text="Developed by .884.", fg="yellow", bg="black", font=("Arial", 10)).pack()
-tk.Label(root, text="Loading tool...", fg="lime", bg="black", font=("Arial", 10)).pack(pady=(5, 10))
+            valid = 0
+            invalid = 0
 
-text_box = tk.Text(root, height=10, width=70, bg="white", fg="black", font=("Consolas", 10))
-text_box.pack(pady=5)
+            for r in results:
+                if r.get("status") == "invalid":
+                    self.log(f"Invalid Token - {r['token'][:6]}...", "red")
+                    invalid += 1
+                else:
+                    self.log(f"{r['username']} - {r['status']}", "lightgreen")
+                    valid += 1
 
-upload_button = tk.Button(root, text="Upload Tokens", command=upload_tokens, bg="gray20", fg="white")
-upload_button.pack(pady=5)
+            self.log("All accounts initialized", "lightgreen")
+            self.log("Status", "lightgreen")
+            self.log(f"- Valid tokens total : {valid}", "lightgreen")
+            self.log(f"  - status accounts : {valid}", "lightgreen")
+            self.log(f"- invalid tokens : {invalid}", "red")
 
-status_label = tk.Label(root, text="", fg="white", bg="black", font=("Arial", 10))
-status_label.pack(pady=5)
+            ssh.close()
 
-state_output = tk.Text(root, height=10, width=70, bg="black", fg="cyan", font=("Consolas", 10))
-state_output.pack(pady=5)
+        except Exception as e:
+            self.log(f"Connection error: {str(e)}", "red")
 
-root.mainloop()
+
+def run_gui():
+    app = QtWidgets.QApplication(sys.argv)
+    window = MainWindow()
+    window.show()
+    sys.exit(app.exec_())
+
+if __name__ == "__main__":
+    run_gui()
