@@ -1,60 +1,74 @@
-import tkinter as tk
+from flask import Flask, request, jsonify
 import requests
+import threading
 import random
+import time
+import websocket
+import json
 
-# VPS URL – عدله حسب الـ IP تبعك
-VPS_URL = "http://YOUR_VPS_IP:7869/upload_tokens"  # ← بدّلها بـ IP الحقيقي
+app = Flask(__name__)
+VALID_TOKENS = []
+INVALID_TOKENS = []
 
-def upload_tokens():
-    tokens_raw = text_box.get("1.0", "end").strip()
-    tokens = tokens_raw.splitlines()
-
-    if not tokens:
-        status_label.config(text="❌ Please enter tokens.", fg="red")
-        return
-
-    status_label.config(text="🟡 Connecting valid accounts...", fg="yellow")
-    root.update_idletasks()
-
+def start_discord_session(token, status_type):
+    ws = websocket.WebSocket()
     try:
-        res = requests.post(VPS_URL, json={"tokens": tokens})
-        result = res.json()
+        ws.connect("wss://gateway.discord.gg/?v=9&encoding=json")
 
-        valid_count = result.get("count", 0)
-        status_label.config(text=f"✅ Loaded {valid_count} tokens.", fg="lime")
+        # Identify payload
+        payload = {
+            "op": 2,
+            "d": {
+                "token": token,
+                "properties": {
+                    "$os": "windows",
+                    "$browser": "chrome",
+                    "$device": "pc"
+                },
+                "presence": {
+                    "status": status_type,
+                    "activities": [],
+                    "afk": False
+                }
+            }
+        }
 
-        # طباعة حالة كل حساب عشوائي
-        states = ["online", "idle", "dnd"]
-        for token in tokens[:valid_count]:
-            user = f"user_{random.randint(1000, 9999)}"
-            state = random.choice(states)
-            state_output.insert(tk.END, f"{user}: {state}\n")
-            state_output.see("end")
-
-        state_output.insert(tk.END, "\n✅ All Accounts initialized.\n")
+        ws.send(json.dumps(payload))
+        # تخليه شغال 24/7
+        while True:
+            time.sleep(60)
     except Exception as e:
-        status_label.config(text=f"❌ Failed to send tokens.", fg="red")
+        print(f"[!] Failed token: {token[:10]}...")
 
-# إنشاء نافذة GUI
-root = tk.Tk()
-root.title("2050 Studio")
-root.configure(bg="black")
-root.geometry("700x600")
+@app.route("/upload_tokens", methods=["POST"])
+def upload_tokens():
+    data = request.json
+    tokens = data.get("tokens", [])
 
-tk.Label(root, text="2050", fg="lime", bg="black", font=("Courier", 40, "bold")).pack(pady=(10, 0))
-tk.Label(root, text="2050 Studio - Advanced Status Manager", fg="skyblue", bg="black", font=("Arial", 12)).pack()
-tk.Label(root, text="Developed by .884.", fg="yellow", bg="black", font=("Arial", 10)).pack()
-tk.Label(root, text="Loading tool...", fg="lime", bg="black", font=("Arial", 10)).pack(pady=(5, 10))
+    VALID_TOKENS.clear()
+    INVALID_TOKENS.clear()
 
-text_box = tk.Text(root, height=10, width=70, bg="white", fg="black", font=("Consolas", 10))
-text_box.pack(pady=5)
+    for token in tokens:
+        headers = {"Authorization": token}
+        res = requests.get("https://discord.com/api/v9/users/@me", headers=headers)
 
-tk.Button(root, text="Upload Tokens", command=upload_tokens, bg="gray20", fg="white").pack(pady=5)
+        if res.status_code == 200:
+            user = res.json()
+            username = f"{user['username']}#{user['discriminator']}"
+            status_type = random.choice(["online", "idle", "dnd"])
+            VALID_TOKENS.append({"token": token, "username": username, "status": status_type})
 
-status_label = tk.Label(root, text="", fg="white", bg="black", font=("Arial", 10))
-status_label.pack(pady=5)
+            # Start WebSocket session
+            threading.Thread(target=start_discord_session, args=(token, status_type)).start()
+        else:
+            INVALID_TOKENS.append(token)
 
-state_output = tk.Text(root, height=10, width=70, bg="black", fg="cyan", font=("Consolas", 10))
-state_output.pack(pady=5)
+    return jsonify({
+        "status": "done",
+        "valid_count": len(VALID_TOKENS),
+        "invalid_count": len(INVALID_TOKENS),
+        "valid_users": VALID_TOKENS
+    })
 
-root.mainloop()
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=7869)
