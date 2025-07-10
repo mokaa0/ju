@@ -1,14 +1,10 @@
-from PyQt5 import QtWidgets, QtGui, QtCore
+from PyQt5 import QtWidgets, QtCore
 import sys
-import paramiko
-import time
-import json
+import requests
+import threading
 
-# معلومات الـ VPS (غيرها حسب بياناتك)
-VPS_IP = "YOUR.VPS.IP"
-VPS_USER = "root"
-VPS_PASSWORD = "your_password"
-REMOTE_DIR = "/root/discord-bot"
+# بيانات VPS HTTP API - غيرها حسب عندك
+VPS_URL = "https://VPS_IP:5000/upload_tokens"  # غيرها لـ ip و port الصحيح
 
 class MainWindow(QtWidgets.QWidget):
     def __init__(self):
@@ -63,44 +59,17 @@ class MainWindow(QtWidgets.QWidget):
             return
 
         self.log("Uploading tokens to VPS...", "yellow")
+
+        threading.Thread(target=self.upload_tokens_http, args=(tokens,), daemon=True).start()
+
+    def upload_tokens_http(self, tokens):
         try:
-            ssh = paramiko.SSHClient()
-            ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-            ssh.connect(VPS_IP, username=VPS_USER, password=VPS_PASSWORD)
-
-            sftp = ssh.open_sftp()
-            with sftp.file(f"{REMOTE_DIR}/tokens.txt", 'w') as f:
-                f.write("\n".join(tokens))
-            sftp.close()
-
-            self.log("Running script on VPS...", "lightblue")
-            ssh.exec_command(f"python3 {REMOTE_DIR}/token_runner.py")
-
-            time.sleep(10)  # انتظر شوي
-
-            sftp = ssh.open_sftp()
-            with sftp.file(f"{REMOTE_DIR}/results.json", 'r') as f:
-                results = json.load(f)
-
-            valid = 0
-            invalid = 0
-
-            for r in results:
-                if r.get("status") == "invalid":
-                    self.log(f"Invalid Token - {r['token'][:6]}...", "red")
-                    invalid += 1
-                else:
-                    self.log(f"{r['username']} - {r['status']}", "lightgreen")
-                    valid += 1
-
-            self.log("All accounts initialized", "lightgreen")
-            self.log("Status", "lightgreen")
-            self.log(f"- Valid tokens total : {valid}", "lightgreen")
-            self.log(f"  - status accounts : {valid}", "lightgreen")
-            self.log(f"- invalid tokens : {invalid}", "red")
-
-            ssh.close()
-
+            response = requests.post(VPS_URL, json={"tokens": tokens}, verify=False)
+            res = response.json()
+            if res.get("status") == "success":
+                self.log("Tokens uploaded and runner started.", "green")
+            else:
+                self.log(f"Error from server: {res.get('message')}", "red")
         except Exception as e:
             self.log(f"Connection error: {str(e)}", "red")
 
@@ -110,6 +79,7 @@ def run_gui():
     window = MainWindow()
     window.show()
     sys.exit(app.exec_())
+
 
 if __name__ == "__main__":
     run_gui()
