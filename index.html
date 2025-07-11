@@ -3,6 +3,7 @@ const chalk = require('chalk');
 const fs = require('fs');
 const fetch = require('node-fetch');
 
+process.stdout.write('\x1Bc');
 console.log(chalk.cyan(figlet.textSync('Qya', { horizontalLayout: 'default' })));
 console.log(chalk.blue('\nQya Studio - username tokens tool'));
 console.log(chalk.yellow('Developed by .884.'));
@@ -19,7 +20,7 @@ try {
   usernames = fs.readFileSync(usernamesPath, 'utf-8').split('\n').filter(Boolean);
   console.log(chalk.green(`Loaded ${usernames.length} username`));
 } catch (err) {
-  console.log(chalk.red('Error loading usernames:', err.message));
+  console.log(chalk.red('Error loading usernames'));
   process.exit();
 }
 
@@ -27,57 +28,61 @@ try {
   tokens = fs.readFileSync(tokensPath, 'utf-8').split('\n').filter(Boolean);
   console.log(chalk.green(`Loaded ${tokens.length} tokens`));
 } catch (err) {
-  console.log(chalk.red('Error loading tokens:', err.message));
+  console.log(chalk.red('Error loading tokens'));
   process.exit();
 }
 
 console.log(chalk.yellow('Connecting valid accounts…'));
-
 
 let valid = 0;
 let invalid = 0;
 
 async function changeUsername(token, newUsername) {
   try {
+    const userInfo = await fetch('https://discord.com/api/v9/users/@me', {
+      headers: { Authorization: token }
+    });
+
+    if (userInfo.status !== 200) return false;
+
+    const data = await userInfo.json();
+
     const res = await fetch('https://discord.com/api/v9/users/@me', {
       method: 'PATCH',
       headers: {
         Authorization: token,
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ username: newUsername }),
+      body: JSON.stringify({
+        username: newUsername,
+        discriminator: data.discriminator
+      })
     });
 
     if (res.status === 200) {
       console.log(chalk.blue(`${token.slice(0, 15)}... - ${newUsername}`));
       return true;
     } else {
-      const json = await res.json();
-      if (json.message === "Unauthorized" || json.code === 0) {
-        return false;
-      }
+      return false;
     }
-  } catch (e) {
+  } catch {
     return false;
   }
-
-  return false;
 }
 
 (async () => {
   for (const token of tokens) {
     if (usernames.length === 0) {
-      console.log(chalk.red('No more usernames available!'));
+      console.log(chalk.red('No more usernames available'));
       break;
     }
 
     const username = usernames.shift();
-
     const success = await changeUsername(token, username);
 
     if (success) {
       valid++;
-      fs.writeFileSync(usernamesPath, usernames.join('\n')); // remove used
+      fs.writeFileSync(usernamesPath, usernames.join('\n'));
     } else {
       invalid++;
     }
