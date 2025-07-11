@@ -14,7 +14,7 @@ const usernamesPath = './username.txt';
 const tokensPath = './tokens.txt';
 
 let usernames = [];
-let tokens = [];
+let accounts = [];
 
 try {
   usernames = fs.readFileSync(usernamesPath, 'utf-8').split('\n').filter(Boolean);
@@ -25,8 +25,12 @@ try {
 }
 
 try {
-  tokens = fs.readFileSync(tokensPath, 'utf-8').split('\n').filter(Boolean);
-  console.log(chalk.green(`Loaded ${tokens.length} tokens`));
+  const rawLines = fs.readFileSync(tokensPath, 'utf-8').split('\n').filter(Boolean);
+  accounts = rawLines.map(line => {
+    const [token, password] = line.split('|').map(v => v.trim());
+    return { token, password };
+  });
+  console.log(chalk.green(`Loaded ${accounts.length} tokens`));
 } catch (err) {
   console.log(chalk.red('Error loading tokens'));
   process.exit();
@@ -37,7 +41,7 @@ console.log(chalk.yellow('Connecting valid accounts…'));
 let valid = 0;
 let invalid = 0;
 
-async function changeUsername(token, newUsername) {
+async function changeUsername(token, password, newUsername) {
   try {
     const userInfo = await fetch('https://discord.com/api/v9/users/@me', {
       headers: { Authorization: token }
@@ -55,6 +59,7 @@ async function changeUsername(token, newUsername) {
       },
       body: JSON.stringify({
         username: newUsername,
+        password: password,
         discriminator: data.discriminator
       })
     });
@@ -71,14 +76,14 @@ async function changeUsername(token, newUsername) {
 }
 
 (async () => {
-  for (const token of tokens) {
+  for (const { token, password } of accounts) {
     if (usernames.length === 0) {
       console.log(chalk.red('No more usernames available'));
       break;
     }
 
     const username = usernames.shift();
-    const success = await changeUsername(token, username);
+    const success = await changeUsername(token, password, username);
 
     if (success) {
       valid++;
