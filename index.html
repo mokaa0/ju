@@ -19,7 +19,7 @@ let accounts = [];
 try {
   usernames = fs.readFileSync(usernamesPath, 'utf-8').split('\n').filter(Boolean);
   console.log(chalk.green(`Loaded ${usernames.length} username`));
-} catch (err) {
+} catch {
   console.log(chalk.red('Error loading usernames'));
   process.exit();
 }
@@ -27,11 +27,11 @@ try {
 try {
   const rawLines = fs.readFileSync(tokensPath, 'utf-8').split('\n').filter(Boolean);
   accounts = rawLines.map(line => {
-    const [token, password] = line.split('|').map(v => v.trim());
-    return { token, password };
+    const [token, email, password] = line.split('|').map(v => v.trim());
+    return { token, email, password };
   });
   console.log(chalk.green(`Loaded ${accounts.length} tokens`));
-} catch (err) {
+} catch {
   console.log(chalk.red('Error loading tokens'));
   process.exit();
 }
@@ -41,7 +41,7 @@ console.log(chalk.yellow('Connecting valid accounts…'));
 let valid = 0;
 let invalid = 0;
 
-async function changeUsername(token, password, newUsername) {
+async function changeUsername({ token, email, password }, newUsername) {
   try {
     const userInfo = await fetch('https://discord.com/api/v9/users/@me', {
       headers: { Authorization: token }
@@ -60,6 +60,7 @@ async function changeUsername(token, password, newUsername) {
       body: JSON.stringify({
         username: newUsername,
         password: password,
+        email: email,
         discriminator: data.discriminator
       })
     });
@@ -67,23 +68,23 @@ async function changeUsername(token, password, newUsername) {
     if (res.status === 200) {
       console.log(chalk.blue(`${token.slice(0, 15)}... - ${newUsername}`));
       return true;
-    } else {
-      return false;
     }
+
+    return false;
   } catch {
     return false;
   }
 }
 
 (async () => {
-  for (const { token, password } of accounts) {
+  for (const account of accounts) {
     if (usernames.length === 0) {
       console.log(chalk.red('No more usernames available'));
       break;
     }
 
     const username = usernames.shift();
-    const success = await changeUsername(token, password, username);
+    const success = await changeUsername(account, username);
 
     if (success) {
       valid++;
