@@ -14,7 +14,7 @@ function sleep(ms) {
 async function main() {
   clearConsole();
 
-  // عرض العنوان
+  // العنوان
   console.log(
     chalk.cyanBright(figlet.textSync('Qya', { horizontalLayout: 'default' }))
   );
@@ -40,18 +40,46 @@ async function main() {
     .filter(Boolean);
 
   console.log(chalk.green(`Loaded ${tokens.length} tokens`));
-
   console.log(chalk.yellow('Connecting valid accounts…'));
 
   let valid = 0;
   let invalid = 0;
 
   for (let token of tokens) {
+    // تحقق من أن لدينا أسماء متبقية
+    if (names.length === 0) {
+      console.log(chalk.red('No more names available in name.txt!'));
+      break;
+    }
+
+    // تحقق أولي من التوكن
+    try {
+      const check = await axios.get('https://discord.com/api/v10/users/@me', {
+        headers: {
+          Authorization: token
+        }
+      });
+
+      if (check.data.bot) {
+        console.log(chalk.red(`${token.slice(0, 15)}... - Bot token, skipping.`));
+        invalid++;
+        continue;
+      }
+    } catch (err) {
+      const part = token.slice(0, 15) + '...';
+      const message = err.response?.data?.message || 'Unknown error';
+      console.log(chalk.red(`${part} - Invalid token (${message})`));
+      invalid++;
+      continue;
+    }
+
+    // اسم عشوائي
     const randomIndex = Math.floor(Math.random() * names.length);
     const randomName = names[randomIndex];
-    names.splice(randomIndex, 1); // حذف الاسم المستخدم
-    fs.writeFileSync('name.txt', names.join('\n')); // تحديث الملف بدون الاسم المستخدم
+    names.splice(randomIndex, 1); // حذف الاسم
+    fs.writeFileSync('name.txt', names.join('\n')); // تحديث ملف الأسماء
 
+    // محاولة تغيير الاسم
     try {
       await axios.patch(
         'https://discord.com/api/v10/users/@me',
@@ -68,10 +96,13 @@ async function main() {
       console.log(chalk.blue(`${tokenPart} - ${randomName}`));
       valid++;
     } catch (err) {
+      const tokenPart = token.slice(0, 15) + '...';
+      const message = err.response?.data?.message || 'Unknown error';
+      console.log(chalk.red(`${tokenPart} - Failed to set name (${message})`));
       invalid++;
     }
 
-    await sleep(1000); // انتظار لتفادي rate limit
+    await sleep(1000); // انتظار بين الطلبات
   }
 
   console.log(chalk.green('All accounts initialized.'));
