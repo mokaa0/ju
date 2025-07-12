@@ -11,6 +11,13 @@ function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+// فلترة الاسم الظاهر
+function isValidDisplayName(name) {
+  // Discord يسمح بـ Unicode و Emojis في global_name، لكن يجب أن يكون بين 1 و 32 حرفًا
+  const trimmed = name.trim();
+  return trimmed.length >= 1 && trimmed.length <= 32;
+}
+
 async function main() {
   clearConsole();
 
@@ -46,13 +53,12 @@ async function main() {
   let invalid = 0;
 
   for (let token of tokens) {
-    // تحقق من أن لدينا أسماء متبقية
     if (names.length === 0) {
       console.log(chalk.red('No more names available in name.txt!'));
       break;
     }
 
-    // تحقق أولي من التوكن
+    // التحقق من التوكن
     try {
       const check = await axios.get('https://discord.com/api/v10/users/@me', {
         headers: {
@@ -73,17 +79,37 @@ async function main() {
       continue;
     }
 
-    // اسم عشوائي
-    const randomIndex = Math.floor(Math.random() * names.length);
-    const randomName = names[randomIndex];
-    names.splice(randomIndex, 1); // حذف الاسم
-    fs.writeFileSync('name.txt', names.join('\n')); // تحديث ملف الأسماء
+    // اختيار اسم عشوائي صالح
+    let randomName = '';
+    let attempts = 0;
+    while (attempts < 5) {
+      const index = Math.floor(Math.random() * names.length);
+      const candidate = names[index];
 
-    // محاولة تغيير الاسم
+      if (isValidDisplayName(candidate)) {
+        randomName = candidate;
+        names.splice(index, 1); // حذف الاسم
+        fs.writeFileSync('name.txt', names.join('\n'));
+        break;
+      } else {
+        // سجل الاسم غير الصالح
+        fs.appendFileSync('invalid_names.txt', candidate + '\n');
+        names.splice(index, 1); // احذفه من القائمة
+      }
+      attempts++;
+    }
+
+    if (!randomName) {
+      console.log(chalk.red(`No valid display name found for ${token.slice(0, 15)}...`));
+      invalid++;
+      continue;
+    }
+
+    // تغيير الاسم الظاهر (Display Name)
     try {
       await axios.patch(
-        'https://discord.com/api/v10/users/@me',
-        { username: randomName },
+        'https://discord.com/api/v10/users/@me/profile',
+        { global_name: randomName },
         {
           headers: {
             Authorization: token,
@@ -92,17 +118,15 @@ async function main() {
         }
       );
 
-      const tokenPart = token.slice(0, 15) + '...';
-      console.log(chalk.blue(`${tokenPart} - ${randomName}`));
+      console.log(chalk.blue(`${token.slice(0, 15)}... - ${randomName}`));
       valid++;
     } catch (err) {
-      const tokenPart = token.slice(0, 15) + '...';
       const message = err.response?.data?.message || 'Unknown error';
-      console.log(chalk.red(`${tokenPart} - Failed to set name (${message})`));
+      console.log(chalk.red(`${token.slice(0, 15)}... - Failed to set display name (${message})`));
       invalid++;
     }
 
-    await sleep(1000); // انتظار بين الطلبات
+    await sleep(1000); // تجنب rate limit
   }
 
   console.log(chalk.green('All accounts initialized.'));
