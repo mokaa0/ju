@@ -11,9 +11,8 @@ function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-// فلترة الاسم الظاهر
+// تحقق من صلاحية الاسم الظاهر (1-32 حرف)
 function isValidDisplayName(name) {
-  // Discord يسمح بـ Unicode و Emojis في global_name، لكن يجب أن يكون بين 1 و 32 حرفًا
   const trimmed = name.trim();
   return trimmed.length >= 1 && trimmed.length <= 32;
 }
@@ -22,10 +21,7 @@ async function main() {
   clearConsole();
 
   // العنوان
-  console.log(
-    chalk.cyanBright(figlet.textSync('Qya', { horizontalLayout: 'default' }))
-  );
-
+  console.log(chalk.cyanBright(figlet.textSync('Qya')));
   console.log(chalk.blue('•'));
   console.log(chalk.white('Qya Studio - name tokens tool'));
   console.log(chalk.yellow('Developed by .884.'));
@@ -35,7 +31,7 @@ async function main() {
   // تحميل الأسماء
   let names = fs.readFileSync('name.txt', 'utf-8')
     .split('\n')
-    .map(name => name.trim())
+    .map(n => n.trim())
     .filter(Boolean);
 
   console.log(chalk.green(`Loaded ${names.length} names`));
@@ -58,23 +54,23 @@ async function main() {
       break;
     }
 
-    // التحقق من التوكن
+    // التحقق من صلاحية التوكن
+    let userInfo;
     try {
-      const check = await axios.get('https://discord.com/api/v10/users/@me', {
-        headers: {
-          Authorization: token
-        }
+      const res = await axios.get('https://discord.com/api/v10/users/@me', {
+        headers: { Authorization: token }
       });
 
-      if (check.data.bot) {
+      if (res.data.bot) {
         console.log(chalk.red(`${token.slice(0, 15)}... - Bot token, skipping.`));
         invalid++;
         continue;
       }
+
+      userInfo = res.data;
     } catch (err) {
-      const part = token.slice(0, 15) + '...';
-      const message = err.response?.data?.message || 'Unknown error';
-      console.log(chalk.red(`${part} - Invalid token (${message})`));
+      const msg = err.response?.data?.message || 'Unknown error';
+      console.log(chalk.red(`${token.slice(0, 15)}... - Invalid token (${msg})`));
       invalid++;
       continue;
     }
@@ -82,32 +78,31 @@ async function main() {
     // اختيار اسم عشوائي صالح
     let randomName = '';
     let attempts = 0;
-    while (attempts < 5) {
+    while (attempts < 10 && names.length > 0) {
       const index = Math.floor(Math.random() * names.length);
-      const candidate = names[index];
+      const name = names[index];
 
-      if (isValidDisplayName(candidate)) {
-        randomName = candidate;
-        names.splice(index, 1); // حذف الاسم
+      if (isValidDisplayName(name)) {
+        randomName = name;
+        names.splice(index, 1);
         fs.writeFileSync('name.txt', names.join('\n'));
         break;
       } else {
-        // سجل الاسم غير الصالح
-        fs.appendFileSync('invalid_names.txt', candidate + '\n');
-        names.splice(index, 1); // احذفه من القائمة
+        fs.appendFileSync('invalid_names.txt', name + '\n');
+        names.splice(index, 1);
       }
       attempts++;
     }
 
     if (!randomName) {
-      console.log(chalk.red(`No valid display name found for ${token.slice(0, 15)}...`));
+      console.log(chalk.red(`${token.slice(0, 15)}... - No valid name found.`));
       invalid++;
       continue;
     }
 
-    // تغيير الاسم الظاهر (Display Name)
+    // إرسال الطلب لتغيير الاسم الظاهر
     try {
-      await axios.patch(
+      const response = await axios.patch(
         'https://discord.com/api/v10/users/@me/profile',
         { global_name: randomName },
         {
@@ -118,18 +113,26 @@ async function main() {
         }
       );
 
-      console.log(chalk.blue(`${token.slice(0, 15)}... - ${randomName}`));
-      valid++;
+      const actualName = response.data.global_name;
+
+      if (actualName && actualName === randomName) {
+        console.log(chalk.blue(`${token.slice(0, 15)}... - ${randomName}`));
+        valid++;
+      } else {
+        console.log(chalk.red(`${token.slice(0, 15)}... - Failed to set name. Response: ${actualName}`));
+        invalid++;
+      }
+
     } catch (err) {
-      const message = err.response?.data?.message || 'Unknown error';
-      console.log(chalk.red(`${token.slice(0, 15)}... - Failed to set display name (${message})`));
+      const errMsg = err.response?.data?.global_name?.[0] || err.response?.data?.message || 'Unknown error';
+      console.log(chalk.red(`${token.slice(0, 15)}... - Failed to set display name (${errMsg})`));
       invalid++;
     }
 
-    await sleep(1000); // تجنب rate limit
+    await sleep(1000); // تأخير لتجنب الحظر
   }
 
-  console.log(chalk.green('All accounts initialized.'));
+  console.log(chalk.green('\nAll accounts initialized.'));
   console.log(chalk.green(`Status`));
   console.log(chalk.green(` - Valid tokens total : ${valid}`));
   console.log(chalk.green(` - Invalid tokens : ${invalid}`));
