@@ -1,141 +1,106 @@
-const fs = require('fs');
-const figlet = require('figlet');
-const chalk = require('chalk');
-const axios = require('axios');
+local TransitionEvent = game.ReplicatedStorage:WaitForChild("TransitionEvent")
+local TeleportService = game:GetService("TeleportService")
+local TeleportID = 137486345319510
 
-function clearConsole() {
-  process.stdout.write('\x1Bc');
-}
+local Players = {}
+local IsTeleporting = false
+local TeleportPoint = script.Parent:WaitForChild("TeleportPoint")
+local PlayersAllowed = script.Parent:WaitForChild("PlayersAllowed")
+local Gate = script.Parent:WaitForChild("Gate")
 
-function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
+local Frame = Gate:WaitForChild("SurfaceGui"):WaitForChild("Frame")
+local PlayerNumber = Frame:WaitForChild("PlayerNumber")
+local TimeNumber = Frame:WaitForChild("TimeNumber")
+local ExitEvent = game.ReplicatedStorage:WaitForChild("ExitEvent")
 
-// تحقق من صلاحية الاسم الظاهر (1-32 حرف)
-function isValidDisplayName(name) {
-  const trimmed = name.trim();
-  return trimmed.length >= 1 && trimmed.length <= 32;
-}
+game.Players.RespawnTime = 0
 
-async function main() {
-  clearConsole();
+function Refresh()
+	PlayerNumber.Text = tostring(#Players)
+end
 
-  // العنوان
-  console.log(chalk.cyanBright(figlet.textSync('Qya')));
-  console.log(chalk.blue('•'));
-  console.log(chalk.white('Qya Studio - name tokens tool'));
-  console.log(chalk.yellow('Developed by .884.'));
-  console.log(chalk.yellow('Random name'));
-  console.log(chalk.green('Loading Tool…'));
+local function RemoveFromList(Char)
+	for i = #Players, 1, -1 do
+		if Players[i] == Char.Name then
+			table.remove(Players, i)
+			if Char:FindFirstChild("Humanoid") then
+				Char.Humanoid.JumpPower = 50
+			end
+			Refresh()
+			break
+		end
+	end
+end
 
-  // تحميل الأسماء
-  let names = fs.readFileSync('name.txt', 'utf-8')
-    .split('\n')
-    .map(n => n.trim())
-    .filter(Boolean);
+local function Teleport()
+	if #Players > 0 then
+		local TeleportPlayers = {}
+		for i = #Players, 1, -1 do
+			local plr = game.Players:FindFirstChild(Players[i])
+			if plr then
+				table.insert(TeleportPlayers, plr)
+				TransitionEvent:FireClient(plr)
+			else
+				table.remove(Players, i)
+			end
+		end
+		if #TeleportPlayers > 0 then
+			local Code = TeleportService:ReserveServer(TeleportID)
+			IsTeleporting = true
+			TeleportService:TeleportToPrivateServer(TeleportID, Code, TeleportPlayers)
+			repeat task.wait() until #Players <= 0
+			IsTeleporting = false
+		end
+	end
+end
 
-  console.log(chalk.green(`Loaded ${names.length} names`));
+Gate.Touched:Connect(function(Hit)
+	if Hit and Hit.Parent:FindFirstChild("Humanoid") then
+		local Player = game.Players:GetPlayerFromCharacter(Hit.Parent)
+		if not Player then return end
+		if not IsTeleporting then
+			local Character = Player.Character or Player.CharacterAdded:Wait()
+			local AlreadyInside = false
+			for _, name in ipairs(Players) do
+				if name == Character.Name then
+					AlreadyInside = true
+					break
+				end
+			end
+			if not AlreadyInside and #Players < PlayersAllowed.Value then
+				table.insert(Players, Character.Name)
+				local HRP = Character:FindFirstChild("HumanoidRootPart")
+				if HRP then
+					HRP.CFrame = TeleportPoint.CFrame
+				end
+				if Character:FindFirstChild("Humanoid") then
+					Character.Humanoid.JumpPower = 0
+				end
+				Refresh()
+				ExitEvent:FireClient(Player)
+				Player.CharacterRemoving:Once(function(Char)
+					RemoveFromList(Char)
+				end)
+			end
+		end
+	end
+end)
 
-  // تحميل التوكنات
-  let tokens = fs.readFileSync('tokens.txt', 'utf-8')
-    .split('\n')
-    .map(t => t.trim())
-    .filter(Boolean);
+ExitEvent.OnServerEvent:Connect(function(player)
+	if player.Character then
+		if player.Character:FindFirstChild("Humanoid") then
+			player.Character.Humanoid.Health = 0
+		end
+		RemoveFromList(player.Character)
+	end
+end)
 
-  console.log(chalk.green(`Loaded ${tokens.length} tokens`));
-  console.log(chalk.yellow('Connecting valid accounts…'));
-
-  let valid = 0;
-  let invalid = 0;
-
-  for (let token of tokens) {
-    if (names.length === 0) {
-      console.log(chalk.red('No more names available in name.txt!'));
-      break;
-    }
-
-    // التحقق من صلاحية التوكن
-    let userInfo;
-    try {
-      const res = await axios.get('https://discord.com/api/v10/users/@me', {
-        headers: { Authorization: token }
-      });
-
-      if (res.data.bot) {
-        console.log(chalk.red(`${token.slice(0, 15)}... - Bot token, skipping.`));
-        invalid++;
-        continue;
-      }
-
-      userInfo = res.data;
-    } catch (err) {
-      const msg = err.response?.data?.message || 'Unknown error';
-      console.log(chalk.red(`${token.slice(0, 15)}... - Invalid token (${msg})`));
-      invalid++;
-      continue;
-    }
-
-    // اختيار اسم عشوائي صالح
-    let randomName = '';
-    let attempts = 0;
-    while (attempts < 10 && names.length > 0) {
-      const index = Math.floor(Math.random() * names.length);
-      const name = names[index];
-
-      if (isValidDisplayName(name)) {
-        randomName = name;
-        names.splice(index, 1);
-        fs.writeFileSync('name.txt', names.join('\n'));
-        break;
-      } else {
-        fs.appendFileSync('invalid_names.txt', name + '\n');
-        names.splice(index, 1);
-      }
-      attempts++;
-    }
-
-    if (!randomName) {
-      console.log(chalk.red(`${token.slice(0, 15)}... - No valid name found.`));
-      invalid++;
-      continue;
-    }
-
-    // إرسال الطلب لتغيير الاسم الظاهر
-    try {
-      const response = await axios.patch(
-        'https://discord.com/api/v10/users/@me/profile',
-        { global_name: randomName },
-        {
-          headers: {
-            Authorization: token,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-
-      const actualName = response.data.global_name;
-
-      if (actualName && actualName === randomName) {
-        console.log(chalk.blue(`${token.slice(0, 15)}... - ${randomName}`));
-        valid++;
-      } else {
-        console.log(chalk.red(`${token.slice(0, 15)}... - Failed to set name. Response: ${actualName}`));
-        invalid++;
-      }
-
-    } catch (err) {
-      const errMsg = err.response?.data?.global_name?.[0] || err.response?.data?.message || 'Unknown error';
-      console.log(chalk.red(`${token.slice(0, 15)}... - Failed to set display name (${errMsg})`));
-      invalid++;
-    }
-
-    await sleep(1000); // تأخير لتجنب الحظر
-  }
-
-  console.log(chalk.green('\nAll accounts initialized.'));
-  console.log(chalk.green(`Status`));
-  console.log(chalk.green(` - Valid tokens total : ${valid}`));
-  console.log(chalk.green(` - Invalid tokens : ${invalid}`));
-}
-
-main();
+while true do
+	local Timer = 20
+	for i = Timer, 1, -1 do
+		TimeNumber.Text = tostring(i)
+		task.wait(1)
+	end
+	TimeNumber.Text = "0"
+	Teleport()
+end
