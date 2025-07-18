@@ -1,306 +1,298 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Limited</title>
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    body {
-      background-color: #000;
-      color: white;
-      font-family: 'Arial', sans-serif;
-      overflow-x: hidden;
-      position: relative;
-    }
-
-    .background-points {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      pointer-events: none;
-      z-index: -1;
-    }
-
-    .point {
-      position: absolute;
-      width: 4px;
-      height: 4px;
-      background-color: white;
-      border-radius: 50%;
-      animation: float 6s ease-in-out infinite;
-    }
-
-    @keyframes float {
-      0%, 100% { transform: translateY(0px) translateX(0px); }
-      25% { transform: translateY(-20px) translateX(10px); }
-      50% { transform: translateY(0px) translateX(-10px); }
-      75% { transform: translateY(20px) translateX(5px); }
-    }
-
-    .container {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 0 20px;
-    }
-
-    .header {
-      text-align: center;
-      padding: 100px 0 50px;
-      opacity: 0;
-      transform: translateY(50px);
-      animation: fadeInUp 1s ease-out 0.5s forwards;
-    }
-
-    .title {
-      font-size: 4rem;
-      font-weight: bold;
-      margin-bottom: 30px;
-      background: linear-gradient(45deg, #fff, #9d4edd);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-
-    .join-button {
-      display: inline-block;
-      background: linear-gradient(45deg, #9d4edd, #7b2cbf);
-      color: white;
-      padding: 15px 40px;
-      text-decoration: none;
-      border-radius: 10px;
-      font-size: 1.2rem;
-      font-weight: bold;
-      transition: all 0.3s ease;
-      border: 2px solid transparent;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .join-button::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: -100%;
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-      transition: left 0.5s ease;
-    }
-
-    .join-button:hover {
-      transform: scale(1.05);
-      box-shadow: 0 0 20px #9d4edd;
-      border-color: #9d4edd;
-    }
-
-    .join-button:hover::before {
-      left: 100%;
-    }
-
-    .cards-section {
-      padding: 50px 0;
-    }
-
-    .cards-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-      gap: 30px;
-      margin-bottom: 100px;
-    }
-
-    .card {
-      background: rgba(20, 20, 20, 0.85);
-      color: #ddd;
-      padding: 40px;
-      border-radius: 15px;
-      transition: all 0.3s ease;
-      border: 2px solid transparent;
-      opacity: 0;
-      transform: translateY(50px);
-      backdrop-filter: blur(10px);
-      aspect-ratio: 1;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      min-height: 300px;
-    }
-
-    .card:hover {
-      transform: translateY(-10px) scale(1.02);
-      box-shadow: 0 20px 40px rgba(157, 78, 221, 0.3);
-      border-color: #9d4edd;
-    }
-
-    .card h3 {
-      font-size: 1.4rem;
-      margin-bottom: 20px;
-      color: #9d4edd;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .card p {
-      line-height: 1.6;
-      font-size: 1rem;
-      flex-grow: 1;
-    }
-
-    @keyframes fadeInUp {
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    .animate-card-1 { animation: fadeInUp 0.8s ease-out 1.2s forwards; }
-    .animate-card-2 { animation: fadeInUp 0.8s ease-out 1.4s forwards; }
-    .animate-card-3 { animation: fadeInUp 0.8s ease-out 1.6s forwards; }
-    .animate-card-4 { animation: fadeInUp 0.8s ease-out 1.8s forwards; }
-    .animate-card-5 { animation: fadeInUp 0.8s ease-out 2.2s forwards; }
-    .animate-card-6 { animation: fadeInUp 0.8s ease-out 2.4s forwards; }
-    .animate-card-7 { animation: fadeInUp 0.8s ease-out 2.6s forwards; }
-    .animate-card-8 { animation: fadeInUp 0.8s ease-out 2.8s forwards; }
-
-    @media (max-width: 768px) {
-      .title {
-        font-size: 3rem;
-      }
-
-      .cards-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .card {
-        padding: 20px;
-      }
-    }
-  </style>
-</head>
-<body>
-  <div class="background-points" id="backgroundPoints"></div>
-
-  <div class="container">
-    <div class="header">
-      <h1 class="title">Limited</h1>
-      <a href="https://discord.gg/xXeyBb6MsK" class="join-button" target="_blank">Join Server</a>
-    </div>
-
-    <div class="cards-section">
-      <div class="cards-grid">
-        <div class="card animate-card-1">
-          <h3>
-            <svg width="24" height="24" fill="none" stroke="#9d4edd" stroke-width="2">
-              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-            </svg>
-            Most Secure Market
-          </h3>
-          <p>We provide the safest trading environment with advanced security measures, encrypted transactions, and verified seller protection. Your digital assets are protected with military-grade security protocols.</p>
-        </div>
-
-        <div class="card animate-card-2">
-          <h3>
-            <svg width="24" height="24" fill="none" stroke="#9d4edd" stroke-width="2">
-              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-            </svg>
-            Premium Voice Tokens
-          </h3>
-          <p>Get access to exclusive voice tokens, premium Discord features, and VIP access to private channels. We offer the highest quality digital tokens at competitive prices.</p>
-        </div>
-
-        <div class="card animate-card-3">
-          <h3>
-            <svg width="24" height="24" fill="none" stroke="#9d4edd" stroke-width="2">
-              <circle cx="12" cy="12" r="10"/>
-              <path d="M16 8l-4 4-4-4"/>
-            </svg>
-            Lowest Prices Guaranteed
-          </h3>
-          <p>We beat any competitor's price! Get the best deals on gaming accounts, digital currencies, and premium subscriptions. Our pricing is unmatched in the market.</p>
-        </div>
-
-        <div class="card animate-card-4">
-          <h3>
-            <svg width="24" height="24" fill="none" stroke="#9d4edd" stroke-width="2">
-              <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-              <circle cx="8.5" cy="7" r="4"/>
-              <path d="M20 8v6M23 11l-3 3-3-3"/>
-            </svg>
-            Trusted Community
-          </h3>
-          <p>Join thousands of satisfied customers who trust our platform. With 99.9% positive feedback and 24/7 customer support, we're the most reliable choice for digital trading.</p>
-        </div>
-
-        <div class="card animate-card-5">
-          <h3>
-            <svg width="24" height="24" fill="none" stroke="#9d4edd" stroke-width="2">
-              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
-            </svg>
-            Lightning Fast Service
-          </h3>
-          <p>Get your orders processed instantly! Our automated systems deliver your digital goods within seconds of purchase. No waiting, no delays - just instant satisfaction.</p>
-        </div>
-
-        <div class="card animate-card-6">
-          <h3>
-            <svg width="24" height="24" fill="none" stroke="#9d4edd" stroke-width="2">
-              <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
-              <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
-            </svg>
-            Our Vision
-          </h3>
-          <p>To become the world's leading digital marketplace, connecting gamers and creators globally. We dream of a future where digital trading is seamless, secure, and accessible to everyone.</p>
-        </div>
-
-        <div class="card animate-card-7">
-          <h3>
-            <svg width="24" height="24" fill="none" stroke="#9d4edd" stroke-width="2">
-              <circle cx="12" cy="12" r="3"/>
-              <path d="M12 1v6m0 6v6m11-7h-6m-6 0H1"/>
-            </svg>
-            Premium Quality
-          </h3>
-          <p>Every product undergoes rigorous quality checks. We only offer legitimate, high-quality digital assets from verified sources. Your satisfaction is our top priority.</p>
-        </div>
-
-        <div class="card animate-card-8">
-          <h3>
-            <svg width="24" height="24" fill="none" stroke="#9d4edd" stroke-width="2">
-              <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
-              <line x1="3" y1="6" x2="21" y2="6"/>
-              <path d="M16 10a4 4 0 0 1-8 0"/>
-            </svg>
-            Innovation First
-          </h3>
-          <p>We're constantly evolving with cutting-edge technology, implementing the latest security features and user experience improvements. The future of digital trading starts here.</p>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <script>
-    function createBackgroundPoints() {
-      const container = document.getElementById('backgroundPoints');
-      const numberOfPoints = 50;
-      for (let i = 0; i < numberOfPoints; i++) {
-        const point = document.createElement('div');
-        point.className = 'point';
-        point.style.left = Math.random() * 100 + '%';
-        point.style.top = Math.random() * 100 + '%';
-        point.style.animationDelay = Math.random() * 6 + 's';
-        point.style.opacity = Math.random() * 0.5 + 0.3;
-        container.appendChild(point);
-      }
-    }
-    window.addEventListener('load', createBackgroundPoints);
-  </script>
-</body>
-</html>
+كيفك
+هلا
+أهلاً
+شلونك؟
+تمام الحمدلله
+وانت؟
+أنا بخير
+شو تسوي؟
+طفشان
+نفس الشعور
+الجو ممل
+حر موت
+والله صح
+طلعت اليوم؟
+لا قاعد بالبيت
+ليش؟
+مافي شي أطلعه
+تعال عندنا
+والله ودي
+هات تعال نلعب
+وش نلعب؟
+ببجي؟
+ما أحبها
+فورتنايت؟
+ممكن
+عندك نت قوي؟
+نوعًا ما
+طيب يلا
+دخلت؟
+لسه
+يلاااا بسرعة
+ثواني أفك تحديث
+دائمًا عندك تحديث
+ههههه صدق
+وش أخبارك بالدراسة؟
+ماشي الحال
+طفشان منها
+طبيعي
+امتحاناتكم قربت؟
+اي
+شد حيلك
+مافي حيل 😭
+ههههه
+وش ناوي بعد الثانوي؟
+لسه محتار
+تفكر في جامعة؟
+اي
+ولا وظيفة؟
+الجامعة أحسن
+صح كلامك
+انت شنو ناوي؟
+أنا أبي هندسة
+حلو
+وانت؟
+يمكن IT
+كويس برضو
+نحب التكنولوجيا
+أكيد
+وش تسوي الحين؟
+أسمع أغاني
+وش تسمع؟
+أديل
+رايق
+ههههه
+تبغى نطلع بكرا؟
+متى؟
+بعد الظهر
+وين؟
+مجمع
+مين بيجي؟
+يمكن عزيز وسالم
+يلا متى نحدد؟
+بعدين العصر
+تمام
+لاتنسى
+أذكرك إن شاء الله
+وش فيك ساكت؟
+أكل
+هههه صحتين
+الله يسلمك
+شفت الفيلم الجديد؟
+أي واحد؟
+المريخي
+لا مو شايفه
+حلو مره
+أوصي فيه؟
+اي
+أرسل اسمه
+Mars
+تمام
+أشوفه الليلة
+قل لي رأيك بعدين
+أكيد
+وش رأيك في الكوفي اللي فتح؟
+ما رحت له
+نروح سوا؟
+اي متى؟
+الخميس
+تم
+موعدنا
+لا تتأخر
+أبدًا
+لبسك لا تنسى
+هههه اوكي
+جبت السماعة؟
+لا نسيت
+رجع خذها
+كسلان
+ههههه
+أبوك موجود؟
+لا طلع
+طيب بنجي
+اتصل لما توصل
+تم
+وينك تأخرت؟
+زحمة
+كالعادة
+وش العذر؟
+والله زحمة
+بعدين تعال شف السيارة
+وش فيها؟
+مغبرة
+غسلها لك؟
+هههه لا خلاص
+كيف الجو عندك؟
+مطر
+جد؟
+اي
+يحبك المطر
+وانت أكثر
+هههه رومانسي
+أوقات كذا
+أحب هالجو
+أنا بعد
+نفس الشعور
+تشرب قهوة؟
+دائمًا
+براد ولا ستاربكس؟
+ستاربكس أكيد
+غالي
+بس لذيذ
+هههه معك حق
+كيف دوامك؟
+طويل
+تداوم بدري؟
+اي ٧
+اوه بدري
+وانت؟
+٩ ونص
+محظوظ
+هههه
+مديرك طيب؟
+مره
+أحسن شي
+الحمدلله
+نمت زين؟
+لا
+ليش؟
+كوابيس
+سلامات
+الله يسلمك
+جرب موية ورد
+سمعت عنها
+تفيد
+بجربها
+قول لي بعدين
+ان شاء الله
+بعدين وينك أمس؟
+كنت نايم
+مبكر؟
+اي
+ما توقعتك كذا
+كنت تعبان
+صرت تمام؟
+الحمدلله
+كويس
+وش ناوي تسوي اليوم؟
+ولا شي
+تعال نتمشى
+وين؟
+الكورنيش
+تمام
+أجيب معاي أحد؟
+كيفك
+تعال لحالك
+اوكي
+لبس خفيف الجو حر
+ماشي
+أخذت معك مويا؟
+لا
+جيب لك
+تم
+دقيت عليك ما رديت
+كنت مشغول
+أوكي
+وش فيك زعلان؟
+مو زعلان
+تحس كذا
+يمكن تعبان
+خذ لك راحة
+بحاول
+أرسل لي صورتك
+ليه؟
+اشتقتلك
+ههههه طيب لحظة
+جميل كالعادة
+يا رايق
+وين بتروح الصيف؟
+ما قررنا
+فكر في تركيا
+ودي
+أسعارهم كيف؟
+مرتفعة شوي
+بتجي معنا؟
+لو في مكان
+أكيد
+وش بنسوي هناك؟
+نستكشف
+نصور
+نسوي فلوق؟
+اي
+مين يصور؟
+أنت
+أنا دائمًا
+هههه
+تحب التصوير
+مرة
+علمت أحد؟
+أخوي الصغير
+ذوقه حلو
+فعلاً
+حطيت صورك في انستا؟
+اي
+بشوف
+لا تعلق
+أكيد بعليق
+وش قلت؟
+ولا شي
+لا تكذب
+هههه
+نسيت كلمة السر
+انستا؟
+اي
+سجل خروج؟
+لا
+أوه تمام
+وش نوع جوالك؟
+آيفون
+أي إصدار؟
+١٣
+قديم شوي
+يؤدي الغرض
+صح كلامك
+تبي تغير؟
+ما أفكر
+ليش؟
+مرتاح
+دامك مرتاح خلاص
+بالضبط
+تحب الأندرويد؟
+مو كثير
+أنا بعد
+نظامهم معقد
+صح
+شفت تحديث السناب؟
+لا
+مره غريب
+فيه مميزات؟
+اي
+بس مو مفيدة
+كالعادة
+هههه
+تتابع مسلسلات؟
+أوقات
+وش آخر واحد؟
+الهيبة
+قديم
+أدمنت عليه
+مين أفضل شخصية؟
+جبل طبعاً
+أكيد
+يخليك تتحمس
+فعلاً
+أرسل لي رابط الحلقات
+أوك لحظة
+وصل؟
+اي
+مشاهدة ممتعة
+شكراً
+بتابع الحين
+أنا بعد
+نشوف ونعلق
+جاهز؟
+دائمًا
+بدأت؟
+لسه
+اضغط بلاي
+يلا
