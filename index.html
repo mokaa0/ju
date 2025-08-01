@@ -1,39 +1,51 @@
-local DataStoreService = game:GetService("DataStoreService")
-local PointsDataStore = DataStoreService:GetDataStore("UpgradePointsData")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TeamsService = game:GetService("Teams")
 
-game.Players.PlayerAdded:Connect(function(player)
-    local leaderstats = Instance.new("Folder")
-    leaderstats.Name = "leaderstats"
-    leaderstats.Parent = player
+local event = ReplicatedStorage:WaitForChild("GiveSoldierRank")
 
-    local upgradePoints = Instance.new("IntValue")
-    upgradePoints.Name = "Upgrade Points"
-    upgradePoints.Parent = leaderstats
+-- جدول الفرق مع اسم الفريق ونقاط الشراء المطلوبة
+local TeamsData = {
+    {Name = "جندي", PointsRequired = 20},
+    {Name = "مقاتل", PointsRequired = 50},
+    {Name = "قائد", PointsRequired = 100},
+    {Name = "رقيب", PointsRequired = 80},
+    {Name = "عريف", PointsRequired = 40},
+    {Name = "نقيب", PointsRequired = 120},
+    {Name = "رائد", PointsRequired = 150},
+    {Name = "ملازم", PointsRequired = 30},
+    {Name = "مقدم", PointsRequired = 200},
+    {Name = "عقيد", PointsRequired = 250},
+    {Name = "لواء", PointsRequired = 300},
+    {Name = "فريق", PointsRequired = 400},
+    {Name = "مشير", PointsRequired = 500},
+    {Name = "جنرال", PointsRequired = 600},
+    {Name = "فريق أول", PointsRequired = 700},
+}
 
-    local success, data = pcall(function()
-        return PointsDataStore:GetAsync(player.UserId)
-    end)
+event.OnServerEvent:Connect(function(player, requestedTeamName)
+    local leaderstats = player:FindFirstChild("leaderstats")
+    if not leaderstats then return end
 
-    if success and data then
-        upgradePoints.Value = data
-    else
-        upgradePoints.Value = 0
+    local points = leaderstats:FindFirstChild("Upgrade Points")
+    if not points then return end
+
+    -- بحث عن الفريق في الجدول
+    local teamData
+    for _, t in pairs(TeamsData) do
+        if t.Name == requestedTeamName then
+            teamData = t
+            break
+        end
     end
 
-    while player and player.Parent do
-        wait(40)
-        upgradePoints.Value += 8
-    end
-end)
+    if not teamData then return end -- الفريق غير موجود
 
-game.Players.PlayerRemoving:Connect(function(player)
-    local stats = player:FindFirstChild("leaderstats")
-    if stats then
-        local points = stats:FindFirstChild("Upgrade Points")
-        if points then
-            pcall(function()
-                PointsDataStore:SetAsync(player.UserId, points.Value)
-            end)
+    if points.Value >= teamData.PointsRequired then
+        local team = TeamsService:FindFirstChild(teamData.Name)
+        if team then
+            points.Value = points.Value - teamData.PointsRequired
+            player.Team = team
+            player.TeamColor = team.TeamColor
         end
     end
 end)
