@@ -3,7 +3,6 @@ local TeamsService = game:GetService("Teams")
 
 local event = ReplicatedStorage:WaitForChild("GiveSoldierRank")
 
--- جدول الفرق مع اسم الفريق ونقاط الشراء المطلوبة
 local TeamsData = {
     {Name = "جندي", PointsRequired = 20},
     {Name = "مقاتل", PointsRequired = 50},
@@ -29,7 +28,6 @@ event.OnServerEvent:Connect(function(player, requestedTeamName)
     local points = leaderstats:FindFirstChild("Upgrade Points")
     if not points then return end
 
-    -- بحث عن الفريق في الجدول
     local teamData
     for _, t in pairs(TeamsData) do
         if t.Name == requestedTeamName then
@@ -38,7 +36,7 @@ event.OnServerEvent:Connect(function(player, requestedTeamName)
         end
     end
 
-    if not teamData then return end -- الفريق غير موجود
+    if not teamData then return end
 
     if points.Value >= teamData.PointsRequired then
         local team = TeamsService:FindFirstChild(teamData.Name)
