@@ -1,62 +1,39 @@
-// index.js
-const fs = require("fs");
-const readline = require("readline");
-const { Client, Intents } = require("discord.js-selfbot-v13");
-const figlet = require("figlet");
-const chalk = require("chalk");
+local DataStoreService = game:GetService("DataStoreService")
+local PointsDataStore = DataStoreService:GetDataStore("UpgradePointsData")
 
-console.clear();
-console.log(figlet.textSync("Qya"));
-console.log(chalk.hex("#89CFF0")("Qya Studio - games tokens tool"));
-console.log(chalk.yellow("Developed By .884."));
-console.log(chalk.green("Starting..."));
+game.Players.PlayerAdded:Connect(function(player)
+    local leaderstats = Instance.new("Folder")
+    leaderstats.Name = "leaderstats"
+    leaderstats.Parent = player
 
-const tokensData = fs.readFileSync("tokens.txt", "utf-8").split("\n").filter(Boolean);
+    local upgradePoints = Instance.new("IntValue")
+    upgradePoints.Name = "Upgrade Points"
+    upgradePoints.Parent = leaderstats
 
-// نقوم بقراءة التوكنات وقنواتهم
-tokensData.forEach((line, index) => {
-    const [token, channelId] = line.split("|").map(x => x.trim());
-    if (!token || !channelId) {
-        console.log(chalk.red(`خطأ في السطر ${index + 1}: تأكد أن الصيغة token | id_channel صحيحة.`));
-        return;
-    }
+    local success, data = pcall(function()
+        return PointsDataStore:GetAsync(player.UserId)
+    end)
 
-    const client = new Client({
-        checkUpdate: false,
-    });
+    if success and data then
+        upgradePoints.Value = data
+    else
+        upgradePoints.Value = 0
+    end
 
-    client.on("ready", async () => {
-        console.log(chalk.cyan(`Logged in as ${client.user.username} (${index + 1})`));
+    while player and player.Parent do
+        wait(40)
+        upgradePoints.Value += 8
+    end
+end)
 
-        const channel = await client.channels.fetch(channelId).catch(() => null);
-        if (!channel) {
-            console.log(chalk.red(`❌ لم يتم العثور على الروم ${channelId}`));
-            return;
-        }
-
-        channel.messages.fetch({ limit: 5 }).catch(() => null); // ابدأ بتحميل بعض الرسائل
-
-        channel.on("messageCreate", async (message) => {
-            if (message.author.bot || message.webhookId) {
-                if (message.components?.length > 0) {
-                    for (const row of message.components) {
-                        for (const button of row.components) {
-                            if (button.style === 1 || button.style === 2 || button.style === 3 || button.style === 4) {
-                                try {
-                                    await message.clickButton(button.customId);
-                                    console.log(chalk.green(`[${client.user.username}] ضغط الزر: ${button.customId}`));
-                                } catch (err) {
-                                    console.log(chalk.red(`[${client.user.username}] فشل في ضغط الزر`));
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        });
-    });
-
-    client.login(token).catch(err => {
-        console.log(chalk.red(`❌ فشل تسجيل الدخول بالتوكن ${token.slice(0, 10)}...`));
-    });
-});
+game.Players.PlayerRemoving:Connect(function(player)
+    local stats = player:FindFirstChild("leaderstats")
+    if stats then
+        local points = stats:FindFirstChild("Upgrade Points")
+        if points then
+            pcall(function()
+                PointsDataStore:SetAsync(player.UserId, points.Value)
+            end)
+        end
+    end
+end)
