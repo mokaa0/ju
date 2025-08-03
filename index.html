@@ -30,8 +30,8 @@
     #sendBtn { background-color: #FFD700; color: #000; }
     #receiveBtn { background-color: #444; color: #fff; }
     #buyBtn { background-color: #FFD700; color: #000; }
-    select {
-      margin-top: 20px;
+    select, input {
+      margin-top: 10px;
       padding: 10px;
       font-size: 1em;
       background-color: #222;
@@ -44,10 +44,20 @@
 <body>
   <h1>Radar Wallet</h1>
   <div class="balance" id="balance">0$</div>
+
+  <!-- أزرار -->
   <button id="sendBtn"><img src="send.svg" width="20" height="20" alt="Send"/>Send</button>
   <button id="receiveBtn"><img src="receive.svg" width="20" height="20" alt="Receive"/>Receive</button>
   <br><br>
   <button id="buyBtn"><img src="cart.svg" width="20" height="20" alt="Buy"/>Buy</button>
+
+  <!-- إدخال الكود والمبلغ -->
+  <br>
+  <input type="text" id="send-code" placeholder="Enter user code">
+  <input type="number" id="send-amount" placeholder="Amount">
+
+  <!-- سلكت منيو للشراء -->
+  <br>
   <select id="itemSelect" style="display:none;"></select>
 
   <script>
@@ -70,7 +80,9 @@
 
     document.getElementById("receiveBtn").onclick = async () => {
       try {
-        const res = await fetch("http://45.137.70.93:2032/generate-code");
+        const res = await fetch("http://45.137.70.93:2032/api/receive", {
+          method: "POST"
+        });
         if (!res.ok) throw new Error("Failed to generate code");
         const data = await res.json();
         userCode = data.code;
@@ -82,41 +94,66 @@
       }
     };
 
-   document.getElementById("buyBtn").onclick = async () => {
-  const select = document.getElementById("itemSelect");
-  if (select.style.display === "none") {
-    // تحميل السلع من JSON وعرضها في السلكت منيو
-    const res = await fetch("items.json");
-    const items = await res.json();
-    select.innerHTML = "";
-    items.forEach((item, index) => {
-      const opt = document.createElement("option");
-      opt.value = index;
-      opt.textContent = item.name + " - " + item.price + "$";
-      select.appendChild(opt);
-    });
-    select.style.display = "inline-block";
-  } else {
-    // شراء السلعة المختارة
-    const res = await fetch("items.json");
-    const items = await res.json();
-    const item = items[select.value];
-    if (balance < item.price) {
-      alert("No Money");
-      return;
-    }
-    // طلب الشراء للسيرفر API
-    await fetch(`http://45.137.70.93:2032/buy`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ code: userCode, price: item.price })
-    });
-    // اختيار وصف عشوائي
-    const desc = item.desc[Math.floor(Math.random() * item.desc.length)];
-    // فتح صفحة الشراء مع الوصف
-    window.open(`buy.html?desc=${encodeURIComponent(desc)}`, "_blank");
-  }
-};
+    document.getElementById("sendBtn").onclick = async () => {
+      const code = document.getElementById("send-code").value.trim();
+      const amount = parseFloat(document.getElementById("send-amount").value);
+      if (!code || isNaN(amount)) {
+        alert("❌ Please enter valid code and amount");
+        return;
+      }
+
+      try {
+        const res = await fetch("http://45.137.70.93:2032/api/send", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code, amount })
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+          alert("✅ Sent successfully!");
+        } else {
+          alert("❌ Error: " + (data.error || "Unknown"));
+        }
+      } catch (err) {
+        alert("❌ Failed to send");
+        console.error(err);
+      }
+    };
+
+    document.getElementById("buyBtn").onclick = async () => {
+      const select = document.getElementById("itemSelect");
+      if (select.style.display === "none") {
+        // تحميل السلع من JSON
+        const res = await fetch("items.json");
+        const items = await res.json();
+        select.innerHTML = "";
+        items.forEach((item, index) => {
+          const opt = document.createElement("option");
+          opt.value = index;
+          opt.textContent = item.name + " - " + item.price + "$";
+          select.appendChild(opt);
+        });
+        select.style.display = "inline-block";
+      } else {
+        // شراء السلعة
+        const res = await fetch("items.json");
+        const items = await res.json();
+        const item = items[select.value];
+        if (balance < item.price) {
+          alert("No Money");
+          return;
+        }
+        await fetch(`http://45.137.70.93:2032/buy`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code: userCode, price: item.price })
+        });
+        const desc = item.desc[Math.floor(Math.random() * item.desc.length)];
+        window.open(`buy.html?desc=${encodeURIComponent(desc)}`, "_blank");
+        await fetchBalance(); // تحديث الرصيد بعد الشراء
+      }
+    };
   </script>
 </body>
 </html>
