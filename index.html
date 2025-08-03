@@ -1,33 +1,35 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Purchase Result</title>
-  <style>
-    body {
-      background-color: #000;
-      color: #FFD700;
-      font-family: sans-serif;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
+document.getElementById("buyBtn").onclick = async () => {
+  const select = document.getElementById("itemSelect");
+  if (select.style.display === "none") {
+    // تحميل السلع من JSON وعرضها في السلكت منيو
+    const res = await fetch("items.json");
+    const items = await res.json();
+    select.innerHTML = "";
+    items.forEach((item, index) => {
+      const opt = document.createElement("option");
+      opt.value = index;
+      opt.textContent = item.name + " - " + item.price + "$";
+      select.appendChild(opt);
+    });
+    select.style.display = "inline-block";
+  } else {
+    // شراء السلعة المختارة
+    const res = await fetch("items.json");
+    const items = await res.json();
+    const item = items[select.value];
+    if (balance < item.price) {
+      alert("No Money");
+      return;
     }
-    .box {
-      background-color: #FFD700;
-      color: #000;
-      padding: 30px;
-      border-radius: 15px;
-      font-size: 1.5em;
-    }
-  </style>
-</head>
-<body>
-  <div class="box" id="desc">جاري التحميل...</div>
-  <script>
-    const params = new URLSearchParams(window.location.search);
-    const desc = params.get('desc');
-    document.getElementById('desc').textContent = desc || 'لا يوجد وصف.';
-  </script>
-</body>
-</html>
+    // طلب الشراء للسيرفر API
+    await fetch(`http://localhost:7972/buy`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code: userCode, price: item.price })
+    });
+    // اختيار وصف عشوائي
+    const desc = item.desc[Math.floor(Math.random() * item.desc.length)];
+    // فتح صفحة الشراء مع الوصف
+    window.open(`buy.html?desc=${encodeURIComponent(desc)}`, "_blank");
+  }
+};
