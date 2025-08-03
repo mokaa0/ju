@@ -44,10 +44,10 @@
 <body>
   <h1>Radar Wallet</h1>
   <div class="balance" id="balance">0$</div>
-  <button id="sendBtn"><img src="send.svg" width="20" height="20" />Send</button>
-  <button id="receiveBtn"><img src="receive.svg" width="20" height="20" />Receive</button>
+  <button id="sendBtn"><img src="send.svg" width="20" height="20" alt="Send"/>Send</button>
+  <button id="receiveBtn"><img src="receive.svg" width="20" height="20" alt="Receive"/>Receive</button>
   <br><br>
-  <button id="buyBtn"><img src="cart.svg" width="20" height="20" />Buy</button>
+  <button id="buyBtn"><img src="cart.svg" width="20" height="20" alt="Buy"/>Buy</button>
   <select id="itemSelect" style="display:none;"></select>
 
   <script>
@@ -55,47 +55,74 @@
     let balance = 0;
 
     async function fetchBalance() {
-      const res = await fetch(`http://localhost:7972/balance/${userCode}`);
-      const data = await res.json();
-      balance = data.balance;
-      document.getElementById('balance').innerText = balance + "$";
+      if (!userCode) return;
+      try {
+        const res = await fetch(`http://localhost:7972/balance/${userCode}`);
+        if (!res.ok) throw new Error("Network response was not ok");
+        const data = await res.json();
+        balance = data.balance || 0;
+        document.getElementById('balance').innerText = balance + "$";
+      } catch (err) {
+        console.error("Error fetching balance:", err);
+        document.getElementById('balance').innerText = "0$";
+      }
     }
 
     document.getElementById("receiveBtn").onclick = async () => {
-      const res = await fetch("http://localhost:7972/generate-code");
-      const data = await res.json();
-      userCode = data.code;
-      alert("Your code: " + userCode);
-      fetchBalance();
+      try {
+        const res = await fetch("http://localhost:7972/generate-code");
+        if (!res.ok) throw new Error("Failed to generate code");
+        const data = await res.json();
+        userCode = data.code;
+        alert("Your code: " + userCode);
+        await fetchBalance();
+      } catch (err) {
+        alert("Error generating code.");
+        console.error(err);
+      }
     };
 
     document.getElementById("buyBtn").onclick = async () => {
       const select = document.getElementById("itemSelect");
       if (select.style.display === "none") {
-        const res = await fetch("items.json");
-        const items = await res.json();
-        select.innerHTML = "";
-        items.forEach((item, index) => {
-          const opt = document.createElement("option");
-          opt.value = index;
-          opt.textContent = item.name + " - " + item.price + "$";
-          select.appendChild(opt);
-        });
-        select.style.display = "inline-block";
+        try {
+          const res = await fetch("items.json");
+          if (!res.ok) throw new Error("Failed to load items");
+          const items = await res.json();
+          select.innerHTML = "";
+          items.forEach((item, index) => {
+            const opt = document.createElement("option");
+            opt.value = index;
+            opt.textContent = item.name + " - " + item.price + "$";
+            select.appendChild(opt);
+          });
+          select.style.display = "inline-block";
+        } catch (err) {
+          alert("Error loading items.");
+          console.error(err);
+        }
       } else {
-        const res = await fetch("items.json");
-        const items = await res.json();
-        const item = items[select.value];
-        if (balance < item.price) {
-          alert("No Money");
-        } else {
-          await fetch(`http://localhost:7972/buy`, {
+        try {
+          const res = await fetch("items.json");
+          if (!res.ok) throw new Error("Failed to load items");
+          const items = await res.json();
+          const item = items[select.value];
+          if (balance < item.price) {
+            alert("No Money");
+            return;
+          }
+          const buyRes = await fetch(`http://localhost:7972/buy`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ code: userCode, price: item.price })
           });
+          if (!buyRes.ok) throw new Error("Purchase failed");
           const desc = item.desc[Math.floor(Math.random() * item.desc.length)];
           window.open(`buy.html?desc=${encodeURIComponent(desc)}`, "_blank");
+          await fetchBalance();
+        } catch (err) {
+          alert("Error during purchase.");
+          console.error(err);
         }
       }
     };
