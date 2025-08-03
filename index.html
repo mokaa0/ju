@@ -1,49 +1,193 @@
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local TeamsService = game:GetService("Teams")
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Radar Wallet</title>
+  <style>
+    body {
+      background-color: #000;
+      color: #FFD700;
+      font-family: sans-serif;
+      text-align: center;
+      padding: 30px;
+    }
+    .balance {
+      font-size: 3em;
+    }
+    button {
+      margin: 15px;
+      padding: 10px 20px;
+      font-size: 1.2em;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    #sendBtn { background-color: #FFD700; color: #000; }
+    #receiveBtn { background-color: #444; color: #fff; }
+    #buyBtn { background-color: #FFD700; color: #000; }
+    select {
+      margin-top: 20px;
+      padding: 10px;
+      font-size: 1em;
+    }
+  </style>
+</head>
+<body>
+  <h1>Radar Wallet</h1>
+  <div class="balance" id="balance">0$</div>
 
-local event = ReplicatedStorage:WaitForChild("GiveSoldierRank")
+  <button id="sendBtn">📤 Send</button>
+  <button id="receiveBtn">📥 Receive</button>
+  <br><br>
+  <button id="buyBtn">🛒 Buy</button>
 
-local TeamsData = {
-    {Name = "جندي", PointsRequired = 20},
-    {Name = "مقاتل", PointsRequired = 50},
-    {Name = "قائد", PointsRequired = 100},
-    {Name = "رقيب", PointsRequired = 80},
-    {Name = "عريف", PointsRequired = 40},
-    {Name = "نقيب", PointsRequired = 120},
-    {Name = "رائد", PointsRequired = 150},
-    {Name = "ملازم", PointsRequired = 30},
-    {Name = "مقدم", PointsRequired = 200},
-    {Name = "عقيد", PointsRequired = 250},
-    {Name = "لواء", PointsRequired = 300},
-    {Name = "فريق", PointsRequired = 400},
-    {Name = "مشير", PointsRequired = 500},
-    {Name = "جنرال", PointsRequired = 600},
-    {Name = "فريق أول", PointsRequired = 700},
-}
+  <select id="itemSelect" style="display:none;"></select>
 
-event.OnServerEvent:Connect(function(player, requestedTeamName)
-    local leaderstats = player:FindFirstChild("leaderstats")
-    if not leaderstats then return end
+  <script>
+    let userCode = "";
+    let balance = 0;
 
-    local points = leaderstats:FindFirstChild("Upgrade Points")
-    if not points then return end
+    async function fetchBalance() {
+      const res = await fetch(`http://localhost:3000/balance/${userCode}`);
+      const data = await res.json();
+      balance = data.balance;
+      document.getElementById('balance').innerText = balance + "$";
+    }
 
-    local teamData
-    for _, t in pairs(TeamsData) do
-        if t.Name == requestedTeamName then
-            teamData = t
-            break
-        end
-    end
+    document.getElementById("receiveBtn
 
-    if not teamData then return end
+تمام، راح أعدّل الأزرار في الموقع علشان تستخدم **إيموجيات SVG** بدل النصوص العادية، وأكمل لك باقي الكود خطوة خطوة.
 
-    if points.Value >= teamData.PointsRequired then
-        local team = TeamsService:FindFirstChild(teamData.Name)
-        if team then
-            points.Value = points.Value - teamData.PointsRequired
-            player.Team = team
-            player.TeamColor = team.TeamColor
-        end
-    end
-end)
+---
+
+## ✅ الجزء الأول: موقع HTML باستخدام SVG Emojis
+
+### 📁 `index.html`
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Radar Wallet</title>
+  <style>
+    body {
+      background-color: #000;
+      color: #FFD700;
+      font-family: sans-serif;
+      text-align: center;
+      padding: 30px;
+    }
+    .balance {
+      font-size: 3em;
+      margin-bottom: 20px;
+    }
+    button {
+      margin: 10px;
+      padding: 12px 24px;
+      font-size: 1.2em;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+    #sendBtn {
+      background-color: #FFD700;
+      color: #000;
+    }
+    #receiveBtn {
+      background-color: #444;
+      color: #fff;
+    }
+    #buyBtn {
+      background-color: #FFD700;
+      color: #000;
+    }
+    select {
+      margin-top: 20px;
+      padding: 10px;
+      font-size: 1em;
+      background-color: #222;
+      color: #FFD700;
+      border: none;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Radar Wallet</h1>
+  <div class="balance" id="balance">0$</div>
+
+  <button id="sendBtn">
+    <img src="send.svg" width="20" height="20" alt="Send" />
+    Send
+  </button>
+
+  <button id="receiveBtn">
+    <img src="receive.svg" width="20" height="20" alt="Receive" />
+    Receive
+  </button>
+
+  <br><br>
+
+  <button id="buyBtn">
+    <img src="cart.svg" width="20" height="20" alt="Buy" />
+    Buy
+  </button>
+
+  <select id="itemSelect" style="display:none;"></select>
+
+  <script>
+    let userCode = "";
+    let balance = 0;
+
+    async function fetchBalance() {
+      const res = await fetch(`http://localhost:3000/balance/${userCode}`);
+      const data = await res.json();
+      balance = data.balance;
+      document.getElementById('balance').innerText = balance + "$";
+    }
+
+    document.getElementById("receiveBtn").onclick = async () => {
+      const res = await fetch("http://localhost:3000/generate-code");
+      const data = await res.json();
+      userCode = data.code;
+      alert("Your code: " + userCode);
+      fetchBalance();
+    };
+
+    document.getElementById("buyBtn").onclick = async () => {
+      const select = document.getElementById("itemSelect");
+      if (select.style.display === "none") {
+        const res = await fetch("items.json");
+        const items = await res.json();
+        select.innerHTML = "";
+        items.forEach((item, index) => {
+          const opt = document.createElement("option");
+          opt.value = index;
+          opt.textContent = item.name + " - " + item.price + "$";
+          select.appendChild(opt);
+        });
+        select.style.display = "inline-block";
+      } else {
+        const res = await fetch("items.json");
+        const items = await res.json();
+        const item = items[select.value];
+        if (balance < item.price) {
+          alert("No Money");
+        } else {
+          await fetch(`http://localhost:3000/buy`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ code: userCode, price: item.price })
+          });
+          const desc = item.desc[Math.floor(Math.random() * item.desc.length)];
+          window.open(`buy.html?desc=${encodeURIComponent(desc)}`, "_blank");
+        }
+      }
+    };
+  </script>
+</body>
+</html>
