@@ -1,35 +1,26 @@
-document.getElementById("buyBtn").onclick = async () => {
-  const select = document.getElementById("itemSelect");
-  if (select.style.display === "none") {
-    // تحميل السلع من JSON وعرضها في السلكت منيو
-    const res = await fetch("items.json");
-    const items = await res.json();
-    select.innerHTML = "";
-    items.forEach((item, index) => {
-      const opt = document.createElement("option");
-      opt.value = index;
-      opt.textContent = item.name + " - " + item.price + "$";
-      select.appendChild(opt);
-    });
-    select.style.display = "inline-block";
-  } else {
-    // شراء السلعة المختارة
-    const res = await fetch("items.json");
-    const items = await res.json();
-    const item = items[select.value];
-    if (balance < item.price) {
-      alert("No Money");
-      return;
-    }
-    // طلب الشراء للسيرفر API
-    await fetch(`http://localhost:7972/buy`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ code: userCode, price: item.price })
-    });
-    // اختيار وصف عشوائي
-    const desc = item.desc[Math.floor(Math.random() * item.desc.length)];
-    // فتح صفحة الشراء مع الوصف
-    window.open(`buy.html?desc=${encodeURIComponent(desc)}`, "_blank");
+[
+  {
+    "name": "سلعة 1",
+    "price": 10,
+    "desc": [
+      "وصف 1 للسلعة 1",
+      "وصف 2 للسلعة 1",
+      "وصف 3 للسلعة 1"
+    ]
+  },
+  {
+    "name": "سلعة 2",
+    "price": 25,
+    "desc": [
+      "وصف 1 للسلعة 2",
+      "وصف 2 للسلعة 2"
+    ]
+  },
+  {
+    "name": "سلعة 3",
+    "price": 40,
+    "desc": [
+      "وصف واحد فقط أو أكثر"
+    ]
   }
-};
+]
