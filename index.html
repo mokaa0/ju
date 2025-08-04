@@ -1,59 +1,251 @@
-const userId = 'user123';
-let userBalance = 0;
-let userData = {};
+index.html
 
-async function loadUserData() {
-  const res = await fetch('data.json');
-  userData = await res.json();
-  userBalance = userData[userId] || 0;
-  document.getElementById("balance").textContent = `${userBalance}$`;
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Login - Radar</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="login-page">
+  <div class="login-box">
+    <button id="loginBtn">Login</button>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
+
+dashboard.html
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Dashboard - Radar</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="dashboard-page">
+  <header>
+    <h1><span class="red">Radar</span> <span class="white">Wallet</span></h1>
+    <p id="balance">0$</p>
+  </header>
+
+  <main id="items-container">
+    <!-- المنتجات تظهر تلقائياً -->
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
+
+
+style.css
+
+body {
+  margin: 0;
+  font-family: 'Cairo', sans-serif;
+  background-color: #111;
+  color: white;
 }
 
-async function loadItems() {
-  const res = await fetch('items.json');
-  const items = await res.json();
-  const container = document.getElementById("items-container");
-  container.innerHTML = '';
-
-  items.forEach((item, index) => {
-    const div = document.createElement('div');
-    div.className = 'item';
-
-    const outOfStock = item.stock.length === 0;
-    const canBuy = userBalance >= item.price;
-
-    div.innerHTML = `
-      <img src="${item.image}" alt="">
-      <h3>${item.name}</h3>
-      <p>${item.description}</p>
-      <p>السعر: ${item.price}$</p>
-      <p>${outOfStock ? "لا كمية!" : `الكمية: ${item.stock.length}`}</p>
-      ${!outOfStock && canBuy ? `<button class="buy-btn" onclick="buyItem(${index})">شراء</button>` : ''}
-    `;
-
-    container.appendChild(div);
-  });
+.login-page {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background-color: black;
+  border: 5px solid red;
 }
 
-async function buyItem(index) {
-  const itemsRes = await fetch('items.json');
-  const items = await itemsRes.json();
-
-  const item = items[index];
-  if (item.stock.length === 0 || userBalance < item.price) return alert("لا يمكن الشراء");
-
-  const reward = item.stock.shift();
-  userBalance -= item.price;
-  userData[userId] = userBalance;
-
-  alert(`✅ تم شراء: ${item.name}\n🎁 هديتك: ${reward}`);
-
-  // تحديث البيانات (لو فيه باك اند)
-  // يمكنك إرسال JSON جديد للسيرفر لحفظه
-
-  loadUserData();
-  loadItems();
+.login-box button {
+  background-color: red;
+  color: white;
+  padding: 20px 40px;
+  font-size: 24px;
+  border: none;
+  cursor: pointer;
+  border-radius: 10px;
 }
 
-loadUserData();
-loadItems();
+.dashboard-page {
+  background-color: #111;
+  border: 5px solid red;
+  padding: 20px;
+}
+
+header {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.red {
+  color: red;
+}
+
+.white {
+  color: white;
+}
+
+#balance {
+  font-size: 32px;
+  font-family: 'Cairo', sans-serif;
+}
+
+#items-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 20px;
+  padding: 20px;
+}
+
+.item-card {
+  background-color: #1c1c1c;
+  border-radius: 12px;
+  padding: 16px;
+  text-align: center;
+  border: 2px solid red;
+}
+
+.item-card img {
+  max-width: 100%;
+  height: 150px;
+  object-fit: contain;
+}
+
+.item-card h3, .item-card p, .item-card span {
+  margin: 10px 0;
+}
+
+.item-card button {
+  background-color: red;
+  color: white;
+  border: none;
+  padding: 10px 15px;
+  cursor: pointer;
+  border-radius: 8px;
+}
+
+script.js
+// كلمة مرور عشوائية
+function generatePassword() {
+  return Math.random().toString(36).slice(-10);
+}
+
+// زر تسجيل الدخول
+document.addEventListener("DOMContentLoaded", () => {
+  const loginBtn = document.getElementById("loginBtn");
+  if (loginBtn) {
+    loginBtn.addEventListener("click", () => {
+      const password = generatePassword();
+      const username = "user_" + Date.now();
+
+      fetch('data.json')
+        .then(res => res.json())
+        .then(data => {
+          data[username] = { password: password, balance: 0 };
+          return saveJson('data.json', data);
+        })
+        .then(() => {
+          localStorage.setItem("username", username);
+          alert("Your password: " + password);
+          window.location.href = "dashboard.html";
+        });
+    });
+  }
+
+  // في لوحة التحكم
+  if (window.location.pathname.includes("dashboard.html")) {
+    const username = localStorage.getItem("username");
+    if (!username) return alert("Please login first");
+
+    fetch('data.json')
+      .then(res => res.json())
+      .then(data => {
+        const user = data[username];
+        document.getElementById("balance").textContent = `${user.balance}$`;
+
+        fetch('items.json')
+          .then(res => res.json())
+          .then(items => {
+            const container = document.getElementById("items-container");
+            items.forEach((item, index) => {
+              const card = document.createElement("div");
+              card.className = "item-card";
+
+              card.innerHTML = `
+                <img src="${item.image}" alt="${item.name}">
+                <h3>${item.name}</h3>
+                <p>${item.description}</p>
+                <span>${item.price}$</span>
+                <br/>
+                ${
+                  item.stock.length > 0
+                    ? `<button onclick="buyItem(${index})">Buy</button>`
+                    : `<strong>No stock!</strong>`
+                }
+              `;
+
+              container.appendChild(card);
+            });
+          });
+      });
+  }
+});
+
+// شراء سلعة
+function buyItem(index) {
+  const username = localStorage.getItem("username");
+
+  Promise.all([
+    fetch('data.json').then(res => res.json()),
+    fetch('items.json').then(res => res.json())
+  ])
+    .then(([data, items]) => {
+      const user = data[username];
+      const item = items[index];
+
+      if (user.balance >= item.price && item.stock.length > 0) {
+        const delivered = item.stock.shift();
+        user.balance -= item.price;
+        alert("You received: " + delivered);
+
+        return Promise.all([
+          saveJson('data.json', data),
+          saveJson('items.json', items)
+        ]).then(() => {
+          location.reload();
+        });
+      } else {
+        alert("Insufficient funds or stock!");
+      }
+    });
+}
+
+// حفظ ملف JSON (محاكاة فقط هنا)
+function saveJson(filename, jsonData) {
+  // محاكاة الحفظ: تحتاج إلى back-end فعلي بلغة مثل Node.js لحفظ البيانات فعلاً
+  console.log(`Saving ${filename}`, jsonData);
+  return Promise.resolve(); // simulate save
+}
+
+items.json
+
+[
+  {
+    "name": "Netflix Premium",
+    "description": "4K UHD Plan for 1 month",
+    "price": 5,
+    "image": "assets/product-images/netflix.png",
+    "stock": ["net1:abc", "net2:def", "net3:ghi"]
+  },
+  {
+    "name": "Spotify Family",
+    "description": "6 accounts plan",
+    "price": 3,
+    "image": "assets/product-images/spotify.png",
+    "stock": ["spot1:pass1", "spot2:pass2"]
+  }
+]
