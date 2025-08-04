@@ -1,16 +1,59 @@
-[
-  {
-    "name": "سلعة 1",
-    "description": "وصف السلعة 1",
-    "price": 10,
-    "image": "item1.png",
-    "stock": ["كود 1", "كود 2", "كود 3"]
-  },
-  {
-    "name": "سلعة 2",
-    "description": "وصف سلعة 2",
-    "price": 25,
-    "image": "item2.png",
-    "stock": ["هدية 1", "هدية 2"]
-  }
-]
+const userId = 'user123';
+let userBalance = 0;
+let userData = {};
+
+async function loadUserData() {
+  const res = await fetch('data.json');
+  userData = await res.json();
+  userBalance = userData[userId] || 0;
+  document.getElementById("balance").textContent = `${userBalance}$`;
+}
+
+async function loadItems() {
+  const res = await fetch('items.json');
+  const items = await res.json();
+  const container = document.getElementById("items-container");
+  container.innerHTML = '';
+
+  items.forEach((item, index) => {
+    const div = document.createElement('div');
+    div.className = 'item';
+
+    const outOfStock = item.stock.length === 0;
+    const canBuy = userBalance >= item.price;
+
+    div.innerHTML = `
+      <img src="${item.image}" alt="">
+      <h3>${item.name}</h3>
+      <p>${item.description}</p>
+      <p>السعر: ${item.price}$</p>
+      <p>${outOfStock ? "لا كمية!" : `الكمية: ${item.stock.length}`}</p>
+      ${!outOfStock && canBuy ? `<button class="buy-btn" onclick="buyItem(${index})">شراء</button>` : ''}
+    `;
+
+    container.appendChild(div);
+  });
+}
+
+async function buyItem(index) {
+  const itemsRes = await fetch('items.json');
+  const items = await itemsRes.json();
+
+  const item = items[index];
+  if (item.stock.length === 0 || userBalance < item.price) return alert("لا يمكن الشراء");
+
+  const reward = item.stock.shift();
+  userBalance -= item.price;
+  userData[userId] = userBalance;
+
+  alert(`✅ تم شراء: ${item.name}\n🎁 هديتك: ${reward}`);
+
+  // تحديث البيانات (لو فيه باك اند)
+  // يمكنك إرسال JSON جديد للسيرفر لحفظه
+
+  loadUserData();
+  loadItems();
+}
+
+loadUserData();
+loadItems();
