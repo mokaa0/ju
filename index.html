@@ -1,109 +1,156 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Radar Dashboard</title>
-  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
-</head>
-<body class="dashboard-page">
+/* General */
+body {
+  margin: 0;
+  font-family: 'Cairo', sans-serif;
+  background: black;
+  color: white;
+}
 
-  <!-- Header -->
-  <header class="fade-in delay-1">
-    <div class="logo">Radar</div>
-    <div class="wallet">
-      Wallet: <span id="balance">0</span>$
-      <button class="logout-btn" onclick="logout()">Logout</button>
-    </div>
-  </header>
+/* Fade In Animation */
+.fade-in {
+  opacity: 0;
+  animation: fadeIn 0.8s forwards;
+}
+.delay-1 { animation-delay: 0.2s; }
+.delay-2 { animation-delay: 0.4s; }
+.delay-3 { animation-delay: 0.6s; }
+.delay-4 { animation-delay: 0.8s; }
+.delay-5 { animation-delay: 1s; }
 
-  <!-- Products Section -->
-  <main>
-    <h2 class="fade-in delay-2">Available Items</h2>
-    <div id="items-container" class="items-grid fade-in delay-3"></div>
-  </main>
+@keyframes fadeIn {
+  to { opacity: 1; }
+}
 
-  <script>
-    const API_URL = 'http://45.137.70.93:2032'; // API السيرفر
-    const userPass = localStorage.getItem('walletPass');
-    const balanceEl = document.getElementById('balance');
-    const itemsContainer = document.getElementById('items-container');
+/* Buttons */
+.btn-animated {
+  background: yellow;
+  border: none;
+  padding: 10px 15px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  border-radius: 5px;
+  transition: transform 0.2s;
+}
 
-    // لو مافي باس يرجعه للصفحة الرئيسية
-    if(!userPass){
-      window.location.href = 'index.html';
-    }
+.btn-animated:hover {
+  transform: scale(1.05);
+}
 
-    async function loadBalance() {
-      const res = await fetch(`${API_URL}/api/balance/${userPass}`);
-      const data = await res.json();
-      balanceEl.textContent = data.balance;
-    }
+/* ===== Wallet Page ===== */
+.wallet-container {
+  text-align: center;
+  max-width: 400px;
+  margin: auto;
+  padding: 20px;
+}
 
-    async function loadItems() {
-      const res = await fetch('items.json');
-      const items = await res.json();
+.logo-circle {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: yellow;
+  color: black;
+  font-size: 30px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 20px auto;
+}
 
-      itemsContainer.innerHTML = '';
+.wallet-box {
+  background: #111;
+  border: 2px solid yellow;
+  border-radius: 10px;
+  padding: 20px;
+  margin-top: 20px;
+}
 
-      items.forEach((item, index) => {
-        const isOutOfStock = item.stock.length === 0;
-        const card = document.createElement('div');
-        card.className = 'item-card';
+.wallet-box h3 {
+  color: yellow;
+}
 
-        card.innerHTML = `
-          <img src="${item.image}" alt="${item.name}">
-          <h3>${item.name}</h3>
-          <p>${item.description}</p>
-          <div class="price">${item.price}$</div>
-          <button class="btn-animated buy-btn" ${isOutOfStock ? 'disabled' : ''}>
-            ${isOutOfStock ? 'Out of Stock' : 'Buy'}
-          </button>
-        `;
+.wallet-box p {
+  font-size: 14px;
+  color: #ccc;
+}
 
-        card.querySelector('.buy-btn').addEventListener('click', async () => {
-          const currentBalance = parseInt(balanceEl.textContent);
-          if (currentBalance < item.price) {
-            alert('Not enough balance!');
-            return;
-          }
+/* ===== Dashboard ===== */
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  background: #111;
+  border-bottom: 2px solid yellow;
+}
 
-          await fetch(`${API_URL}/api/money`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ pass: userPass, amount: -item.price })
-          });
+header .logo {
+  font-size: 24px;
+  font-weight: bold;
+  color: yellow;
+}
 
-          const updateRes = await fetch(`${API_URL}/api/update-stock`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ index })
-          });
+header .wallet {
+  font-size: 18px;
+  color: white;
+}
 
-          const updateData = await updateRes.json();
+.logout-btn {
+  background: #222;
+  border: 2px solid yellow;
+  color: yellow;
+  margin-left: 10px;
+  padding: 5px 10px;
+  border-radius: 5px;
+}
 
-          if (updateData.success) {
-            alert(`You bought: ${item.name}\n\n${item.stock[0]}`);
-          } else {
-            alert('Out of stock!');
-          }
+/* Items Grid */
+.items-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+  padding: 20px;
+}
 
-          loadBalance();
-          loadItems();
-        });
+.item-card {
+  background: #222;
+  border: 2px solid yellow;
+  border-radius: 10px;
+  padding: 15px;
+  text-align: center;
+  transition: transform 0.3s ease;
+}
 
-        itemsContainer.appendChild(card);
-      });
-    }
+.item-card:hover {
+  transform: translateY(-5px);
+}
 
-    function logout() {
-      localStorage.removeItem('walletPass');
-      window.location.href = 'index.html';
-    }
+.item-card img {
+  width: 100%;
+  border-radius: 10px;
+}
 
-    loadBalance();
-    loadItems();
-  </script>
-</body>
-</html>
+.item-card h3 {
+  color: yellow;
+  margin: 10px 0;
+}
+
+.item-card p {
+  color: #ccc;
+  font-size: 14px;
+}
+
+.item-card .price {
+  margin: 10px 0;
+  font-size: 18px;
+  color: white;
+}
+
+.item-card .buy-btn {
+  width: 100%;
+  background: yellow;
+  color: black;
+  margin-top: 10px;
+}
