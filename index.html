@@ -1,94 +1,125 @@
-<!DOCTYPE html>
-<html lang="ar">
-<head>
-  <meta charset="UTF-8">
-  <title>Radar Wallet</title>
-  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
-</head>
-<body class="dashboard-page">
+/* ===== إعدادات عامة ===== */
+body {
+  margin: 0;
+  font-family: 'Cairo', sans-serif;
+  background: black;
+  border: 5px solid yellow;
+  min-height: 100vh;
+  color: white;
+}
 
-  <header class="fade-in">
-    <h1><span class="yellow">Radar</span> <span class="white">Wallet</span></h1>
-    <div class="balance" id="balance">0$</div>
-  </header>
+/* ===== صفحة تسجيل الدخول ===== */
+.login-page {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
 
-  <main id="items-container" class="fade-in delay-1"></main>
+.login-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  animation: fadeInUp 1s forwards;
+}
 
-  <script>
-    const API_URL = 'http://45.137.70.93:2032';
-    const PASS = localStorage.getItem('userPass');
+.input-pass {
+  padding: 10px;
+  font-size: 20px;
+  margin-bottom: 20px;
+  border: 2px solid yellow;
+  border-radius: 5px;
+  background: #111;
+  color: yellow;
+  text-align: center;
+  outline: none;
+}
 
-    if (!PASS) {
-      // لو مافي باس يرجع تسجيل الدخول
-      window.location.href = 'index.html';
-    }
+/* ===== أزرار ===== */
+.btn-animated {
+  background: yellow;
+  color: black;
+  font-size: 20px;
+  padding: 10px 30px;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.2s ease, background 0.3s ease;
+}
 
-    let balance = 0;
+.btn-animated:hover {
+  transform: scale(1.05);
+  background: #f7e000;
+}
 
-    // جلب الرصيد
-    async function getBalance() {
-      const res = await fetch(`${API_URL}/api/balance/${PASS}`);
-      const data = await res.json();
-      balance = data.balance;
-      document.getElementById('balance').innerText = balance + '$';
-    }
+.btn-animated:active {
+  transform: scale(0.95);
+}
 
-    // تحميل المنتجات
-    async function loadItems() {
-      const res = await fetch('items.json');
-      const items = await res.json();
-      const container = document.getElementById('items-container');
+/* ===== رأس صفحة المتجر ===== */
+header {
+  text-align: center;
+  padding: 20px;
+}
 
-      container.innerHTML = '';
-      items.forEach((item, index) => {
-        const stockAvailable = item.stock.length > 0;
-        const div = document.createElement('div');
-        div.classList.add('item', 'fade-in', `delay-${index+2}`);
-        div.innerHTML = `
-          <img src="${item.image}" alt="${item.name}">
-          <h2>${item.name}</h2>
-          <p>${item.description}</p>
-          <p class="price">${item.price}$</p>
-          <button class="btn-animated" onclick="buyItem(${index})" ${!stockAvailable ? 'disabled' : ''}>
-            ${stockAvailable ? 'شراء' : 'لا كمية!'}
-          </button>
-        `;
-        container.appendChild(div);
-      });
-    }
+header .yellow {
+  color: yellow;
+}
 
-    // شراء منتج
-    async function buyItem(index) {
-      const res = await fetch('items.json');
-      const items = await res.json();
-      const item = items[index];
+header .white {
+  color: white;
+}
 
-      if (balance >= item.price && item.stock.length > 0) {
-        balance -= item.price;
-        document.getElementById('balance').innerText = balance + '$';
+.balance {
+  font-size: 30px;
+  margin-top: 10px;
+}
 
-        const stockItem = item.stock.shift();
-        await fetch(`${API_URL}/api/update-stock`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ index })
-        });
+/* ===== المنتجات ===== */
+#items-container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  padding: 20px;
+  gap: 20px;
+}
 
-        // فتح صفحة الاستلام
-        const newPage = window.open('', '_blank');
-        newPage.document.write(`
-          <body style="background:black;color:yellow;font-family:Cairo;display:flex;justify-content:center;align-items:center;height:100vh;font-size:24px;">
-            ${stockItem}
-          </body>
-        `);
-      } else {
-        alert('رصيد غير كافي أو لا كمية!');
-      }
-    }
+.item {
+  background: #111;
+  border: 2px solid yellow;
+  padding: 10px;
+  width: 200px;
+  text-align: center;
+  opacity: 0;
+  transform: translateY(20px);
+  animation: fadeInUp 0.8s forwards;
+}
 
-    getBalance();
-    loadItems();
-  </script>
-</body>
-</html>
+.item img {
+  width: 100%;
+  height: 120px;
+  object-fit: cover;
+}
+
+.price {
+  color: yellow;
+}
+
+/* ===== أنيميشن ===== */
+.fade-in {
+  animation: fadeInUp 0.8s forwards;
+}
+
+.delay-1 { animation-delay: 0.2s; }
+.delay-2 { animation-delay: 0.4s; }
+.delay-3 { animation-delay: 0.6s; }
+.delay-4 { animation-delay: 0.8s; }
+.delay-5 { animation-delay: 1s; }
+.delay-6 { animation-delay: 1.2s; }
+.delay-7 { animation-delay: 1.4s; }
+.delay-8 { animation-delay: 1.6s; }
+.delay-9 { animation-delay: 1.8s; }
+.delay-10 { animation-delay: 2s; }
+
+@keyframes fadeInUp {
+  0% { opacity: 0; transform: translateY(20px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
