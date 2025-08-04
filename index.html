@@ -5,7 +5,7 @@ index.html
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Login</title>
+  <title>Wallet Login</title>
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
 </head>
@@ -14,6 +14,17 @@ index.html
     <h1 class="title">Wallet Login</h1>
     <input type="text" id="password" placeholder="Enter Wallet Pass" />
     <button onclick="login()">Login</button>
+    <p id="not-found" class="hidden">
+      Wallet Account Not Found
+      <button id="create-btn" onclick="showCreate()">Create Account</button>
+    </p>
+  </div>
+
+  <!-- Popup إنشاء الحساب -->
+  <div id="create-popup" class="popup hidden">
+    <h2>Please Enter Password</h2>
+    <input type="text" id="new-password" placeholder="Enter New Wallet Pass" />
+    <button onclick="createAccount()">Create</button>
   </div>
 
   <script>
@@ -24,28 +35,43 @@ index.html
         return;
       }
 
-      // جلب البيانات من localStorage (محاكاة data.json)
       let data = JSON.parse(localStorage.getItem("wallets")) || {};
 
-      // لو المحفظة غير موجودة، أنشئها بـ 0$
       if (!data[pass]) {
-        data[pass] = 0;
+        document.getElementById("not-found").classList.remove("hidden");
+        return;
       }
 
-      // حفظ البيانات
-      localStorage.setItem("wallets", JSON.stringify(data));
-
-      // تخزين المفتاح الحالي
       localStorage.setItem("currentPass", pass);
+      window.location.href = "dashboard.html";
+    }
 
-      // الانتقال للوحة
+    function showCreate() {
+      document.getElementById("create-popup").classList.remove("hidden");
+    }
+
+    function createAccount() {
+      const newPass = document.getElementById("new-password").value.trim();
+      if (!newPass) {
+        alert("Enter a password");
+        return;
+      }
+
+      let data = JSON.parse(localStorage.getItem("wallets")) || {};
+      if (data[newPass]) {
+        alert("Account already exists!");
+        return;
+      }
+
+      data[newPass] = 0;
+      localStorage.setItem("wallets", JSON.stringify(data));
+      localStorage.setItem("currentPass", newPass);
+
       window.location.href = "dashboard.html";
     }
   </script>
 </body>
 </html>
-
-
 
 
 dashboard.html
@@ -55,29 +81,50 @@ dashboard.html
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Dashboard</title>
+  <title>Radar Wallet</title>
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <header>
+    <div class="menu-icon" onclick="toggleMenu()">&#9776;</div>
     <h1 class="logo">Radar <span>Wallet</span></h1>
     <p id="balance">0$</p>
   </header>
+
+  <!-- القائمة الجانبية -->
+  <div id="side-menu" class="side-menu hidden">
+    <h2>Menu</h2>
+    <p><strong>Password:</strong> <span id="show-pass"></span></p>
+    <hr>
+    <h3>Purchase Log</h3>
+    <ul id="purchase-log"></ul>
+  </div>
 
   <main>
     <div id="items" class="items-container"></div>
   </main>
 
   <script>
-    // جلب بيانات المستخدم
     const pass = localStorage.getItem("currentPass");
     let data = JSON.parse(localStorage.getItem("wallets")) || {};
     let balance = data[pass] || 0;
 
     document.getElementById("balance").innerText = balance + "$";
+    document.getElementById("show-pass").innerText = pass;
 
-    // جلب السلع
+    let logs = JSON.parse(localStorage.getItem(pass + "_logs")) || [];
+    function renderLog() {
+      const logList = document.getElementById("purchase-log");
+      logList.innerHTML = "";
+      logs.forEach(entry => {
+        const li = document.createElement("li");
+        li.textContent = entry;
+        logList.appendChild(li);
+      });
+    }
+    renderLog();
+
     fetch("items.json")
       .then(res => res.json())
       .then(items => {
@@ -91,12 +138,16 @@ dashboard.html
             <h3>${item.name}</h3>
             <p>${item.description}</p>
             <p class="price">${item.price}$</p>
-            <button onclick="buyItem(${index})">Buy</button>
+            <button class="buy-btn" onclick="buyItem(${index})">Buy</button>
           `;
 
           container.appendChild(card);
         });
       });
+
+    function toggleMenu() {
+      document.getElementById("side-menu").classList.toggle("hidden");
+    }
 
     function buyItem(index) {
       fetch("items.json")
@@ -104,32 +155,28 @@ dashboard.html
         .then(items => {
           const item = items[index];
 
-          // تحقق من الرصيد
           if (balance < item.price) {
             alert("Not enough balance!");
             return;
           }
 
-          // تحقق من الستوك
           if (!item.stock || item.stock.length === 0) {
             alert("Out of stock!");
             return;
           }
 
-          // خصم السعر
           balance -= item.price;
           data[pass] = balance;
           localStorage.setItem("wallets", JSON.stringify(data));
           document.getElementById("balance").innerText = balance + "$";
 
-          // عرض العنصر المشتراة
           const reward = item.stock.shift();
+          logs.push(`Bought ${item.name}: ${reward}`);
+          localStorage.setItem(pass + "_logs", JSON.stringify(logs));
+          renderLog();
+
           alert("You got: " + reward);
 
-          // تحديث الستوك محلي (لا يتغير على السيرفر)
-          items[index].stock = item.stock;
-
-          // تحديث واجهة المستخدم لو انتهى الستوك
           if (item.stock.length === 0) {
             alert("Item is now out of stock!");
           }
@@ -138,8 +185,6 @@ dashboard.html
   </script>
 </body>
 </html>
-
-
 
 
 style.css
@@ -151,11 +196,103 @@ body {
   color: #fff;
 }
 
+/* تسجيل الدخول */
+.login-container {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.login-container h1 {
+  color: #ffcc00;
+  margin-bottom: 20px;
+}
+
+.login-container input {
+  padding: 10px;
+  width: 220px;
+  margin-bottom: 10px;
+  border: 2px solid #ffcc00;
+  background: #111;
+  color: #fff;
+  border-radius: 6px;
+}
+
+.login-container button {
+  padding: 10px 20px;
+  background: #ffcc00;
+  border: none;
+  cursor: pointer;
+  font-weight: bold;
+  border-radius: 6px;
+}
+
+#not-found {
+  color: #fff;
+  margin-top: 10px;
+}
+
+#not-found button {
+  margin-left: 10px;
+  padding: 6px 12px;
+  border: none;
+  background: #ffcc00;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+/* Popup إنشاء الحساب */
+.popup {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #111;
+  padding: 20px;
+  border: 2px solid #ffcc00;
+  border-radius: 8px;
+  width: 280px;
+  text-align: center;
+  box-shadow: 0 0 15px rgba(255, 204, 0, 0.4);
+}
+
+.popup.hidden {
+  display: none;
+}
+
+.popup h2 {
+  margin-bottom: 15px;
+  color: #ffcc00;
+}
+
+.popup input {
+  padding: 8px;
+  width: 90%;
+  margin-bottom: 10px;
+  border: 2px solid #ffcc00;
+  background: #222;
+  color: #fff;
+  border-radius: 6px;
+}
+
+.popup button {
+  padding: 8px 15px;
+  background: #ffcc00;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+/* رأس الصفحة */
 header {
   padding: 20px;
   background-color: #111;
   border-bottom: 2px solid #ffcc00;
   text-align: center;
+  position: relative;
 }
 
 header .logo {
@@ -172,36 +309,57 @@ header .logo span {
   font-size: 1.5rem;
 }
 
-.login-container {
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-}
-
-.login-container h1 {
-  color: #ffcc00;
-  margin-bottom: 20px;
-}
-
-.login-container input {
-  padding: 10px;
-  width: 200px;
-  margin-bottom: 10px;
-  border: 2px solid #ffcc00;
-  background: #111;
-  color: #fff;
-}
-
-.login-container button {
-  padding: 10px 20px;
-  background: #ffcc00;
-  border: none;
+/* زر القائمة */
+.menu-icon {
+  position: absolute;
+  left: 20px;
+  top: 20px;
+  font-size: 26px;
   cursor: pointer;
-  font-weight: bold;
 }
 
+/* القائمة الجانبية */
+.side-menu {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 250px;
+  height: 100%;
+  background: #111;
+  border-right: 2px solid #ffcc00;
+  padding: 20px;
+  box-shadow: 2px 0 5px rgba(0,0,0,0.5);
+  transition: transform 0.3s ease;
+  z-index: 100;
+}
+
+.side-menu.hidden {
+  transform: translateX(-100%);
+}
+
+.side-menu h2 {
+  margin-top: 0;
+  color: #ffcc00;
+}
+
+.side-menu h3 {
+  margin-top: 20px;
+  margin-bottom: 10px;
+  color: #ffcc00;
+}
+
+.side-menu ul {
+  list-style: none;
+  padding: 0;
+}
+
+.side-menu ul li {
+  padding: 5px 0;
+  border-bottom: 1px solid #444;
+  font-size: 14px;
+}
+
+/* المنتجات */
 .items-container {
   display: flex;
   flex-wrap: wrap;
@@ -229,14 +387,20 @@ header .logo span {
   font-weight: bold;
 }
 
-.item-card button {
+/* زر Buy */
+.buy-btn {
   margin-top: 10px;
   padding: 8px;
   background: #ffcc00;
   border: none;
   cursor: pointer;
+  border-radius: 8px;
+  transition: background 0.3s ease;
 }
 
+.buy-btn:hover {
+  background: #e6b800;
+}
 
 
 items.json
@@ -254,15 +418,7 @@ items.json
     "description": "Description of Item 2",
     "price": 20,
     "image": "https://via.placeholder.com/200x150",
-    "stock": ["Code-221", "Code-222"]
+    "stock": ["Code-201", "Code-202"]
   }
 ]
 
-
-data.json
-
-{
-  "wallets": {
-    "WALLET-LISCVOW": 0
-  }
-}
