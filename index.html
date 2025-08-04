@@ -3,274 +3,266 @@ index.html
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Login - Cryptonel Wallet</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login</title>
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="style.css" />
 </head>
-<body class="login-page">
-  <div class="login-wrapper">
-    <div class="login-box">
-      <div class="circle">C</div>
-      <h2 class="main-title">Wallet Required</h2>
-      <p class="sub-text">To access the dashboard, you need to set up a wallet first</p>
-
-      <div class="warning-box">
-        <strong>Wallet Not Found</strong>
-        <p>Your Discord account doesn't have a wallet yet.<br>You can create one now to get started with Cryptonel.</p>
-        <button class="create-wallet-btn" id="loginBtn">Create New Wallet</button>
-        <p class="note">A wallet is required to store and manage your Cryptonel currency</p>
-      </div>
-
-      <a class="back-link" href="#">← Back to Home</a>
-    </div>
+<body>
+  <div class="login-container">
+    <h1 class="title">Wallet Login</h1>
+    <input type="text" id="password" placeholder="Enter Wallet Pass" />
+    <button onclick="login()">Login</button>
   </div>
+
+  <script>
+    function login() {
+      const pass = document.getElementById("password").value.trim();
+      if (!pass) {
+        alert("Enter your wallet pass");
+        return;
+      }
+
+      // جلب البيانات من localStorage (محاكاة data.json)
+      let data = JSON.parse(localStorage.getItem("wallets")) || {};
+
+      // لو المحفظة غير موجودة، أنشئها بـ 0$
+      if (!data[pass]) {
+        data[pass] = 0;
+      }
+
+      // حفظ البيانات
+      localStorage.setItem("wallets", JSON.stringify(data));
+
+      // تخزين المفتاح الحالي
+      localStorage.setItem("currentPass", pass);
+
+      // الانتقال للوحة
+      window.location.href = "dashboard.html";
+    }
+  </script>
 </body>
 </html>
+
+
+
 
 dashboard.html
 
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Dashboard - Radar</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard</title>
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="style.css" />
 </head>
-<body class="dashboard-page">
+<body>
   <header>
-    <h1><span class="red">Radar</span> <span class="white">Wallet</span></h1>
+    <h1 class="logo">Radar <span>Wallet</span></h1>
     <p id="balance">0$</p>
   </header>
 
-  <main id="items-container">
-    <!-- المنتجات تظهر تلقائياً -->
+  <main>
+    <div id="items" class="items-container"></div>
   </main>
 
-  <script src="script.js"></script>
+  <script>
+    // جلب بيانات المستخدم
+    const pass = localStorage.getItem("currentPass");
+    let data = JSON.parse(localStorage.getItem("wallets")) || {};
+    let balance = data[pass] || 0;
+
+    document.getElementById("balance").innerText = balance + "$";
+
+    // جلب السلع
+    fetch("items.json")
+      .then(res => res.json())
+      .then(items => {
+        const container = document.getElementById("items");
+        items.forEach((item, index) => {
+          const card = document.createElement("div");
+          card.className = "item-card";
+
+          card.innerHTML = `
+            <img src="${item.image}" alt="${item.name}">
+            <h3>${item.name}</h3>
+            <p>${item.description}</p>
+            <p class="price">${item.price}$</p>
+            <button onclick="buyItem(${index})">Buy</button>
+          `;
+
+          container.appendChild(card);
+        });
+      });
+
+    function buyItem(index) {
+      fetch("items.json")
+        .then(res => res.json())
+        .then(items => {
+          const item = items[index];
+
+          // تحقق من الرصيد
+          if (balance < item.price) {
+            alert("Not enough balance!");
+            return;
+          }
+
+          // تحقق من الستوك
+          if (!item.stock || item.stock.length === 0) {
+            alert("Out of stock!");
+            return;
+          }
+
+          // خصم السعر
+          balance -= item.price;
+          data[pass] = balance;
+          localStorage.setItem("wallets", JSON.stringify(data));
+          document.getElementById("balance").innerText = balance + "$";
+
+          // عرض العنصر المشتراة
+          const reward = item.stock.shift();
+          alert("You got: " + reward);
+
+          // تحديث الستوك محلي (لا يتغير على السيرفر)
+          items[index].stock = item.stock;
+
+          // تحديث واجهة المستخدم لو انتهى الستوك
+          if (item.stock.length === 0) {
+            alert("Item is now out of stock!");
+          }
+        });
+    }
+  </script>
 </body>
 </html>
+
+
 
 
 style.css
 
 body {
   margin: 0;
-  padding: 0;
-  background-color: #000;
   font-family: 'Cairo', sans-serif;
+  background-color: #000;
   color: #fff;
 }
 
-.login-page {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
-}
-
-.login-wrapper {
-  width: 100%;
-  max-width: 420px;
+header {
   padding: 20px;
   background-color: #111;
-  border: 3px solid red;
-  border-radius: 16px;
-  box-shadow: 0 0 20px red;
+  border-bottom: 2px solid #ffcc00;
   text-align: center;
 }
 
-.circle {
-  background-color: #ff0000;
-  color: black;
-  font-weight: 800;
-  font-size: 28px;
-  width: 60px;
-  height: 60px;
-  line-height: 60px;
-  border-radius: 50%;
-  margin: 0 auto 20px;
+header .logo {
+  font-size: 2rem;
+  color: #ffcc00;
 }
 
-.main-title {
-  font-size: 24px;
-  font-weight: 800;
+header .logo span {
   color: #fff;
 }
 
-.sub-text {
-  font-size: 14px;
-  color: #ccc;
-  margin-bottom: 20px;
-}
-
-.warning-box {
-  background-color: #1a1a1a;
-  border-left: 5px solid red;
-  padding: 16px;
-  margin-bottom: 20px;
-  border-radius: 8px;
-  text-align: left;
-  font-size: 14px;
-}
-
-.create-wallet-btn {
-  display: block;
-  width: 100%;
-  background-color: red;
-  color: white;
-  border: none;
-  padding: 14px;
-  margin-top: 12px;
-  font-size: 16px;
-  border-radius: 8px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-}
-
-.create-wallet-btn:hover {
-  background-color: #cc0000;
-}
-
-.note {
+#balance {
   margin-top: 10px;
-  font-size: 12px;
-  color: #aaa;
+  font-size: 1.5rem;
+}
+
+.login-container {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.login-container h1 {
+  color: #ffcc00;
+  margin-bottom: 20px;
+}
+
+.login-container input {
+  padding: 10px;
+  width: 200px;
+  margin-bottom: 10px;
+  border: 2px solid #ffcc00;
+  background: #111;
+  color: #fff;
+}
+
+.login-container button {
+  padding: 10px 20px;
+  background: #ffcc00;
+  border: none;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.items-container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  padding: 20px;
+  gap: 20px;
+}
+
+.item-card {
+  background: #111;
+  border: 2px solid #ffcc00;
+  border-radius: 8px;
+  padding: 10px;
+  width: 200px;
   text-align: center;
 }
 
-.back-link {
-  display: inline-block;
+.item-card img {
+  width: 100%;
+  border-radius: 8px;
+}
+
+.item-card .price {
+  color: #ffcc00;
+  font-weight: bold;
+}
+
+.item-card button {
   margin-top: 10px;
-  font-size: 13px;
-  color: #ccc;
-  text-decoration: none;
+  padding: 8px;
+  background: #ffcc00;
+  border: none;
+  cursor: pointer;
 }
 
-.back-link:hover {
-  color: red;
-}
 
-script.js
-// كلمة مرور عشوائية
-function generatePassword() {
-  return Math.random().toString(36).slice(-10);
-}
-
-// زر تسجيل الدخول
-document.addEventListener("DOMContentLoaded", () => {
-  const loginBtn = document.getElementById("loginBtn");
-  if (loginBtn) {
-    loginBtn.addEventListener("click", () => {
-      const password = generatePassword();
-      const username = "user_" + Date.now();
-
-      fetch('data.json')
-        .then(res => res.json())
-        .then(data => {
-          data[username] = { password: password, balance: 0 };
-          return saveJson('data.json', data);
-        })
-        .then(() => {
-          localStorage.setItem("username", username);
-          alert("Your password: " + password);
-          window.location.href = "dashboard.html";
-        });
-    });
-  }
-
-  // في لوحة التحكم
-  if (window.location.pathname.includes("dashboard.html")) {
-    const username = localStorage.getItem("username");
-    if (!username) return alert("Please login first");
-
-    fetch('data.json')
-      .then(res => res.json())
-      .then(data => {
-        const user = data[username];
-        document.getElementById("balance").textContent = `${user.balance}$`;
-
-        fetch('items.json')
-          .then(res => res.json())
-          .then(items => {
-            const container = document.getElementById("items-container");
-            items.forEach((item, index) => {
-              const card = document.createElement("div");
-              card.className = "item-card";
-
-              card.innerHTML = `
-                <img src="${item.image}" alt="${item.name}">
-                <h3>${item.name}</h3>
-                <p>${item.description}</p>
-                <span>${item.price}$</span>
-                <br/>
-                ${
-                  item.stock.length > 0
-                    ? `<button onclick="buyItem(${index})">Buy</button>`
-                    : `<strong>No stock!</strong>`
-                }
-              `;
-
-              container.appendChild(card);
-            });
-          });
-      });
-  }
-});
-
-// شراء سلعة
-function buyItem(index) {
-  const username = localStorage.getItem("username");
-
-  Promise.all([
-    fetch('data.json').then(res => res.json()),
-    fetch('items.json').then(res => res.json())
-  ])
-    .then(([data, items]) => {
-      const user = data[username];
-      const item = items[index];
-
-      if (user.balance >= item.price && item.stock.length > 0) {
-        const delivered = item.stock.shift();
-        user.balance -= item.price;
-        alert("You received: " + delivered);
-
-        return Promise.all([
-          saveJson('data.json', data),
-          saveJson('items.json', items)
-        ]).then(() => {
-          location.reload();
-        });
-      } else {
-        alert("Insufficient funds or stock!");
-      }
-    });
-}
-
-// حفظ ملف JSON (محاكاة فقط هنا)
-function saveJson(filename, jsonData) {
-  // محاكاة الحفظ: تحتاج إلى back-end فعلي بلغة مثل Node.js لحفظ البيانات فعلاً
-  console.log(`Saving ${filename}`, jsonData);
-  return Promise.resolve(); // simulate save
-}
 
 items.json
 
 [
   {
-    "name": "Netflix Premium",
-    "description": "4K UHD Plan for 1 month",
-    "price": 5,
-    "image": "assets/product-images/netflix.png",
-    "stock": ["net1:abc", "net2:def", "net3:ghi"]
+    "name": "Item 1",
+    "description": "Description of Item 1",
+    "price": 10,
+    "image": "https://via.placeholder.com/200x150",
+    "stock": ["Code-111", "Code-112", "Code-113"]
   },
   {
-    "name": "Spotify Family",
-    "description": "6 accounts plan",
-    "price": 3,
-    "image": "assets/product-images/spotify.png",
-    "stock": ["spot1:pass1", "spot2:pass2"]
+    "name": "Item 2",
+    "description": "Description of Item 2",
+    "price": 20,
+    "image": "https://via.placeholder.com/200x150",
+    "stock": ["Code-221", "Code-222"]
   }
 ]
+
+
+data.json
+
+{
+  "wallets": {
+    "WALLET-LISCVOW": 0
+  }
+}
