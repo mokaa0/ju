@@ -2,11 +2,18 @@
 <html lang="ar">
 <head>
   <meta charset="UTF-8">
-  <title>تسجيل الدخول</title>
+  <title>Radar Wallet</title>
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
-<body class="login-page">
-  <button onclick="location.href='dashboard.html'" class="login-btn">تسجيل الدخول</button>
+<body class="dashboard-page">
+  <div class="header">
+    <span class="radar">Radar</span>
+    <span class="wallet">Wallet</span>
+  </div>
+  <div class="balance" id="balance">0$</div>
+  <div class="items" id="items-container"></div>
+
+  <script src="dashboard.js"></script>
 </body>
 </html>
