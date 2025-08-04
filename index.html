@@ -1,16 +1,41 @@
-/* ===== إعدادات عامة ===== */[
-  {
-    "name": "كود ستيم 5$",
-    "description": "بطاقة ستيم بقيمة 5 دولار",
-    "price": 5,
-    "image": "https://via.placeholder.com/200x120.png?text=Steam+5$",
-    "stock": ["STEAM-AAA111", "STEAM-BBB222", "STEAM-CCC333"]
-  },
-  {
-    "name": "كود نتفلكس",
-    "description": "اشتراك نتفلكس لمدة شهر",
-    "price": 15,
-    "image": "https://via.placeholder.com/200x120.png?text=Netflix",
-    "stock": ["NFLX-111", "NFLX-222"]
-  }
-]
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wallet Required</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="login-page">
+
+  <div class="wallet-container fade-in delay-1">
+    <div class="logo-circle">C</div>
+    <h2 class="title fade-in delay-2">Wallet Required</h2>
+    <p class="subtitle fade-in delay-3">
+      To access the dashboard, you need to set up a wallet first
+    </p>
+
+    <div class="wallet-box fade-in delay-4">
+      <h3>Wallet Not Found</h3>
+      <p>Your Discord account doesn't have a wallet yet. You can create one now to get started with Cryptonel.</p>
+      <button class="btn-animated create-wallet" onclick="createWallet()">Create New Wallet</button>
+      <p class="info">A wallet is required to store and manage your Cryptonel currency</p>
+    </div>
+
+    <button class="btn-animated back-home fade-in delay-5" onclick="goHome()">← Back to Home</button>
+  </div>
+
+  <script>
+    function createWallet() {
+      // هنا تحط كود ينقل المستخدم للصفحة اللي بعدها أو ينشئ باس
+      window.location.href = 'dashboard.html';
+    }
+
+    function goHome() {
+      // رجوع للصفحة الرئيسية لو حاب تعملها
+      window.location.href = 'index.html';
+    }
+  </script>
+</body>
+</html>
