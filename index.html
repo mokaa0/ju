@@ -1,5 +1,3 @@
-index.html
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -28,7 +26,7 @@ index.html
   </div>
 
   <script>
-    function login() {
+    async function login() {
       const pass = document.getElementById("password").value.trim();
       if (!pass) {
         alert("Enter your wallet pass");
@@ -37,13 +35,32 @@ index.html
 
       let data = JSON.parse(localStorage.getItem("wallets")) || {};
 
-      if (!data[pass]) {
-        document.getElementById("not-found").classList.remove("hidden");
+      // لو الحساب موجود أصلاً في localStorage
+      if (data[pass] !== undefined) {
+        localStorage.setItem("currentPass", pass);
+        window.location.href = "dashboard.html";
         return;
       }
 
-      localStorage.setItem("currentPass", pass);
-      window.location.href = "dashboard.html";
+      // لو مو موجود في localStorage، نقرأ من data.json
+      try {
+        const response = await fetch("data.json");
+        const jsonData = await response.json();
+
+        if (jsonData.wallets[pass] !== undefined) {
+          // نخزن الحساب في localStorage لأول مرة
+          data[pass] = jsonData.wallets[pass];
+          localStorage.setItem("wallets", JSON.stringify(data));
+          localStorage.setItem("currentPass", pass);
+          window.location.href = "dashboard.html";
+          return;
+        }
+      } catch (e) {
+        console.error("Error reading data.json", e);
+      }
+
+      // لو ما لقى الحساب
+      document.getElementById("not-found").classList.remove("hidden");
     }
 
     function showCreate() {
@@ -58,7 +75,8 @@ index.html
       }
 
       let data = JSON.parse(localStorage.getItem("wallets")) || {};
-      if (data[newPass]) {
+
+      if (data[newPass] !== undefined) {
         alert("Account already exists!");
         return;
       }
@@ -72,353 +90,3 @@ index.html
   </script>
 </body>
 </html>
-
-
-dashboard.html
-
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Radar Wallet</title>
-  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css" />
-</head>
-<body>
-  <header>
-    <div class="menu-icon" onclick="toggleMenu()">&#9776;</div>
-    <h1 class="logo">Radar <span>Wallet</span></h1>
-    <p id="balance">0$</p>
-  </header>
-
-  <!-- القائمة الجانبية -->
-  <div id="side-menu" class="side-menu hidden">
-    <h2>Menu</h2>
-    <p><strong>Password:</strong> <span id="show-pass"></span></p>
-    <hr>
-    <h3>Purchase Log</h3>
-    <ul id="purchase-log"></ul>
-  </div>
-
-  <main>
-    <div id="items" class="items-container"></div>
-  </main>
-
-  <script>
-    const pass = localStorage.getItem("currentPass");
-    let data = JSON.parse(localStorage.getItem("wallets")) || {};
-    let balance = data[pass] || 0;
-
-    document.getElementById("balance").innerText = balance + "$";
-    document.getElementById("show-pass").innerText = pass;
-
-    let logs = JSON.parse(localStorage.getItem(pass + "_logs")) || [];
-    function renderLog() {
-      const logList = document.getElementById("purchase-log");
-      logList.innerHTML = "";
-      logs.forEach(entry => {
-        const li = document.createElement("li");
-        li.textContent = entry;
-        logList.appendChild(li);
-      });
-    }
-    renderLog();
-
-    fetch("items.json")
-      .then(res => res.json())
-      .then(items => {
-        const container = document.getElementById("items");
-        items.forEach((item, index) => {
-          const card = document.createElement("div");
-          card.className = "item-card";
-
-          card.innerHTML = `
-            <img src="${item.image}" alt="${item.name}">
-            <h3>${item.name}</h3>
-            <p>${item.description}</p>
-            <p class="price">${item.price}$</p>
-            <button class="buy-btn" onclick="buyItem(${index})">Buy</button>
-          `;
-
-          container.appendChild(card);
-        });
-      });
-
-    function toggleMenu() {
-      document.getElementById("side-menu").classList.toggle("hidden");
-    }
-
-    function buyItem(index) {
-      fetch("items.json")
-        .then(res => res.json())
-        .then(items => {
-          const item = items[index];
-
-          if (balance < item.price) {
-            alert("Not enough balance!");
-            return;
-          }
-
-          if (!item.stock || item.stock.length === 0) {
-            alert("Out of stock!");
-            return;
-          }
-
-          balance -= item.price;
-          data[pass] = balance;
-          localStorage.setItem("wallets", JSON.stringify(data));
-          document.getElementById("balance").innerText = balance + "$";
-
-          const reward = item.stock.shift();
-          logs.push(`Bought ${item.name}: ${reward}`);
-          localStorage.setItem(pass + "_logs", JSON.stringify(logs));
-          renderLog();
-
-          alert("You got: " + reward);
-
-          if (item.stock.length === 0) {
-            alert("Item is now out of stock!");
-          }
-        });
-    }
-  </script>
-</body>
-</html>
-
-
-style.css
-
-body {
-  margin: 0;
-  font-family: 'Cairo', sans-serif;
-  background-color: #000;
-  color: #fff;
-}
-
-/* تسجيل الدخول */
-.login-container {
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-}
-
-.login-container h1 {
-  color: #ffcc00;
-  margin-bottom: 20px;
-}
-
-.login-container input {
-  padding: 10px;
-  width: 220px;
-  margin-bottom: 10px;
-  border: 2px solid #ffcc00;
-  background: #111;
-  color: #fff;
-  border-radius: 6px;
-}
-
-.login-container button {
-  padding: 10px 20px;
-  background: #ffcc00;
-  border: none;
-  cursor: pointer;
-  font-weight: bold;
-  border-radius: 6px;
-}
-
-#not-found {
-  color: #fff;
-  margin-top: 10px;
-}
-
-#not-found button {
-  margin-left: 10px;
-  padding: 6px 12px;
-  border: none;
-  background: #ffcc00;
-  border-radius: 6px;
-  cursor: pointer;
-}
-
-/* Popup إنشاء الحساب */
-.popup {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: #111;
-  padding: 20px;
-  border: 2px solid #ffcc00;
-  border-radius: 8px;
-  width: 280px;
-  text-align: center;
-  box-shadow: 0 0 15px rgba(255, 204, 0, 0.4);
-}
-
-.popup.hidden {
-  display: none;
-}
-
-.popup h2 {
-  margin-bottom: 15px;
-  color: #ffcc00;
-}
-
-.popup input {
-  padding: 8px;
-  width: 90%;
-  margin-bottom: 10px;
-  border: 2px solid #ffcc00;
-  background: #222;
-  color: #fff;
-  border-radius: 6px;
-}
-
-.popup button {
-  padding: 8px 15px;
-  background: #ffcc00;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: bold;
-}
-
-/* رأس الصفحة */
-header {
-  padding: 20px;
-  background-color: #111;
-  border-bottom: 2px solid #ffcc00;
-  text-align: center;
-  position: relative;
-}
-
-header .logo {
-  font-size: 2rem;
-  color: #ffcc00;
-}
-
-header .logo span {
-  color: #fff;
-}
-
-#balance {
-  margin-top: 10px;
-  font-size: 1.5rem;
-}
-
-/* زر القائمة */
-.menu-icon {
-  position: absolute;
-  left: 20px;
-  top: 20px;
-  font-size: 26px;
-  cursor: pointer;
-}
-
-/* القائمة الجانبية */
-.side-menu {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 250px;
-  height: 100%;
-  background: #111;
-  border-right: 2px solid #ffcc00;
-  padding: 20px;
-  box-shadow: 2px 0 5px rgba(0,0,0,0.5);
-  transition: transform 0.3s ease;
-  z-index: 100;
-}
-
-.side-menu.hidden {
-  transform: translateX(-100%);
-}
-
-.side-menu h2 {
-  margin-top: 0;
-  color: #ffcc00;
-}
-
-.side-menu h3 {
-  margin-top: 20px;
-  margin-bottom: 10px;
-  color: #ffcc00;
-}
-
-.side-menu ul {
-  list-style: none;
-  padding: 0;
-}
-
-.side-menu ul li {
-  padding: 5px 0;
-  border-bottom: 1px solid #444;
-  font-size: 14px;
-}
-
-/* المنتجات */
-.items-container {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  padding: 20px;
-  gap: 20px;
-}
-
-.item-card {
-  background: #111;
-  border: 2px solid #ffcc00;
-  border-radius: 8px;
-  padding: 10px;
-  width: 200px;
-  text-align: center;
-}
-
-.item-card img {
-  width: 100%;
-  border-radius: 8px;
-}
-
-.item-card .price {
-  color: #ffcc00;
-  font-weight: bold;
-}
-
-/* زر Buy */
-.buy-btn {
-  margin-top: 10px;
-  padding: 8px;
-  background: #ffcc00;
-  border: none;
-  cursor: pointer;
-  border-radius: 8px;
-  transition: background 0.3s ease;
-}
-
-.buy-btn:hover {
-  background: #e6b800;
-}
-
-
-items.json
-
-[
-  {
-    "name": "Item 1",
-    "description": "Description of Item 1",
-    "price": 10,
-    "image": "https://via.placeholder.com/200x150",
-    "stock": ["Code-111", "Code-112", "Code-113"]
-  },
-  {
-    "name": "Item 2",
-    "description": "Description of Item 2",
-    "price": 20,
-    "image": "https://via.placeholder.com/200x150",
-    "stock": ["Code-201", "Code-202"]
-  }
-]
-
