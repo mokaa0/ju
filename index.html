@@ -3,40 +3,107 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Wallet Required</title>
+  <title>Radar Dashboard</title>
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
-<body class="login-page">
+<body class="dashboard-page">
 
-  <div class="wallet-container fade-in delay-1">
-    <div class="logo-circle">C</div>
-    <h2 class="title fade-in delay-2">Wallet Required</h2>
-    <p class="subtitle fade-in delay-3">
-      To access the dashboard, you need to set up a wallet first
-    </p>
-
-    <div class="wallet-box fade-in delay-4">
-      <h3>Wallet Not Found</h3>
-      <p>Your Discord account doesn't have a wallet yet. You can create one now to get started with Cryptonel.</p>
-      <button class="btn-animated create-wallet" onclick="createWallet()">Create New Wallet</button>
-      <p class="info">A wallet is required to store and manage your Cryptonel currency</p>
+  <!-- Header -->
+  <header class="fade-in delay-1">
+    <div class="logo">Radar</div>
+    <div class="wallet">
+      Wallet: <span id="balance">0</span>$
+      <button class="logout-btn" onclick="logout()">Logout</button>
     </div>
-  </div>
+  </header>
+
+  <!-- Products Section -->
+  <main>
+    <h2 class="fade-in delay-2">Available Items</h2>
+    <div id="items-container" class="items-grid fade-in delay-3"></div>
+  </main>
 
   <script>
-    // إذا عنده محفظة مسجلة، يوديه على الداشبورد
-    if(localStorage.getItem('walletPass')){
-      window.location.href = 'dashboard.html';
+    const API_URL = 'http://45.137.70.93:2032'; // API السيرفر
+    const userPass = localStorage.getItem('walletPass');
+    const balanceEl = document.getElementById('balance');
+    const itemsContainer = document.getElementById('items-container');
+
+    // لو مافي باس يرجعه للصفحة الرئيسية
+    if(!userPass){
+      window.location.href = 'index.html';
     }
 
-    function createWallet() {
-      // توليد باس عشوائي
-      const pass = 'WALLET-' + Math.random().toString(36).substring(2, 10).toUpperCase();
-      localStorage.setItem('walletPass', pass);
-      alert(`Your wallet key: ${pass}\nSave this key to recharge via Discord bot.`);
-      window.location.href = 'dashboard.html';
+    async function loadBalance() {
+      const res = await fetch(`${API_URL}/api/balance/${userPass}`);
+      const data = await res.json();
+      balanceEl.textContent = data.balance;
     }
+
+    async function loadItems() {
+      const res = await fetch('items.json');
+      const items = await res.json();
+
+      itemsContainer.innerHTML = '';
+
+      items.forEach((item, index) => {
+        const isOutOfStock = item.stock.length === 0;
+        const card = document.createElement('div');
+        card.className = 'item-card';
+
+        card.innerHTML = `
+          <img src="${item.image}" alt="${item.name}">
+          <h3>${item.name}</h3>
+          <p>${item.description}</p>
+          <div class="price">${item.price}$</div>
+          <button class="btn-animated buy-btn" ${isOutOfStock ? 'disabled' : ''}>
+            ${isOutOfStock ? 'Out of Stock' : 'Buy'}
+          </button>
+        `;
+
+        card.querySelector('.buy-btn').addEventListener('click', async () => {
+          const currentBalance = parseInt(balanceEl.textContent);
+          if (currentBalance < item.price) {
+            alert('Not enough balance!');
+            return;
+          }
+
+          await fetch(`${API_URL}/api/money`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ pass: userPass, amount: -item.price })
+          });
+
+          const updateRes = await fetch(`${API_URL}/api/update-stock`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ index })
+          });
+
+          const updateData = await updateRes.json();
+
+          if (updateData.success) {
+            alert(`You bought: ${item.name}\n\n${item.stock[0]}`);
+          } else {
+            alert('Out of stock!');
+          }
+
+          loadBalance();
+          loadItems();
+        });
+
+        itemsContainer.appendChild(card);
+      });
+    }
+
+    function logout() {
+      localStorage.removeItem('walletPass');
+      window.location.href = 'index.html';
+    }
+
+    loadBalance();
+    loadItems();
   </script>
 </body>
 </html>
