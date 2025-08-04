@@ -2,27 +2,93 @@
 <html lang="ar">
 <head>
   <meta charset="UTF-8">
-  <title>تسجيل الدخول</title>
+  <title>Radar Wallet</title>
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
-<body class="login-page">
+<body class="dashboard-page">
 
-  <div class="login-container fade-in">
-    <input type="text" id="passInput" placeholder="أدخل باسك" class="input-pass">
-    <button class="btn-animated" onclick="setPass()">تسجيل الدخول</button>
-  </div>
+  <header class="fade-in">
+    <h1><span class="yellow">Radar</span> <span class="white">Wallet</span></h1>
+    <div class="balance" id="balance">0$</div>
+  </header>
+
+  <main id="items-container" class="fade-in delay-1"></main>
 
   <script>
-    function setPass() {
-      const pass = document.getElementById('passInput').value.trim();
-      if (!pass) {
-        alert("رجاءً أدخل باس");
-        return;
-      }
-      localStorage.setItem('userPass', pass);
-      window.location.href = 'dashboard.html';
+    const API_URL = 'http://45.137.70.93:2032';
+    const PASS = localStorage.getItem('userPass');
+
+    if (!PASS) {
+      // لو مافي باس يرجع تسجيل الدخول
+      window.location.href = 'index.html';
     }
+
+    let balance = 0;
+
+    // جلب الرصيد
+    async function getBalance() {
+      const res = await fetch(`${API_URL}/api/balance/${PASS}`);
+      const data = await res.json();
+      balance = data.balance;
+      document.getElementById('balance').innerText = balance + '$';
+    }
+
+    // تحميل المنتجات
+    async function loadItems() {
+      const res = await fetch('items.json');
+      const items = await res.json();
+      const container = document.getElementById('items-container');
+
+      container.innerHTML = '';
+      items.forEach((item, index) => {
+        const stockAvailable = item.stock.length > 0;
+        const div = document.createElement('div');
+        div.classList.add('item', 'fade-in', `delay-${index+2}`);
+        div.innerHTML = `
+          <img src="${item.image}" alt="${item.name}">
+          <h2>${item.name}</h2>
+          <p>${item.description}</p>
+          <p class="price">${item.price}$</p>
+          <button class="btn-animated" onclick="buyItem(${index})" ${!stockAvailable ? 'disabled' : ''}>
+            ${stockAvailable ? 'شراء' : 'لا كمية!'}
+          </button>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    // شراء منتج
+    async function buyItem(index) {
+      const res = await fetch('items.json');
+      const items = await res.json();
+      const item = items[index];
+
+      if (balance >= item.price && item.stock.length > 0) {
+        balance -= item.price;
+        document.getElementById('balance').innerText = balance + '$';
+
+        const stockItem = item.stock.shift();
+        await fetch(`${API_URL}/api/update-stock`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ index })
+        });
+
+        // فتح صفحة الاستلام
+        const newPage = window.open('', '_blank');
+        newPage.document.write(`
+          <body style="background:black;color:yellow;font-family:Cairo;display:flex;justify-content:center;align-items:center;height:100vh;font-size:24px;">
+            ${stockItem}
+          </body>
+        `);
+      } else {
+        alert('رصيد غير كافي أو لا كمية!');
+      }
+    }
+
+    getBalance();
+    loadItems();
   </script>
 </body>
 </html>
