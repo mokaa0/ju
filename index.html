@@ -22,19 +22,20 @@
       <button class="btn-animated create-wallet" onclick="createWallet()">Create New Wallet</button>
       <p class="info">A wallet is required to store and manage your Cryptonel currency</p>
     </div>
-
-    <button class="btn-animated back-home fade-in delay-5" onclick="goHome()">← Back to Home</button>
   </div>
 
   <script>
-    function createWallet() {
-      // هنا تحط كود ينقل المستخدم للصفحة اللي بعدها أو ينشئ باس
+    // إذا عنده محفظة مسجلة، يوديه على الداشبورد
+    if(localStorage.getItem('walletPass')){
       window.location.href = 'dashboard.html';
     }
 
-    function goHome() {
-      // رجوع للصفحة الرئيسية لو حاب تعملها
-      window.location.href = 'index.html';
+    function createWallet() {
+      // توليد باس عشوائي
+      const pass = 'WALLET-' + Math.random().toString(36).substring(2, 10).toUpperCase();
+      localStorage.setItem('walletPass', pass);
+      alert(`Your wallet key: ${pass}\nSave this key to recharge via Discord bot.`);
+      window.location.href = 'dashboard.html';
     }
   </script>
 </body>
