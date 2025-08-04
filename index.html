@@ -4,16 +4,27 @@ index.html
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Login - Radar</title>
+  <title>Login - Cryptonel Wallet</title>
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body class="login-page">
-  <div class="login-box">
-    <button id="loginBtn">Login</button>
-  </div>
+  <div class="login-wrapper">
+    <div class="login-box">
+      <div class="circle">C</div>
+      <h2 class="main-title">Wallet Required</h2>
+      <p class="sub-text">To access the dashboard, you need to set up a wallet first</p>
 
-  <script src="script.js"></script>
+      <div class="warning-box">
+        <strong>Wallet Not Found</strong>
+        <p>Your Discord account doesn't have a wallet yet.<br>You can create one now to get started with Cryptonel.</p>
+        <button class="create-wallet-btn" id="loginBtn">Create New Wallet</button>
+        <p class="note">A wallet is required to store and manage your Cryptonel currency</p>
+      </div>
+
+      <a class="back-link" href="#">← Back to Home</a>
+    </div>
+  </div>
 </body>
 </html>
 
