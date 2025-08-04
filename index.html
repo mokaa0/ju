@@ -1,159 +1,28 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ar">
 <head>
-  <meta charset="UTF-8" />
-  <title>Radar Wallet</title>
-  <style>
-    body {
-      background-color: #000;
-      color: #FFD700;
-      font-family: sans-serif;
-      text-align: center;
-      padding: 30px;
-    }
-    .balance {
-      font-size: 3em;
-      margin-bottom: 20px;
-    }
-    button {
-      margin: 10px;
-      padding: 12px 24px;
-      font-size: 1.2em;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-    }
-    #sendBtn { background-color: #FFD700; color: #000; }
-    #receiveBtn { background-color: #444; color: #fff; }
-    #buyBtn { background-color: #FFD700; color: #000; }
-    select, input {
-      margin-top: 10px;
-      padding: 10px;
-      font-size: 1em;
-      background-color: #222;
-      color: #FFD700;
-      border: none;
-      border-radius: 5px;
-    }
-  </style>
+  <meta charset="UTF-8">
+  <title>تسجيل الدخول</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
 </head>
-<body>
-  <h1>Radar Wallet</h1>
-  <div class="balance" id="balance">0$</div>
+<body class="login-page">
 
-  <!-- أزرار -->
-  <button id="sendBtn"><img src="send.svg" width="20" height="20" alt="Send"/>Send</button>
-  <button id="receiveBtn"><img src="receive.svg" width="20" height="20" alt="Receive"/>Receive</button>
-  <br><br>
-  <button id="buyBtn"><img src="cart.svg" width="20" height="20" alt="Buy"/>Buy</button>
-
-  <!-- إدخال الكود والمبلغ -->
-  <br>
-  <input type="text" id="send-code" placeholder="Enter user code">
-  <input type="number" id="send-amount" placeholder="Amount">
-
-  <!-- سلكت منيو للشراء -->
-  <br>
-  <select id="itemSelect" style="display:none;"></select>
+  <div class="login-container fade-in">
+    <input type="text" id="passInput" placeholder="أدخل باسك" class="input-pass">
+    <button class="btn-animated" onclick="setPass()">تسجيل الدخول</button>
+  </div>
 
   <script>
-    let userCode = "";
-    let balance = 0;
-
-    async function fetchBalance() {
-      if (!userCode) return;
-      try {
-        const res = await fetch(`http://45.137.70.93:2032/balance/${userCode}`);
-        if (!res.ok) throw new Error("Network response was not ok");
-        const data = await res.json();
-        balance = data.balance || 0;
-        document.getElementById('balance').innerText = balance + "$";
-      } catch (err) {
-        console.error("Error fetching balance:", err);
-        document.getElementById('balance').innerText = "0$";
-      }
-    }
-
-    document.getElementById("receiveBtn").onclick = async () => {
-      try {
-        const res = await fetch("http://45.137.70.93:2032/api/receive", {
-          method: "POST"
-        });
-        if (!res.ok) throw new Error("Failed to generate code");
-        const data = await res.json();
-        userCode = data.code;
-        alert("Your code: " + userCode);
-        await fetchBalance();
-      } catch (err) {
-        alert("Error generating code.");
-        console.error(err);
-      }
-    };
-
-    document.getElementById("sendBtn").onclick = async () => {
-      const code = document.getElementById("send-code").value.trim();
-      const amount = parseFloat(document.getElementById("send-amount").value);
-      if (!code || isNaN(amount)) {
-        alert("❌ Please enter valid code and amount");
+    function setPass() {
+      const pass = document.getElementById('passInput').value.trim();
+      if (!pass) {
+        alert("رجاءً أدخل باس");
         return;
       }
-
-      try {
-        const res = await fetch("http://45.137.70.93:2032/api/send", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ code, amount })
-        });
-
-        const data = await res.json();
-        if (res.ok) {
-          alert("✅ Sent successfully!");
-        } else {
-          alert("❌ Error: " + (data.error || "Unknown"));
-        }
-      } catch (err) {
-        alert("❌ Failed to send");
-        console.error(err);
-      }
-    };
-
-    document.getElementById("buyBtn").onclick = async () => {
-      const select = document.getElementById("itemSelect");
-      if (select.style.display === "none") {
-        // تحميل السلع من JSON
-        const res = await fetch("items.json");
-        const items = await res.json();
-        select.innerHTML = "";
-        items.forEach((item, index) => {
-          const opt = document.createElement("option");
-          opt.value = index;
-          opt.textContent = item.name + " - " + item.price + "$";
-          select.appendChild(opt);
-        });
-        select.style.display = "inline-block";
-      } else {
-        // شراء السلعة
-        const res = await fetch("items.json");
-        const items = await res.json();
-        const item = items[select.value];
-        if (balance < item.price) {
-          alert("No Money");
-          return;
-        }
-        await fetch(`http://45.137.70.93:2032/buy`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ code: userCode, price: item.price })
-        });
-        const desc = item.desc[Math.floor(Math.random() * item.desc.length)];
-        window.open(`buy.html?desc=${encodeURIComponent(desc)}`, "_blank");
-        await fetchBalance(); // تحديث الرصيد بعد الشراء
-      }
-    };
+      localStorage.setItem('userPass', pass);
+      window.location.href = 'dashboard.html';
+    }
   </script>
 </body>
 </html>
