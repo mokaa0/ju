@@ -1,19 +1,83 @@
-<!DOCTYPE html>
-<html lang="ar">
-<head>
-  <meta charset="UTF-8">
-  <title>Radar Wallet</title>
-  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
-</head>
-<body class="dashboard-page">
-  <div class="header">
-    <span class="radar">Radar</span>
-    <span class="wallet">Wallet</span>
-  </div>
-  <div class="balance" id="balance">0$</div>
-  <div class="items" id="items-container"></div>
+body {
+  margin: 0;
+  font-family: 'Cairo', sans-serif;
+  direction: rtl;
+  background-color: #0a0a0a;
+  color: white;
+}
 
-  <script src="dashboard.js"></script>
-</body>
-</html>
+.login-page {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background: black;
+  border: 5px solid red;
+}
+
+.login-btn {
+  padding: 20px 40px;
+  background-color: red;
+  color: white;
+  font-size: 22px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.dashboard-page {
+  padding: 20px;
+  border: 5px solid red;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 28px;
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+
+.radar {
+  color: red;
+}
+
+.wallet {
+  color: white;
+}
+
+.balance {
+  font-size: 24px;
+  font-weight: bold;
+  margin-bottom: 20px;
+}
+
+.items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.item {
+  background: #111;
+  border: 2px solid red;
+  padding: 15px;
+  width: 220px;
+  border-radius: 10px;
+  text-align: center;
+}
+
+.item img {
+  width: 100%;
+  border-radius: 10px;
+  margin-bottom: 10px;
+}
+
+.buy-btn {
+  background: red;
+  color: white;
+  padding: 10px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
