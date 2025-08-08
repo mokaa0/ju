@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 
-<html lang="ar" dir="ltr">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Mókaa - Portfolio</title>
+    <title>Vortex Server</title>
     <style>
         * {
             margin: 0;
@@ -12,319 +12,350 @@
             box-sizing: border-box;
         }
 
+```
     body {
         font-family: 'Arial', sans-serif;
-        background: linear-gradient(135deg, #000000 0%, #2d1b3d 50%, #000000 100%);
+        background: linear-gradient(135deg, #1a001a 0%, #2d1b2e 50%, #000000 100%);
         color: white;
+        min-height: 100vh;
         overflow-x: hidden;
-    }
-
-    .hero-section {
-        height: 100vh;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        text-align: center;
         position: relative;
     }
 
-    .main-title {
+    .animated-bg {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: -1;
+    }
+
+    .dot {
+        position: absolute;
+        background-color: #000;
+        border-radius: 50%;
+        opacity: 0.3;
+        animation: float 6s ease-in-out infinite;
+    }
+
+    .dot:nth-child(1) {
+        width: 8px;
+        height: 8px;
+        top: 10%;
+        left: 20%;
+        animation-delay: 0s;
+    }
+
+    .dot:nth-child(2) {
+        width: 12px;
+        height: 12px;
+        top: 20%;
+        left: 80%;
+        animation-delay: 1s;
+    }
+
+    .dot:nth-child(3) {
+        width: 6px;
+        height: 6px;
+        top: 40%;
+        left: 10%;
+        animation-delay: 2s;
+    }
+
+    .dot:nth-child(4) {
+        width: 10px;
+        height: 10px;
+        top: 60%;
+        left: 90%;
+        animation-delay: 3s;
+    }
+
+    .dot:nth-child(5) {
+        width: 14px;
+        height: 14px;
+        top: 80%;
+        left: 30%;
+        animation-delay: 4s;
+    }
+
+    .dot:nth-child(6) {
+        width: 8px;
+        height: 8px;
+        top: 30%;
+        left: 60%;
+        animation-delay: 5s;
+    }
+
+    .dot:nth-child(7) {
+        width: 16px;
+        height: 16px;
+        top: 70%;
+        left: 70%;
+        animation-delay: 1.5s;
+    }
+
+    .dot:nth-child(8) {
+        width: 10px;
+        height: 10px;
+        top: 15%;
+        left: 45%;
+        animation-delay: 3.5s;
+    }
+
+    .dot:nth-child(9) {
+        width: 12px;
+        height: 12px;
+        top: 85%;
+        left: 15%;
+        animation-delay: 2.5s;
+    }
+
+    .dot:nth-child(10) {
+        width: 6px;
+        height: 6px;
+        top: 50%;
+        left: 85%;
+        animation-delay: 4.5s;
+    }
+
+    @keyframes float {
+        0%, 100% {
+            transform: translateY(0px) translateX(0px);
+        }
+        33% {
+            transform: translateY(-20px) translateX(10px);
+        }
+        66% {
+            transform: translateY(10px) translateX(-15px);
+        }
+    }
+
+    .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    .header {
+        text-align: center;
+        padding: 60px 0 40px;
+        animation: fadeInDown 1s ease-out;
+    }
+
+    .logo {
         font-size: 4rem;
         font-weight: bold;
-        margin-bottom: 2rem;
-        opacity: 0;
-        animation: fadeInUp 1s ease-out 0.5s forwards;
-    }
-
-    .main-title .purple {
-        color: #8b5cf6;
-    }
-
-    .main-title .white {
-        color: white;
+        margin-bottom: 20px;
+        background: linear-gradient(45deg, #4a2c5a, #ffffff);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        text-shadow: 0 0 30px rgba(74, 44, 90, 0.5);
     }
 
     .description {
         font-size: 1.2rem;
         line-height: 1.6;
-        max-width: 800px;
-        margin-bottom: 4rem;
+        margin-bottom: 40px;
+        opacity: 0;
+        animation: fadeInUp 1s ease-out 0.5s forwards;
+    }
+
+    .discord-btn {
+        background: linear-gradient(45deg, #2d1b2e, #4a2c5a);
+        color: white;
+        padding: 15px 40px;
+        border: none;
+        border-radius: 12px;
+        font-size: 1.1rem;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-block;
+        box-shadow: 0 4px 15px rgba(74, 44, 90, 0.3);
         opacity: 0;
         animation: fadeInUp 1s ease-out 1s forwards;
     }
 
-    .scroll-indicator {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        cursor: pointer;
+    .discord-btn:hover {
+        transform: translateY(-3px) scale(1.05);
+        box-shadow: 0 8px 25px rgba(74, 44, 90, 0.5);
+        background: linear-gradient(45deg, #4a2c5a, #2d1b2e);
+    }
+
+    .section-title {
+        text-align: center;
+        font-size: 2.5rem;
+        color: #4a2c5a;
+        margin: 60px 0 40px;
         opacity: 0;
         animation: fadeInUp 1s ease-out 1.5s forwards;
     }
 
-    .scroll-text {
-        font-size: 1rem;
-        margin-bottom: 1rem;
-        animation: bounce 2s infinite;
-    }
-
-    .scroll-arrow {
-        width: 30px;
-        height: 30px;
-        fill: #8b5cf6;
-        animation: bounce 2s infinite;
-    }
-
-    .about-section {
-        padding: 5rem 2rem;
-        max-width: 1200px;
-        margin: 0 auto;
-    }
-
-    .section-title {
-        font-size: 3rem;
-        text-align: center;
-        margin-bottom: 3rem;
-        color: #8b5cf6;
-        opacity: 0;
-        animation: fadeInUp 1s ease-out forwards;
-    }
-
     .cards-container {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-        gap: 2rem;
-        margin-bottom: 4rem;
+        grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+        gap: 40px;
+        margin: 40px 0;
     }
 
     .card {
-        background: rgba(0, 0, 0, 0.7);
+        background: rgba(0, 0, 0, 0.8);
+        border: 2px solid rgba(255, 255, 255, 0.1);
+        border-radius: 20px;
+        padding: 40px;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         backdrop-filter: blur(10px);
-        border: 2px solid rgba(255, 255, 255, 0.2);
-        border-radius: 15px;
-        padding: 2rem;
-        transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
         opacity: 0;
-        transform: translateY(50px);
-        animation: fadeInUp 1s ease-out forwards;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        text-align: center;
+        transform: translateY(30px);
+        animation: fadeInCard 1s ease-out forwards;
         cursor: pointer;
-        position: relative;
-        overflow: hidden;
+        min-height: 280px;
     }
 
-    .card::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(139, 92, 246, 0.3), transparent);
-        transition: all 0.6s ease;
-    }
-
-    .card:nth-child(1) { animation-delay: 0.2s; }
-    .card:nth-child(2) { animation-delay: 0.4s; }
-    .card:nth-child(3) { animation-delay: 0.6s; }
+    .card:nth-child(1) { animation-delay: 2s; }
+    .card:nth-child(2) { animation-delay: 2.2s; }
+    .card:nth-child(3) { animation-delay: 2.4s; }
+    .card:nth-child(4) { animation-delay: 2.6s; }
 
     .card:hover {
-        border-color: #8b5cf6;
-        transform: translateY(-15px) scale(1.08);
-        box-shadow: 0 25px 50px rgba(139, 92, 246, 0.4);
-        background: rgba(139, 92, 246, 0.1);
-    }
-
-    .card:hover::before {
-        left: 100%;
+        border-color: #4a2c5a;
+        transform: translateY(-20px) scale(1.08) rotateX(5deg);
+        box-shadow: 0 25px 60px rgba(74, 44, 90, 0.4);
+        background: rgba(10, 5, 10, 0.9);
     }
 
     .card:active {
-        transform: translateY(-15px) scale(1.12);
-        box-shadow: 0 30px 60px rgba(139, 92, 246, 0.6);
+        transform: translateY(-25px) scale(1.12) rotateX(8deg);
+        box-shadow: 0 35px 80px rgba(74, 44, 90, 0.6);
     }
 
     .card-icon {
-        width: 60px;
-        height: 60px;
-        fill: #8b5cf6;
-        margin-bottom: 1.5rem;
+        width: 70px;
+        height: 70px;
+        margin-bottom: 25px;
+        fill: #4a2c5a;
+        transition: all 0.3s ease;
     }
 
-    .card-title {
-        font-size: 1.5rem;
-        color: #8b5cf6;
-        margin-bottom: 1rem;
-        font-weight: bold;
+    .card:hover .card-icon {
+        fill: #6b4c7a;
+        transform: scale(1.1) rotate(5deg);
     }
 
-    .card-description {
+    .card h3 {
+        color: #4a2c5a;
+        font-size: 1.8rem;
+        margin-bottom: 20px;
+        transition: all 0.3s ease;
+    }
+
+    .card:hover h3 {
+        color: #6b4c7a;
+        transform: translateY(-2px);
+    }
+
+    .card p {
         line-height: 1.6;
-        color: white;
+        color: rgba(255, 255, 255, 0.9);
     }
 
     .skills-section {
-        padding: 3rem 2rem;
-        max-width: 1200px;
-        margin: 0 auto;
+        margin: 80px 0;
+        opacity: 0;
+        animation: fadeInUp 1s ease-out 3s forwards;
+    }
+
+    .skills-title {
+        text-align: center;
+        font-size: 2.5rem;
+        color: #8e44ad;
+        margin-bottom: 40px;
     }
 
     .skills-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-        gap: 2rem;
-        margin-bottom: 4rem;
+        gap: 30px;
     }
 
-    .skill-card {
-        background: rgba(0, 0, 0, 0.7);
-        backdrop-filter: blur(10px);
-        border: 2px solid rgba(255, 255, 255, 0.2);
+    .skill-item {
+        background: rgba(0, 0, 0, 0.8);
+        border: 2px solid rgba(255, 255, 255, 0.1);
         border-radius: 15px;
-        padding: 2rem;
-        transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-        opacity: 0;
-        animation: fadeInUp 1s ease-out forwards;
-        cursor: pointer;
-        position: relative;
-        overflow: hidden;
+        padding: 25px;
+        transition: all 0.3s ease;
     }
 
-    .skill-card::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(139, 92, 246, 0.3), transparent);
-        transition: all 0.6s ease;
-    }
-
-    .skill-card:nth-child(1) { animation-delay: 0.8s; }
-    .skill-card:nth-child(2) { animation-delay: 1s; }
-    .skill-card:nth-child(3) { animation-delay: 1.2s; }
-    .skill-card:nth-child(4) { animation-delay: 1.4s; }
-
-    .skill-card:hover {
-        border-color: #8b5cf6;
-        transform: scale(1.08) translateY(-10px);
-        box-shadow: 0 20px 40px rgba(139, 92, 246, 0.4);
-        background: rgba(139, 92, 246, 0.1);
-    }
-
-    .skill-card:hover::before {
-        left: 100%;
-    }
-
-    .skill-card:active {
-        transform: scale(1.12) translateY(-10px);
-        box-shadow: 0 25px 50px rgba(139, 92, 246, 0.6);
+    .skill-item:hover {
+        border-color: #8e44ad;
+        transform: scale(1.05);
+        box-shadow: 0 10px 30px rgba(142, 68, 173, 0.2);
     }
 
     .skill-name {
-        font-size: 1.2rem;
-        margin-bottom: 1rem;
-        color: #8b5cf6;
-        display: flex;
-        align-items: center;
+        font-weight: bold;
+        margin-bottom: 10px;
+        color: #8e44ad;
     }
 
-    .skill-icon {
-        width: 24px;
-        height: 24px;
-        fill: #8b5cf6;
-        margin-right: 10px;
-    }
-
-    .progress-bar {
+    .skill-bar {
         background: rgba(255, 255, 255, 0.1);
-        border-radius: 10px;
-        height: 20px;
+        height: 10px;
+        border-radius: 5px;
         overflow: hidden;
     }
 
-    .progress-fill {
+    .skill-progress {
         height: 100%;
-        background: linear-gradient(90deg, #8b5cf6, #a855f7);
-        border-radius: 10px;
-        transition: width 2s ease-out;
-        position: relative;
-    }
-
-    .progress-text {
-        position: absolute;
-        right: 10px;
-        top: 50%;
-        transform: translateY(-50%);
-        font-size: 0.8rem;
-        font-weight: bold;
+        background: linear-gradient(45deg, #8e44ad, #5b2c6f);
+        border-radius: 5px;
+        transition: width 2s ease;
+        animation: progressFill 2s ease 3.5s forwards;
     }
 
     .contact-section {
-        padding: 3rem 2rem;
-        max-width: 600px;
-        margin: 0 auto;
+        margin: 80px 0;
+        opacity: 0;
+        animation: fadeInUp 1s ease-out 3.5s forwards;
+    }
+
+    .contact-title {
+        text-align: center;
+        font-size: 2.5rem;
+        color: #8e44ad;
+        margin-bottom: 40px;
     }
 
     .contact-form {
-        background: rgba(0, 0, 0, 0.7);
-        backdrop-filter: blur(10px);
-        border: 2px solid rgba(255, 255, 255, 0.2);
-        border-radius: 15px;
-        padding: 2rem;
-        opacity: 0;
-        animation: fadeInUp 1s ease-out 1.6s forwards;
-        transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-        cursor: pointer;
-        position: relative;
-        overflow: hidden;
-    }
-
-    .contact-form::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(139, 92, 246, 0.3), transparent);
-        transition: all 0.6s ease;
+        max-width: 600px;
+        margin: 0 auto;
+        background: rgba(0, 0, 0, 0.8);
+        padding: 40px;
+        border-radius: 20px;
+        border: 2px solid rgba(255, 255, 255, 0.1);
+        transition: all 0.3s ease;
     }
 
     .contact-form:hover {
-        border-color: #8b5cf6;
-        transform: scale(1.02);
-        box-shadow: 0 15px 30px rgba(139, 92, 246, 0.3);
-        background: rgba(139, 92, 246, 0.05);
-    }
-
-    .contact-form:hover::before {
-        left: 100%;
+        border-color: #8e44ad;
+        box-shadow: 0 15px 40px rgba(142, 68, 173, 0.2);
     }
 
     .form-group {
-        margin-bottom: 1.5rem;
-    }
-
-    .form-group label {
-        display: block;
-        margin-bottom: 0.5rem;
-        color: #8b5cf6;
-        font-weight: bold;
+        margin-bottom: 25px;
     }
 
     .form-group input,
     .form-group textarea {
         width: 100%;
-        padding: 1rem;
-        border: 2px solid rgba(255, 255, 255, 0.2);
-        border-radius: 10px;
+        padding: 15px;
         background: rgba(255, 255, 255, 0.05);
+        border: 2px solid rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
         color: white;
         font-size: 1rem;
         transition: all 0.3s ease;
@@ -333,44 +364,38 @@
     .form-group input:focus,
     .form-group textarea:focus {
         outline: none;
-        border-color: #8b5cf6;
-        box-shadow: 0 0 10px rgba(139, 92, 246, 0.3);
+        border-color: #8e44ad;
+        background: rgba(255, 255, 255, 0.1);
+        box-shadow: 0 0 20px rgba(142, 68, 173, 0.3);
+    }
+
+    .form-group textarea {
+        height: 120px;
+        resize: vertical;
     }
 
     .submit-btn {
-        width: 100%;
-        padding: 1rem;
-        background: linear-gradient(90deg, #8b5cf6, #a855f7);
-        border: none;
-        border-radius: 10px;
+        background: linear-gradient(45deg, #5b2c6f, #8e44ad);
         color: white;
+        padding: 15px 40px;
+        border: none;
+        border-radius: 50px;
         font-size: 1.1rem;
         font-weight: bold;
         cursor: pointer;
         transition: all 0.3s ease;
+        width: 100%;
     }
 
     .submit-btn:hover {
-        transform: translateY(-5px) scale(1.05);
-        box-shadow: 0 15px 30px rgba(139, 92, 246, 0.5);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(142, 68, 173, 0.5);
     }
 
-    .submit-btn:active {
-        transform: translateY(-3px) scale(1.02);
-        box-shadow: 0 10px 20px rgba(139, 92, 246, 0.4);
-    }
-
-    @keyframes ripple {
-        to {
-            transform: scale(4);
-            opacity: 0;
-        }
-    }
-
-    @keyframes fadeInUp {
+    @keyframes fadeInDown {
         from {
             opacity: 0;
-            transform: translateY(50px);
+            transform: translateY(-30px);
         }
         to {
             opacity: 1;
@@ -378,30 +403,54 @@
         }
     }
 
-    @keyframes bounce {
-        0%, 20%, 50%, 80%, 100% {
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
             transform: translateY(0);
-        }
-        40% {
-            transform: translateY(-10px);
-        }
-        60% {
-            transform: translateY(-5px);
         }
     }
 
-    @media (max-width: 768px) {
-        .main-title {
-            font-size: 2.5rem;
+    @keyframes fadeInCard {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
         }
-        
-        .description {
-            font-size: 1rem;
-            padding: 0 1rem;
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @keyframes progressFill {
+        from { width: 0%; }
+    }
+
+    .nodejs { width: 98%; }
+    .javascript { width: 95%; }
+    .express { width: 88%; }
+    .html { width: 100%; }
+
+    @media (max-width: 768px) {
+        .logo {
+            font-size: 2.5rem;
         }
         
         .cards-container {
             grid-template-columns: 1fr;
+            gap: 30px;
+        }
+        
+        .card {
+            min-height: 250px;
+            padding: 30px;
+        }
+        
+        .card:hover {
+            transform: translateY(-15px) scale(1.05);
         }
         
         .skills-grid {
@@ -413,215 +462,157 @@
 
 </head>
 <body>
-    <section class="hero-section">
-        <h1 class="main-title">
-            <span class="purple">The</span> <span class="white">Mókaa</span>
-        </h1>
+    <div class="container">
+        <header class="header">
+            <h1 class="logo">Vortex</h1>
+            <p class="description">
+                I am a Vortex server. My only goal is to combine profit and customer satisfaction. My managers have very high programming experience, so we decided to provide multiple software. For more information, go to the bottom.
+            </p>
+            <a href="https://discord.gg/JV8xwDzjJK" class="discord-btn" target="_blank">
+                <svg width="20" height="20" style="margin-right: 10px; vertical-align: middle;" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515a.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0a12.64 12.64 0 0 0-.617-1.25a.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057a19.9 19.9 0 0 0 5.993 3.03a.078.078 0 0 0 .084-.028a14.09 14.09 0 0 0 1.226-1.994a.076.076 0 0 0-.041-.106a13.107 13.107 0 0 1-1.872-.892a.077.077 0 0 1-.008-.128a10.2 10.2 0 0 0 .372-.292a.074.074 0 0 1 .077-.010c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127a12.299 12.299 0 0 1-1.873.892a.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028a19.839 19.839 0 0 0 6.002-3.03a.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z"/>
+                </svg>
+                Discord
+            </a>
+        </header>
 
 ```
-    <p class="description">
-        I am Mókaa, a student in programming information technology, specializing in programming websites, Discord bots, tools, and a project manager. I was previously a@ manager in a probot. Now I am a manager of several bots and a manager of websites and projects. I always strive to progress toward the better.
-    </p>
-    
-    <div class="scroll-indicator" onclick="scrollToAbout()">
-        <span class="scroll-text">Scroll to explore</span>
-        <svg class="scroll-arrow" viewBox="0 0 24 24">
-            <path d="M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z"/>
-        </svg>
-    </div>
-</section>
-
-<section class="about-section" id="about">
     <h2 class="section-title">About Me</h2>
-    
+
     <div class="cards-container">
         <div class="card">
             <svg class="card-icon" viewBox="0 0 24 24">
-                <path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M7.07,18.28C7.5,17.38 10.12,16.5 12,16.5C13.88,16.5 16.5,17.38 16.93,18.28C15.57,19.36 13.86,20 12,20C10.14,20 8.43,19.36 7.07,18.28M18.36,16.83C16.93,15.09 13.46,14.5 12,14.5C10.54,14.5 7.07,15.09 5.64,16.83C4.62,15.5 4,13.82 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,13.82 19.38,15.5 18.36,16.83M12,6C10.06,6 8.5,7.56 8.5,9.5C8.5,11.44 10.06,13 12,13C13.94,13 15.5,11.44 15.5,9.5C15.5,7.56 13.94,6 12,6M12,11A1.5,1.5 0 0,1 10.5,9.5A1.5,1.5 0 0,1 12,8A1.5,1.5 0 0,1 13.5,9.5A1.5,1.5 0 0,1 12,11Z"/>
+                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
             </svg>
-            <h3 class="card-title">Mókaa</h3>
-            <p class="card-description">
-                I am Mókaa, an expert in programming Discord bots, websites, and tools that improve your daily work.
-            </p>
+            <h3>Vortex</h3>
+            <p>A server seeking profit, selling and development with one mind. Order now!</p>
         </div>
-        
+
         <div class="card">
             <svg class="card-icon" viewBox="0 0 24 24">
-                <path d="M8,3A2,2 0 0,0 6,5V9A2,2 0 0,1 4,11H3V13H4A2,2 0 0,1 6,15V19A2,2 0 0,0 8,21H10V19H8V14A2,2 0 0,0 6,12A2,2 0 0,0 8,10V5H10V3H8M16,3A2,2 0 0,1 18,5V9A2,2 0 0,0 20,11H21V13H20A2,2 0 0,0 18,15V19A2,2 0 0,1 16,21H14V19H16V14A2,2 0 0,1 18,12A2,2 0 0,1 16,10V5H14V3H16Z"/>
+                <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
             </svg>
-            <h3 class="card-title">Api Development</h3>
-            <p class="card-description">
-                A famous API developer, and the current Qya @Manager is famous for linking websites, Discord bots, and much more..
-            </p>
+            <h3>Discord Bots Development</h3>
+            <p>We develop Discord bots in the fastest time, with the best quality and the cheapest price. We turn your ideas and dreams into reality!</p>
         </div>
-        
+
         <div class="card">
             <svg class="card-icon" viewBox="0 0 24 24">
-                <path d="M12,2C13.1,2 14,2.9 14,4C14,5.1 13.1,6 12,6C10.9,6 10,5.1 10,4C10,2.9 10.9,2 12,2M21,9V7L15,1H5C3.89,1 3,1.89 3,3V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V9M19,19H5V3H13V9H19V19Z"/>
+                <path d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/>
             </svg>
-            <h3 class="card-title">Website Development</h3>
-            <p class="card-description">
-                I am a very professional website developer. I work for large groups and teams in the community in exchange for financial compensation. One of my most famous sites is the Radar Technology portfolio, which has been in the spotlight previously..
-            </p>
+            <h3>Website Development</h3>
+            <p>We are skilled at developing websites and selling them at the cheapest price and best quality. This website is fully developed by our team and will be of the same quality.</p>
+        </div>
+
+        <div class="card">
+            <svg class="card-icon" viewBox="0 0 24 24">
+                <path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <h3>Information</h3>
+            <p>My name is Vortex Server. I was established in 2016. I was let go by my managers for personal reasons, but I am ready to return and provide the best service.</p>
         </div>
     </div>
-</section>
 
-<section class="skills-section">
-    <h2 class="section-title">Skills</h2>
-    
-    <div class="skills-grid">
-        <div class="skill-card">
-            <div class="skill-name">
-                <svg class="skill-icon" viewBox="0 0 24 24">
-                    <path d="M12,1.85C12.73,1.85 13.45,2.11 14.03,2.69C14.61,3.27 14.87,3.99 14.87,4.72C14.87,5.45 14.61,6.17 14.03,6.75L13.09,7.69L5.04,15.74C4.46,16.32 3.74,16.58 3.01,16.58C2.28,16.58 1.56,16.32 0.98,15.74C0.4,15.16 0.14,14.44 0.14,13.71C0.14,12.98 0.4,12.26 0.98,11.68L9.03,3.63L9.97,2.69C10.55,2.11 11.27,1.85 12,1.85M12,3.04C11.64,3.04 11.29,3.18 11.03,3.44L10.09,4.38L2.04,12.43C1.78,12.69 1.64,13.04 1.64,13.4C1.64,13.76 1.78,14.11 2.04,14.37C2.3,14.63 2.65,14.77 3.01,14.77C3.37,14.77 3.72,14.63 3.98,14.37L12.03,6.32L12.97,5.38C13.23,5.12 13.37,4.77 13.37,4.41C13.37,4.05 13.23,3.7 12.97,3.44C12.71,3.18 12.36,3.04 12,3.04Z"/>
-                </svg>
-                Node.js
-            </div>
-            <div class="progress-bar">
-                <div class="progress-fill" style="width: 98%;">
-                    <span class="progress-text">98%</span>
+    <section class="skills-section">
+        <h2 class="skills-title">Skills</h2>
+        <div class="skills-grid">
+            <div class="skill-item">
+                <div class="skill-name">Node.js</div>
+                <div class="skill-bar">
+                    <div class="skill-progress nodejs"></div>
                 </div>
+                <div style="text-align: right; margin-top: 5px; color: #4a2c5a; font-weight: bold;">98%</div>
+            </div>
+            
+            <div class="skill-item">
+                <div class="skill-name">JavaScript</div>
+                <div class="skill-bar">
+                    <div class="skill-progress javascript"></div>
+                </div>
+                <div style="text-align: right; margin-top: 5px; color: #4a2c5a; font-weight: bold;">95%</div>
+            </div>
+            
+            <div class="skill-item">
+                <div class="skill-name">Express.js</div>
+                <div class="skill-bar">
+                    <div class="skill-progress express"></div>
+                </div>
+                <div style="text-align: right; margin-top: 5px; color: #4a2c5a; font-weight: bold;">88%</div>
+            </div>
+            
+            <div class="skill-item">
+                <div class="skill-name">HTML</div>
+                <div class="skill-bar">
+                    <div class="skill-progress html"></div>
+                </div>
+                <div style="text-align: right; margin-top: 5px; color: #4a2c5a; font-weight: bold;">100%</div>
             </div>
         </div>
-        
-        <div class="skill-card">
-            <div class="skill-name">
-                <svg class="skill-icon" viewBox="0 0 24 24">
-                    <path d="M3,3H21V21H3V3M7.73,18.04C8.13,18.89 8.92,19.59 10.27,19.59C11.77,19.59 12.8,18.79 12.8,17.04V11.26H11.1V17C11.1,17.86 10.75,18.08 10.2,18.08C9.62,18.08 9.38,17.68 9.11,17.21L7.73,18.04M13.71,17.86C14.21,18.84 15.22,19.59 16.8,19.59C18.4,19.59 19.6,18.76 19.6,17.23C19.6,15.82 18.79,15.19 17.35,14.57L16.93,14.39C16.2,14.08 15.89,13.87 15.89,13.48C15.89,13.15 16.11,12.91 16.54,12.91C16.90,12.91 17.15,13.06 17.35,13.48L18.56,12.64C18.03,11.75 17.22,11.34 16.54,11.34C15.18,11.34 14.26,12.12 14.26,13.48C14.26,14.81 15.11,15.44 16.21,15.94L16.63,16.11C17.45,16.47 17.91,16.68 17.91,17.16C17.91,17.57 17.54,17.85 16.99,17.85C16.32,17.85 15.84,17.53 15.56,17.16L13.71,17.86Z"/>
-                </svg>
-                JavaScript
-            </div>
-            <div class="progress-bar">
-                <div class="progress-fill" style="width: 95%;">
-                    <span class="progress-text">95%</span>
-                </div>
-            </div>
-        </div>
-        
-        <div class="skill-card">
-            <div class="skill-name">
-                <svg class="skill-icon" viewBox="0 0 24 24">
-                    <path d="M2,12A10,10 0 0,1 12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12M12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4M7,9L12,7L17,9V15L12,17L7,15V9M8,10.5V14L11,15.25V11.75L8,10.5M13,11.75V15.25L16,14V10.5L13,11.75Z"/>
-                </svg>
-                Express.js
-            </div>
-            <div class="progress-bar">
-                <div class="progress-fill" style="width: 88%;">
-                    <span class="progress-text">88%</span>
-                </div>
-            </div>
-        </div>
-        
-        <div class="skill-card">
-            <div class="skill-name">
-                <svg class="skill-icon" viewBox="0 0 24 24">
-                    <path d="M12,17.56L16.07,16.43L16.62,10.33H9.38L9.2,8.3H16.8L17,6.31H7L7.56,12.32H14.45L14.22,14.9L12,15.5L9.78,14.9L9.64,13.24H7.64L7.93,16.43L12,17.56M4.07,3H19.93L18.5,19.2L12,21L5.5,19.2L4.07,3Z"/>
-                </svg>
-                HTML
-            </div>
-            <div class="progress-bar">
-                <div class="progress-fill" style="width: 100%;">
-                    <span class="progress-text">100%</span>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
+    </section>
+</div>
 
-<section class="contact-section">
-    <h2 class="section-title">Contact Me</h2>
-    
-    <form class="contact-form" onsubmit="handleSubmit(event)">
-        <div class="form-group">
-            <label for="name">Your Name</label>
-            <input type="text" id="name" name="name" required>
-        </div>
-        
-        <div class="form-group">
-            <label for="email">Email</label>
-            <input type="email" id="email" name="email" required>
-        </div>
-        
-        <div class="form-group">
-            <label for="message">Message</label>
-            <textarea id="message" name="message" rows="6" required></textarea>
-        </div>
-        
-        <button type="submit" class="submit-btn">Send Message</button>
-    </form>
-</section>
+<div class="animated-bg">
+    <div class="dot"></div>
+    <div class="dot"></div>
+    <div class="dot"></div>
+    <div class="dot"></div>
+    <div class="dot"></div>
+    <div class="dot"></div>
+    <div class="dot"></div>
+    <div class="dot"></div>
+    <div class="dot"></div>
+    <div class="dot"></div>
+</div>
 
 <script>
-    function scrollToAbout() {
-        document.getElementById('about').scrollIntoView({
-            behavior: 'smooth'
-        });
-    }
-
-    function handleSubmit(event) {
-        event.preventDefault();
-        
-        const name = document.getElementById('name').value;
-        const email = document.getElementById('email').value;
-        const message = document.getElementById('message').value;
-        
-        // Here you can add your email sending logic
-        alert(`Thank you ${name}! Your message has been received.`);
-        
-        // Reset form
-        document.querySelector('.contact-form').reset();
-    }
-
-    // Animate progress bars when they come into view
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                const progressBars = entry.target.querySelectorAll('.progress-fill');
-                progressBars.forEach(bar => {
-                    const width = bar.style.width;
-                    bar.style.width = '0%';
-                    setTimeout(() => {
-                        bar.style.width = width;
-                    }, 500);
-                });
-            }
-        });
-    });
-
-    // Add card click effects
-    document.addEventListener('DOMContentLoaded', () => {
-        observer.observe(document.querySelector('.skills-section'));
-        
-        // Add ripple effect on card click
-        const cards = document.querySelectorAll('.card, .skill-card');
-        cards.forEach(card => {
-            card.addEventListener('click', function(e) {
-                const ripple = document.createElement('span');
-                const rect = this.getBoundingClientRect();
-                const size = Math.max(rect.width, rect.height);
-                const x = e.clientX - rect.left - size / 2;
-                const y = e.clientY - rect.top - size / 2;
-                
-                ripple.style.width = ripple.style.height = size + 'px';
-                ripple.style.left = x + 'px';
-                ripple.style.top = y + 'px';
-                ripple.style.position = 'absolute';
-                ripple.style.borderRadius = '50%';
-                ripple.style.background = 'rgba(139, 92, 246, 0.5)';
-                ripple.style.transform = 'scale(0)';
-                ripple.style.animation = 'ripple 0.6s linear';
-                ripple.style.pointerEvents = 'none';
-                
-                this.appendChild(ripple);
-                
-                setTimeout(() => {
-                    ripple.remove();
-                }, 600);
+    // Add smooth scroll behavior
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            e.preventDefault();
+            document.querySelector(this.getAttribute('href')).scrollIntoView({
+                behavior: 'smooth'
             });
         });
     });
+
+    // Add intersection observer for animations
+    const observerOptions = {
+        threshold: 0.1,
+        rootMargin: '0px 0px -50px 0px'
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.style.animationPlayState = 'running';
+            }
+        });
+    }, observerOptions);
+
+    document.querySelectorAll('.card, .skill-item').forEach(el => {
+        observer.observe(el);
+    });
+
+    // Enhanced card interaction
+    document.querySelectorAll('.card').forEach(card => {
+        card.addEventListener('mouseenter', () => {
+            card.style.transform = 'translateY(-20px) scale(1.08) rotateX(5deg)';
+        });
+        
+        card.addEventListener('mouseleave', () => {
+            card.style.transform = 'translateY(0) scale(1) rotateX(0)';
+        });
+        
+        card.addEventListener('mousedown', () => {
+            card.style.transform = 'translateY(-25px) scale(1.12) rotateX(8deg)';
+        });
+        
+        card.addEventListener('mouseup', () => {
+            card.style.transform = 'translateY(-20px) scale(1.08) rotateX(5deg)';
+        });
+    });
 </script>
+```
 
 </body>
 </html>
