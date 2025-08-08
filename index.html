@@ -1,11 +1,9 @@
-// send.js
+// fast-send.js
 const fs = require('fs');
-const { Client } = require('discord.js-selfbot-v13'); // تحتاج تثبته: npm i discord.js-selfbot-v13
+const { Client } = require('discord.js-selfbot-v13'); // npm i discord.js-selfbot-v13
 
 // قراءة الرسائل
 const messages = fs.readFileSync('message.txt', 'utf-8').split('\n').filter(line => line.trim() !== '');
-
-// قراءة التوكنات و الرومات
 const accounts = fs.readFileSync('tokens.txt', 'utf-8')
     .split('\n')
     .map(line => line.trim())
@@ -16,7 +14,7 @@ const accounts = fs.readFileSync('tokens.txt', 'utf-8')
     });
 
 accounts.forEach(({ token, channelId }) => {
-    const client = new Client();
+    const client = new Client({ checkUpdate: false });
 
     client.on('ready', async () => {
         console.log(`✅ Logged in as ${client.user.tag} - Channel: ${channelId}`);
@@ -27,21 +25,22 @@ accounts.forEach(({ token, channelId }) => {
             return;
         }
 
-        let count = 0;
-        const sendMessage = () => {
-            const randomMessage = messages[Math.floor(Math.random() * messages.length)];
-            channel.send(randomMessage).catch(err => console.log(`❌ Error sending message: ${err.message}`));
-
-            count++;
-            if (count >= 5) {
-                count = 0;
-                setTimeout(sendMessage, 1000); // استراحة 1 ثانية كل 5 رسائل
-            } else {
-                setTimeout(sendMessage, 200); // 0.2 ثانية بين الرسائل
+        // دالة الإرسال السريع
+        const spam = async () => {
+            while (true) {
+                for (let i = 0; i < 50; i++) { // يرسل 50 رسالة دفعة واحدة
+                    const randomMessage = messages[Math.floor(Math.random() * messages.length)];
+                    channel.send(randomMessage).catch(err => {
+                        if (err.message.includes('rate limited')) {
+                            console.log(`⚠️ Rate limited for ${client.user.tag}, waiting...`);
+                        }
+                    });
+                }
+                await new Promise(res => setTimeout(res, 1000)); // ينتظر ثانية ويعيد
             }
         };
 
-        sendMessage();
+        spam();
     });
 
     client.login(token).catch(() => console.log(`❌ Failed to login with token: ${token}`));
