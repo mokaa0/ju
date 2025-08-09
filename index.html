@@ -1,47 +1,50 @@
-// fast-send.js
-const fs = require('fs');
-const { Client } = require('discord.js-selfbot-v13'); // npm i discord.js-selfbot-v13
+// index.js
 
-// قراءة الرسائل
-const messages = fs.readFileSync('message.txt', 'utf-8').split('\n').filter(line => line.trim() !== '');
-const accounts = fs.readFileSync('tokens.txt', 'utf-8')
-    .split('\n')
-    .map(line => line.trim())
-    .filter(line => line && line.includes('|'))
-    .map(line => {
-        const [token, channelId] = line.split('|').map(v => v.trim());
-        return { token, channelId };
-    });
+function getRandomInt(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
 
-accounts.forEach(({ token, channelId }) => {
-    const client = new Client({ checkUpdate: false });
+function generateLine() {
+  const words = [
+    "ban", "all", "kick", "ip", "banip", "ddos", "attack", "exploit", "inject",
+    "packet", "spoof", "override", "access", "root", "admin", "scan", "trojan",
+    "virus", "hack", "crack", "breach", "shell", "botnet", "payload",
+    "Respect", "rk6"
+  ];
 
-    client.on('ready', async () => {
-        console.log(`✅ Logged in as ${client.user.tag} - Channel: ${channelId}`);
+  let line = [];
 
-        const channel = await client.channels.fetch(channelId).catch(() => null);
-        if (!channel) {
-            console.log(`❌ Couldn't find channel for token: ${token}`);
-            return;
-        }
+  // نضيف كلمتي Respect و rk6 في كل سطر
+  line.push("Respect");
+  line.push("rk6");
 
-        // دالة الإرسال السريع
-        const spam = async () => {
-            while (true) {
-                for (let i = 0; i < 50; i++) { // يرسل 50 رسالة دفعة واحدة
-                    const randomMessage = messages[Math.floor(Math.random() * messages.length)];
-                    channel.send(randomMessage).catch(err => {
-                        if (err.message.includes('rate limited')) {
-                            console.log(`⚠️ Rate limited for ${client.user.tag}, waiting...`);
-                        }
-                    });
-                }
-                await new Promise(res => setTimeout(res, 1000)); // ينتظر ثانية ويعيد
-            }
-        };
+  // نضيف 3 إلى 6 كلمات عشوائية من القائمة بدون Respect و rk6
+  const filteredWords = words.filter(w => w !== "Respect" && w !== "rk6");
+  const count = getRandomInt(3, 6);
+  for (let i = 0; i < count; i++) {
+    const word = filteredWords[getRandomInt(0, filteredWords.length - 1)];
+    line.push(word);
+  }
 
-        spam();
-    });
+  // نخلط ترتيب الكلمات عشوائياً
+  line = line.sort(() => Math.random() - 0.5);
 
-    client.login(token).catch(() => console.log(`❌ Failed to login with token: ${token}`));
-});
+  return line.join(" ");
+}
+
+function printLines() {
+  let count = 0;
+  const maxLines = 100; // عدد السطور
+
+  const interval = setInterval(() => {
+    process.stdout.write("\x1b[32m"); // تغيير لون النص للأخضر
+    console.log(generateLine());
+
+    count++;
+    if (count >= maxLines) {
+      clearInterval(interval);
+    }
+  }, 10); // 10 مللي ثانية بين السطور = 100 سطر في الثانية تقريباً
+}
+
+printLines();
