@@ -1,50 +1,543 @@
-// index.js
+<!DOCTYPE html>
 
-function getRandomInt(min, max) {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Night Store - Premium Services</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-function generateLine() {
-  const words = [
-    "ban", "all", "kick", "ip", "banip", "ddos", "attack", "exploit", "inject",
-    "packet", "spoof", "override", "access", "root", "admin", "scan", "trojan",
-    "virus", "hack", "crack", "breach", "shell", "botnet", "payload",
-    "Respect", "rk6"
-  ];
-
-  let line = [];
-
-  // نضيف كلمتي Respect و rk6 في كل سطر
-  line.push("Respect");
-  line.push("rk6");
-
-  // نضيف 3 إلى 6 كلمات عشوائية من القائمة بدون Respect و rk6
-  const filteredWords = words.filter(w => w !== "Respect" && w !== "rk6");
-  const count = getRandomInt(3, 6);
-  for (let i = 0; i < count; i++) {
-    const word = filteredWords[getRandomInt(0, filteredWords.length - 1)];
-    line.push(word);
-  }
-
-  // نخلط ترتيب الكلمات عشوائياً
-  line = line.sort(() => Math.random() - 0.5);
-
-  return line.join(" ");
-}
-
-function printLines() {
-  let count = 0;
-  const maxLines = 100; // عدد السطور
-
-  const interval = setInterval(() => {
-    process.stdout.write("\x1b[32m"); // تغيير لون النص للأخضر
-    console.log(generateLine());
-
-    count++;
-    if (count >= maxLines) {
-      clearInterval(interval);
+```
+    body {
+        font-family: 'Cairo', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background: 
+            radial-gradient(circle at 20% 20%, rgba(0,0,0,0.8) 1px, transparent 1px),
+            radial-gradient(circle at 80% 80%, rgba(0,0,0,0.8) 1px, transparent 1px),
+            radial-gradient(circle at 40% 60%, rgba(0,0,0,0.6) 1px, transparent 1px),
+            radial-gradient(circle at 60% 40%, rgba(0,0,0,0.7) 1px, transparent 1px),
+            linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 50%, #1a1a1a 100%);
+        background-size: 80px 80px, 120px 120px, 60px 60px, 100px 100px, 100% 100%;
+        color: #ffffff;
+        min-height: 100vh;
+        overflow-x: hidden;
     }
-  }, 10); // 10 مللي ثانية بين السطور = 100 سطر في الثانية تقريباً
-}
 
-printLines();
+    .background-pattern {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-image: 
+            radial-gradient(circle at 25% 25%, rgba(255,255,255,0.02) 1px, transparent 1px),
+            radial-gradient(circle at 75% 75%, rgba(255,255,255,0.02) 1px, transparent 1px);
+        background-size: 50px 50px;
+        z-index: -1;
+        animation: float 20s ease-in-out infinite;
+    }
+
+    @keyframes float {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-20px); }
+    }
+
+    .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 20px;
+        position: relative;
+        z-index: 1;
+    }
+
+    .header {
+        text-align: center;
+        padding: 60px 0 40px;
+        position: relative;
+    }
+
+    .header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 100px;
+        height: 4px;
+        background: linear-gradient(90deg, transparent, #ffffff, transparent);
+        animation: shimmer 3s ease-in-out infinite;
+    }
+
+    @keyframes shimmer {
+        0%, 100% { opacity: 0.3; }
+        50% { opacity: 1; }
+    }
+
+    .logo {
+        display: inline-flex;
+        align-items: center;
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+
+    .moon-icon {
+        width: 50px;
+        height: 50px;
+        fill: #ffffff;
+        filter: drop-shadow(0 0 20px rgba(255,255,255,0.3));
+        animation: rotate 10s linear infinite;
+    }
+
+    @keyframes rotate {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+
+    h1 {
+        font-size: 3.5rem;
+        font-weight: 800;
+        margin-bottom: 15px;
+        background: linear-gradient(45deg, #ffffff, #cccccc, #ffffff);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        text-shadow: 0 0 30px rgba(255,255,255,0.3);
+        animation: glow 2s ease-in-out infinite alternate;
+    }
+
+    @keyframes glow {
+        from { text-shadow: 0 0 20px rgba(255,255,255,0.3); }
+        to { text-shadow: 0 0 40px rgba(255,255,255,0.6); }
+    }
+
+    .subtitle {
+        font-size: 1.2rem;
+        color: #cccccc;
+        font-weight: 700;
+        opacity: 0.9;
+    }
+
+    .services-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 40px;
+        padding: 40px 0;
+        margin: 0 20px;
+    }
+
+    .service-card {
+        background: linear-gradient(145deg, #2a2a2a, #1e1e1e);
+        border-radius: 15px;
+        padding: 20px;
+        position: relative;
+        overflow: hidden;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        border: 1px solid rgba(255,255,255,0.1);
+        box-shadow: 
+            0 8px 25px rgba(0,0,0,0.3),
+            inset 0 1px 0 rgba(255,255,255,0.1);
+        cursor: pointer;
+        transform-origin: center;
+    }
+
+    .service-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+        transition: left 0.6s;
+    }
+
+    .service-card:hover::before {
+        left: 100%;
+    }
+
+    .service-card:hover {
+        transform: translateY(-8px) scale(1.02);
+        box-shadow: 
+            0 15px 35px rgba(0,0,0,0.4),
+            0 0 20px rgba(255,255,255,0.1),
+            inset 0 1px 0 rgba(255,255,255,0.2);
+    }
+
+    .service-card:active {
+        transform: translateY(-5px) scale(0.98);
+        transition: all 0.1s ease;
+    }
+
+    .service-image {
+        width: 100%;
+        height: 160px;
+        object-fit: cover;
+        border-radius: 10px;
+        margin-bottom: 15px;
+        transition: all 0.4s ease;
+        border: 2px solid rgba(255,255,255,0.1);
+    }
+
+    .service-card:hover .service-image {
+        filter: brightness(1.1) contrast(1.1);
+        border-color: rgba(255,255,255,0.2);
+    }
+
+    .service-title {
+        font-size: 1.2rem;
+        font-weight: 800;
+        margin-bottom: 10px;
+        color: #ffffff;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .service-icon {
+        width: 24px;
+        height: 24px;
+        fill: #ffffff;
+    }
+
+    .service-description {
+        color: #cccccc;
+        font-size: 0.9rem;
+        line-height: 1.5;
+        margin-bottom: 15px;
+        opacity: 0.8;
+    }
+
+    .buy-button {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: linear-gradient(145deg, #000000, #1a1a1a);
+        color: #ffffff;
+        padding: 12px 25px;
+        border: none;
+        border-radius: 8px;
+        font-size: 0.95rem;
+        font-weight: 700;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 
+            0 4px 12px rgba(0,0,0,0.3),
+            inset 0 1px 0 rgba(255,255,255,0.1);
+        transform-origin: center;
+    }
+
+    .buy-button::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+        transition: left 0.5s;
+    }
+
+    .buy-button:hover::before {
+        left: 100%;
+    }
+
+    .buy-button:hover {
+        transform: translateY(-2px) scale(1.05);
+        box-shadow: 
+            0 6px 20px rgba(0,0,0,0.4),
+            inset 0 1px 0 rgba(255,255,255,0.2);
+        background: linear-gradient(145deg, #1a1a1a, #000000);
+    }
+
+    .buy-button:active {
+        transform: translateY(0) scale(0.95);
+        transition: all 0.1s ease;
+    }
+
+    .buy-icon {
+        width: 18px;
+        height: 18px;
+        fill: currentColor;
+    }
+
+    /* إضافة تأثيرات الضغط للعناصر التفاعلية */
+    h1, .logo, .service-icon, .moon-icon {
+        cursor: pointer;
+        transition: all 0.3s ease;
+        transform-origin: center;
+    }
+
+    h1:active, .logo:active {
+        transform: scale(0.95);
+        transition: all 0.1s ease;
+    }
+
+    .service-icon:active, .moon-icon:active {
+        transform: scale(0.9);
+        transition: all 0.1s ease;
+    }
+
+    .service-image:active {
+        transform: scale(0.98);
+        transition: all 0.1s ease;
+    }
+
+    .footer {
+        text-align: center;
+        padding: 60px 0 40px;
+        margin-top: 40px;
+        position: relative;
+    }
+
+    .footer::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+    }
+
+    .footer-text {
+        color: #888888;
+        font-size: 1rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+    }
+
+    .heart-icon {
+        width: 20px;
+        height: 20px;
+        fill: #ff4757;
+        animation: heartbeat 2s ease-in-out infinite;
+    }
+
+    @keyframes heartbeat {
+        0%, 100% { transform: scale(1); }
+        25% { transform: scale(1.1); }
+        50% { transform: scale(1); }
+        75% { transform: scale(1.1); }
+    }
+
+    @media (max-width: 768px) {
+        .services-grid {
+            grid-template-columns: 1fr;
+            gap: 25px;
+            padding: 20px 0;
+            margin: 0 10px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+        }
+
+        .service-card {
+            padding: 18px;
+        }
+
+        .container {
+            padding: 0 15px;
+        }
+    }
+
+    .floating-elements {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: -1;
+    }
+
+    .floating-element {
+        position: absolute;
+        opacity: 0.1;
+        animation: floatUp 15s linear infinite;
+    }
+
+    .floating-element:nth-child(1) { left: 10%; animation-delay: 0s; }
+    .floating-element:nth-child(2) { left: 20%; animation-delay: 3s; }
+    .floating-element:nth-child(3) { left: 30%; animation-delay: 6s; }
+    .floating-element:nth-child(4) { left: 40%; animation-delay: 9s; }
+    .floating-element:nth-child(5) { left: 60%; animation-delay: 12s; }
+    .floating-element:nth-child(6) { left: 70%; animation-delay: 15s; }
+    .floating-element:nth-child(7) { left: 80%; animation-delay: 18s; }
+    .floating-element:nth-child(8) { left: 90%; animation-delay: 21s; }
+
+    @keyframes floatUp {
+        0% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+        10% { opacity: 0.1; }
+        90% { opacity: 0.1; }
+        100% { transform: translateY(-100px) rotate(360deg); opacity: 0; }
+    }
+</style>
+```
+
+</head>
+<body>
+    <div class="background-pattern"></div>
+
+```
+<div class="floating-elements">
+    <svg class="floating-element" width="30" height="30" viewBox="0 0 24 24" fill="white">
+        <path d="M12 2L13.09 8.26L20 9L13.09 9.74L12 16L10.91 9.74L4 9L10.91 8.26L12 2Z"/>
+    </svg>
+    <svg class="floating-element" width="25" height="25" viewBox="0 0 24 24" fill="white">
+        <path d="M12 2L13.09 8.26L20 9L13.09 9.74L12 16L10.91 9.74L4 9L10.91 8.26L12 2Z"/>
+    </svg>
+    <svg class="floating-element" width="35" height="35" viewBox="0 0 24 24" fill="white">
+        <path d="M12 2L13.09 8.26L20 9L13.09 9.74L12 16L10.91 9.74L4 9L10.91 8.26L12 2Z"/>
+    </svg>
+    <svg class="floating-element" width="28" height="28" viewBox="0 0 24 24" fill="white">
+        <path d="M12 2L13.09 8.26L20 9L13.09 9.74L12 16L10.91 9.74L4 9L10.91 8.26L12 2Z"/>
+    </svg>
+    <svg class="floating-element" width="32" height="32" viewBox="0 0 24 24" fill="white">
+        <path d="M12 2L13.09 8.26L20 9L13.09 9.74L12 16L10.91 9.74L4 9L10.91 8.26L12 2Z"/>
+    </svg>
+    <svg class="floating-element" width="26" height="26" viewBox="0 0 24 24" fill="white">
+        <path d="M12 2L13.09 8.26L20 9L13.09 9.74L12 16L10.91 9.74L4 9L10.91 8.26L12 2Z"/>
+    </svg>
+    <svg class="floating-element" width="30" height="30" viewBox="0 0 24 24" fill="white">
+        <path d="M12 2L13.09 8.26L20 9L13.09 9.74L12 16L10.91 9.74L4 9L10.91 8.26L12 2Z"/>
+    </svg>
+    <svg class="floating-element" width="24" height="24" viewBox="0 0 24 24" fill="white">
+        <path d="M12 2L13.09 8.26L20 9L13.09 9.74L12 16L10.91 9.74L4 9L10.91 8.26L12 2Z"/>
+    </svg>
+</div>
+
+<div class="container">
+    <header class="header">
+        <div class="logo">
+            <svg class="moon-icon" viewBox="0 0 24 24">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+            </svg>
+            <h1>Night</h1>
+        </div>
+        <p class="subtitle">Server Night sells various services and provides quality and price for the service.</p>
+    </header>
+
+    <main class="services-grid">
+        <div class="service-card">
+            <img src="https://i.postimg.cc/8z1cdZhK/banner.png" alt="Hosting Services" class="service-image">
+            <h3 class="service-title">
+                <svg class="service-icon" viewBox="0 0 24 24">
+                    <path d="M4 6a2 2 0 012-2h12a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM4 12a2 2 0 012-2h12a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM4 18a2 2 0 012-2h12a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2z"/>
+                </svg>
+                Hosting Services
+            </h3>
+            <p class="service-description">High-quality hosting solutions with 99.9% uptime, fast servers, and 24/7 technical support for all your projects.</p>
+            <a href="https://discord.gg/5eusZdNjcR" target="_blank" class="buy-button">
+                <svg class="buy-icon" viewBox="0 0 24 24">
+                    <path d="M7 4V2C7 1.45 7.45 1 8 1H16C16.55 1 17 1.45 17 2V4H20C20.55 4 21 4.45 21 5S20.55 6 20 6H19V19C19 20.1 18.1 21 17 21H7C5.9 21 5 20.1 5 19V6H4C3.45 6 3 5.55 3 5S3.45 4 4 4H7ZM9 3V4H15V3H9ZM7 6V19H17V6H7Z"/>
+                    <path d="M9 8V17H11V8H9ZM13 8V17H15V8H13Z"/>
+                </svg>
+                Buy Now
+            </a>
+        </div>
+
+        <div class="service-card">
+            <img src="https://i.postimg.cc/8z1cdZhK/banner.png" alt="Emoji Design" class="service-image">
+            <h3 class="service-title">
+                <svg class="service-icon" viewBox="0 0 24 24">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zM12 20c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-5-6c.78 2.34 2.72 4 5 4s4.22-1.66 5-4H7zm8-2c0-.55-.45-1-1-1s-1 .45-1 1 .45 1 1 1 1-.45 1-1zM9 12c0-.55-.45-1-1-1s-1 .45-1 1 .45 1 1 1 1-.45 1-1z"/>
+                </svg>
+                Emoji Design
+            </h3>
+            <p class="service-description">Custom emoji design services for Discord servers, creating unique and expressive emojis that match your brand.</p>
+            <a href="https://discord.gg/5eusZdNjcR" target="_blank" class="buy-button">
+                <svg class="buy-icon" viewBox="0 0 24 24">
+                    <path d="M7 4V2C7 1.45 7.45 1 8 1H16C16.55 1 17 1.45 17 2V4H20C20.55 4 21 4.45 21 5S20.55 6 20 6H19V19C19 20.1 18.1 21 17 21H7C5.9 21 5 20.1 5 19V6H4C3.45 6 3 5.55 3 5S3.45 4 4 4H7ZM9 3V4H15V3H9ZM7 6V19H17V6H7Z"/>
+                    <path d="M9 8V17H11V8H9ZM13 8V17H15V8H13Z"/>
+                </svg>
+                Buy Now
+            </a>
+        </div>
+
+        <div class="service-card">
+            <img src="https://i.postimg.cc/8z1cdZhK/banner.png" alt="Auto Sales" class="service-image">
+            <h3 class="service-title">
+                <svg class="service-icon" viewBox="0 0 24 24">
+                    <path d="M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2ZM21 9V7L15 5.5V7C15 8.1 14.1 9 13 9H11C9.9 9 9 8.1 9 7V5.5L3 7V9L9 10.5V18C9 19.1 9.9 20 11 20H13C14.1 20 15 19.1 15 18V10.5L21 9Z"/>
+                </svg>
+                Auto Sales
+            </h3>
+            <p class="service-description">Automated sales systems and Discord bots that handle transactions, payments, and product delivery seamlessly.</p>
+            <a href="https://discord.gg/5eusZdNjcR" target="_blank" class="buy-button">
+                <svg class="buy-icon" viewBox="0 0 24 24">
+                    <path d="M7 4V2C7 1.45 7.45 1 8 1H16C16.55 1 17 1.45 17 2V4H20C20.55 4 21 4.45 21 5S20.55 6 20 6H19V19C19 20.1 18.1 21 17 21H7C5.9 21 5 20.1 5 19V6H4C3.45 6 3 5.55 3 5S3.45 4 4 4H7ZM9 3V4H15V3H9ZM7 6V19H17V6H7Z"/>
+                    <path d="M9 8V17H11V8H9ZM13 8V17H15V8H13Z"/>
+                </svg>
+                Buy Now
+            </a>
+        </div>
+
+        <div class="service-card">
+            <img src="https://i.postimg.cc/8z1cdZhK/banner.png" alt="Premium Methods" class="service-image">
+            <h3 class="service-title">
+                <svg class="service-icon" viewBox="0 0 24 24">
+                    <path d="M12 2L15.09 8.26L22 9L17 14.74L18.18 21.02L12 17.77L5.82 21.02L7 14.74L2 9L8.91 8.26L12 2Z"/>
+                </svg>
+                Premium Methods
+            </h3>
+            <p class="service-description">Exclusive premium strategies and techniques for growing your Discord server and maximizing engagement.</p>
+            <a href="https://discord.gg/5eusZdNjcR" target="_blank" class="buy-button">
+                <svg class="buy-icon" viewBox="0 0 24 24">
+                    <path d="M7 4V2C7 1.45 7.45 1 8 1H16C16.55 1 17 1.45 17 2V4H20C20.55 4 21 4.45 21 5S20.55 6 20 6H19V19C19 20.1 18.1 21 17 21H7C5.9 21 5 20.1 5 19V6H4C3.45 6 3 5.55 3 5S3.45 4 4 4H7ZM9 3V4H15V3H9ZM7 6V19H17V6H7Z"/>
+                    <path d="M9 8V17H11V8H9ZM13 8V17H15V8H13Z"/>
+                </svg>
+                Buy Now
+            </a>
+        </div>
+
+        <div class="service-card">
+            <img src="https://i.postimg.cc/8z1cdZhK/banner.png" alt="Projects" class="service-image">
+            <h3 class="service-title">
+                <svg class="service-icon" viewBox="0 0 24 24">
+                    <path d="M19 3H5C3.9 3 3 3.9 3 5V19C3 20.1 3.9 21 5 21H19C20.1 21 21 20.1 21 19V5C21 3.9 20.1 3 19 3ZM19 19H5V5H19V19ZM17 12H15V17H9V15H7V17C7 18.1 7.9 19 9 19H15C16.1 19 17 18.1 17 17V12ZM7 7V9H9V7H7ZM11 7V9H13V7H11ZM15 7V9H17V7H15Z"/>
+                </svg>
+                Projects
+            </h3>
+            <p class="service-description">Complete custom projects including websites, Discord bots, and applications tailored to your specific needs.</p>
+            <a href="https://discord.gg/5eusZdNjcR" target="_blank" class="buy-button">
+                <svg class="buy-icon" viewBox="0 0 24 24">
+                    <path d="M7 4V2C7 1.45 7.45 1 8 1H16C16.55 1 17 1.45 17 2V4H20C20.55 4 21 4.45 21 5S20.55 6 20 6H19V19C19 20.1 18.1 21 17 21H7C5.9 21 5 20.1 5 19V6H4C3.45 6 3 5.55 3 5S3.45 4 4 4H7ZM9 3V4H15V3H9ZM7 6V19H17V6H7Z"/>
+                    <path d="M9 8V17H11V8H9ZM13 8V17H15V8H13Z"/>
+                </svg>
+                Buy Now
+            </a>
+        </div>
+
+        <div class="service-card">
+            <img src="https://i.postimg.cc/8z1cdZhK/banner.png" alt="Server Cloning" class="service-image">
+            <h3 class="service-title">
+                <svg class="service-icon" viewBox="0 0 24 24">
+                    <path d="M16 1H4C2.9 1 2 1.9 2 3V17H4V3H16V1ZM19 5H8C6.9 5 6 5.9 6 7V21C6 22.1 6.9 23 8 23H19C20.1 23 21 22.1 21 21V7C21 5.9 20.1 5 19 5ZM19 21H8V7H19V21Z"/>
+                </svg>
+                Server Cloning
+            </h3>
+            <p class="service-description">Perfect replication of Discord servers with all channels, roles, permissions, and settings preserved.</p>
+            <a href="https://discord.gg/5eusZdNjcR" target="_blank" class="buy-button">
+                <svg class="buy-icon" viewBox="0 0 24 24">
+                    <path d="M7 4V2C7 1.45 7.45 1 8 1H16C16.55 1 17 1.45 17 2V4H20C20.55 4 21 4.45 21 5S20.55 6 20 6H19V19C19 20.1 18.1 21 17 21H7C5.9 21 5 20.1 5 19V6H4C3.45 6 3 5.55 3 5S3.45 4 4 4H7ZM9 3V4H15V3H9ZM7 6V19H17V6H7Z"/>
+                    <path d="M9 8V17H11V8H9ZM13 8V17H15V8H13Z"/>
+                </svg>
+                Buy Now
+            </a>
+        </div>
+
+        <div class="service-card">
+            <img src="https://i.postimg.cc
+```
