@@ -58,14 +58,35 @@
         font-weight: 500;
         padding: 10px 20px;
         border-radius: 25px;
-        transition: all 0.3s ease;
+        transition: all 0.2s ease;
         cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
     }
 
-    .nav-links a:hover, .nav-links a.active {
+    .nav-links a:hover, .nav-links a.active, .nav-links a:active {
         background: linear-gradient(45deg, #e91e63, #f06292);
         transform: translateY(-1px);
         box-shadow: 0 4px 12px rgba(233, 30, 99, 0.3);
+    }
+
+    @media (hover: none) and (pointer: coarse) {
+        .nav-links a:hover {
+            background: none;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .nav-links a.active {
+            background: linear-gradient(45deg, #e91e63, #f06292);
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .nav-links a:active {
+            background: linear-gradient(45deg, #e91e63, #f06292);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(233, 30, 99, 0.3);
+        }
     }
 
     /* Page Container */
@@ -135,17 +156,43 @@
         border-radius: 20px;
         padding: 30px;
         text-align: center;
-        transition: all 0.3s ease;
+        transition: all 0.1s ease;
         backdrop-filter: blur(10px);
         border: 2px solid transparent;
         cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+        touch-action: manipulation;
     }
 
-    .card:hover {
+    .card:hover, .card:active, .card:focus {
         transform: translateY(-5px) scale(1.02);
         border: 2px solid #e91e63;
         box-shadow: 0 15px 30px rgba(233, 30, 99, 0.25);
         background: rgba(248, 187, 217, 0.95);
+    }
+
+    .card:active {
+        transition: all 0.05s ease;
+    }
+
+    @media (max-width: 768px) {
+        .card {
+            transition: all 0.05s ease;
+        }
+        
+        .card:hover {
+            transform: none;
+            border: 2px solid transparent;
+            box-shadow: none;
+            background: rgba(252, 228, 236, 0.9);
+        }
+        
+        .card:active, .card:focus {
+            transform: translateY(-5px) scale(1.02);
+            border: 2px solid #e91e63;
+            box-shadow: 0 15px 30px rgba(233, 30, 99, 0.25);
+            background: rgba(248, 187, 217, 0.95);
+        }
     }
 
     .card h3 {
@@ -172,10 +219,13 @@
         border-radius: 20px;
         padding: 30px;
         text-align: center;
-        transition: all 0.3s ease;
+        transition: all 0.1s ease;
         border: 2px solid transparent;
         position: relative;
         overflow: hidden;
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+        touch-action: manipulation;
     }
 
     .package::before {
@@ -187,19 +237,51 @@
         height: 200%;
         background: linear-gradient(45deg, transparent, rgba(233, 30, 99, 0.1), transparent);
         transform: rotate(45deg);
-        transition: all 0.6s ease;
+        transition: all 0.4s ease;
         opacity: 0;
     }
 
-    .package:hover::before {
+    .package:hover::before, .package:active::before {
         animation: shimmer 1.5s ease-in-out;
         opacity: 1;
     }
 
-    .package:hover {
+    .package:hover, .package:active, .package:focus {
         transform: translateY(-5px) scale(1.02);
         border: 2px solid #e91e63;
         box-shadow: 0 15px 30px rgba(233, 30, 99, 0.25);
+    }
+
+    .package:active {
+        transition: all 0.05s ease;
+    }
+
+    @media (max-width: 768px) {
+        .package {
+            transition: all 0.05s ease;
+        }
+        
+        .package:hover {
+            transform: none;
+            border: 2px solid transparent;
+            box-shadow: none;
+        }
+        
+        .package:hover::before {
+            animation: none;
+            opacity: 0;
+        }
+        
+        .package:active, .package:focus {
+            transform: translateY(-5px) scale(1.02);
+            border: 2px solid #e91e63;
+            box-shadow: 0 15px 30px rgba(233, 30, 99, 0.25);
+        }
+        
+        .package:active::before {
+            animation: shimmer 1.5s ease-in-out;
+            opacity: 1;
+        }
     }
 
     .package h3 {
@@ -254,10 +336,12 @@
         border-radius: 25px;
         font-size: 1.1rem;
         cursor: pointer;
-        transition: all 0.3s ease;
+        transition: all 0.1s ease;
         margin-top: 30px;
         position: relative;
         overflow: hidden;
+        -webkit-tap-highlight-color: transparent;
+        touch-action: manipulation;
     }
 
     .buy-btn::before {
@@ -270,17 +354,47 @@
         background: rgba(255, 255, 255, 0.2);
         border-radius: 50%;
         transform: translate(-50%, -50%);
-        transition: all 0.6s ease;
+        transition: all 0.4s ease;
     }
 
-    .buy-btn:hover::before {
+    .buy-btn:hover::before, .buy-btn:active::before {
         width: 300px;
         height: 300px;
     }
 
-    .buy-btn:hover {
+    .buy-btn:hover, .buy-btn:active, .buy-btn:focus {
         transform: translateY(-2px);
         box-shadow: 0 8px 20px rgba(233, 30, 99, 0.3);
+    }
+
+    .buy-btn:active {
+        transition: all 0.05s ease;
+    }
+
+    @media (max-width: 768px) {
+        .buy-btn {
+            transition: all 0.05s ease;
+        }
+        
+        .buy-btn:hover {
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .buy-btn:hover::before {
+            width: 0;
+            height: 0;
+        }
+        
+        .buy-btn:active, .buy-btn:focus {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(233, 30, 99, 0.3);
+        }
+        
+        .buy-btn:active::before {
+            width: 300px;
+            height: 300px;
+        }
     }
 
     /* Modal Styles */
@@ -360,13 +474,26 @@
         border-radius: 20px;
         cursor: pointer;
         font-size: 1rem;
-        transition: all 0.3s ease;
+        transition: all 0.2s ease;
         margin-top: 20px;
+        -webkit-tap-highlight-color: transparent;
     }
 
-    .done-btn:hover {
+    .done-btn:hover, .done-btn:active, .done-btn:focus {
         transform: translateY(-1px);
         box-shadow: 0 4px 12px rgba(233, 30, 99, 0.3);
+    }
+
+    @media (hover: none) and (pointer: coarse) {
+        .done-btn:hover {
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .done-btn:active {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(233, 30, 99, 0.3);
+        }
     }
 
     /* Footer */
@@ -722,9 +849,73 @@
         });
     });
 
-    // Initialize cards with hidden state
+    // Add touch event listeners for instant mobile response
     document.addEventListener('DOMContentLoaded', function() {
         const cards = document.querySelectorAll('.card, .package');
+        const buttons = document.querySelectorAll('.buy-btn, .done-btn, .nav-links a');
+        
+        // Add touchstart for instant response on mobile
+        cards.forEach(card => {
+            card.addEventListener('touchstart', function() {
+                this.style.transform = 'translateY(-5px) scale(1.02)';
+                this.style.border = '2px solid #e91e63';
+                this.style.boxShadow = '0 15px 30px rgba(233, 30, 99, 0.25)';
+                this.style.background = 'rgba(248, 187, 217, 0.95)';
+            }, {passive: true});
+            
+            card.addEventListener('touchend', function() {
+                setTimeout(() => {
+                    this.style.transform = '';
+                    this.style.border = '';
+                    this.style.boxShadow = '';
+                    this.style.background = '';
+                }, 150);
+            }, {passive: true});
+            
+            card.addEventListener('touchcancel', function() {
+                this.style.transform = '';
+                this.style.border = '';
+                this.style.boxShadow = '';
+                this.style.background = '';
+            }, {passive: true});
+        });
+        
+        buttons.forEach(btn => {
+            btn.addEventListener('touchstart', function() {
+                if (this.classList.contains('buy-btn') || this.classList.contains('done-btn')) {
+                    this.style.transform = 'translateY(-2px)';
+                    this.style.boxShadow = '0 8px 20px rgba(233, 30, 99, 0.3)';
+                } else if (this.tagName === 'A') {
+                    this.style.transform = 'translateY(-1px)';
+                    this.style.boxShadow = '0 4px 12px rgba(233, 30, 99, 0.3)';
+                    this.style.background = 'linear-gradient(45deg, #e91e63, #f06292)';
+                }
+            }, {passive: true});
+            
+            btn.addEventListener('touchend', function() {
+                setTimeout(() => {
+                    if (!this.classList.contains('active')) {
+                        this.style.transform = '';
+                        this.style.boxShadow = '';
+                        if (this.tagName === 'A') {
+                            this.style.background = '';
+                        }
+                    }
+                }, 150);
+            }, {passive: true});
+            
+            btn.addEventListener('touchcancel', function() {
+                if (!this.classList.contains('active')) {
+                    this.style.transform = '';
+                    this.style.boxShadow = '';
+                    if (this.tagName === 'A') {
+                        this.style.background = '';
+                    }
+                }
+            }, {passive: true});
+        });
+        
+        // Initialize cards with hidden state for scroll animation
         cards.forEach(card => {
             card.style.opacity = '0';
             card.style.transform = 'translateY(50px)';
