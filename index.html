@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 
-<html lang="en">
+<html lang="ar" dir="ltr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Jano - Developer Portfolio</title>
+    <title>The Mókaa - Portfolio</title>
     <style>
         * {
             margin: 0;
@@ -12,71 +12,359 @@
             box-sizing: border-box;
         }
 
-```
     body {
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        background: linear-gradient(135deg, #000000 0%, #1a0d2e 50%, #2d1b69 100%);
+        font-family: 'Arial', sans-serif;
+        background: linear-gradient(135deg, #000000 0%, #2d1b3d 50%, #000000 100%);
         color: white;
         overflow-x: hidden;
     }
 
-    .container {
+    .hero-section {
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        position: relative;
+    }
+
+    .main-title {
+        font-size: 4rem;
+        font-weight: bold;
+        margin-bottom: 2rem;
+        opacity: 0;
+        animation: fadeInUp 1s ease-out 0.5s forwards;
+    }
+
+    .main-title .purple {
+        color: #8b5cf6;
+    }
+
+    .main-title .white {
+        color: white;
+    }
+
+    .description {
+        font-size: 1.2rem;
+        line-height: 1.6;
         max-width: 800px;
+        margin-bottom: 4rem;
+        opacity: 0;
+        animation: fadeInUp 1s ease-out 1s forwards;
+    }
+
+    .scroll-indicator {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        cursor: pointer;
+        opacity: 0;
+        animation: fadeInUp 1s ease-out 1.5s forwards;
+    }
+
+    .scroll-text {
+        font-size: 1rem;
+        margin-bottom: 1rem;
+        animation: bounce 2s infinite;
+    }
+
+    .scroll-arrow {
+        width: 30px;
+        height: 30px;
+        fill: #8b5cf6;
+        animation: bounce 2s infinite;
+    }
+
+    .about-section {
+        padding: 5rem 2rem;
+        max-width: 1200px;
         margin: 0 auto;
-        padding: 0 20px;
     }
 
-    /* Header */
-    .header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 20px 0;
-        margin-bottom: 40px;
+    .section-title {
+        font-size: 3rem;
+        text-align: center;
+        margin-bottom: 3rem;
+        color: #8b5cf6;
+        opacity: 0;
+        animation: fadeInUp 1s ease-out forwards;
     }
 
-    .logo {
+    .cards-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+        gap: 2rem;
+        margin-bottom: 4rem;
+    }
+
+    .card {
+        background: rgba(0, 0, 0, 0.7);
+        backdrop-filter: blur(10px);
+        border: 2px solid rgba(255, 255, 255, 0.2);
+        border-radius: 15px;
+        padding: 2rem;
+        transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        opacity: 0;
+        transform: translateY(50px);
+        animation: fadeInUp 1s ease-out forwards;
         display: flex;
+        flex-direction: column;
         align-items: center;
-        font-size: 24px;
+        text-align: center;
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(139, 92, 246, 0.3), transparent);
+        transition: all 0.6s ease;
+    }
+
+    .card:nth-child(1) { animation-delay: 0.2s; }
+    .card:nth-child(2) { animation-delay: 0.4s; }
+    .card:nth-child(3) { animation-delay: 0.6s; }
+
+    .card:hover {
+        border-color: #8b5cf6;
+        transform: translateY(-15px) scale(1.08);
+        box-shadow: 0 25px 50px rgba(139, 92, 246, 0.4);
+        background: rgba(139, 92, 246, 0.1);
+    }
+
+    .card:hover::before {
+        left: 100%;
+    }
+
+    .card:active {
+        transform: translateY(-15px) scale(1.12);
+        box-shadow: 0 30px 60px rgba(139, 92, 246, 0.6);
+    }
+
+    .card-icon {
+        width: 60px;
+        height: 60px;
+        fill: #8b5cf6;
+        margin-bottom: 1.5rem;
+    }
+
+    .card-title {
+        font-size: 1.5rem;
+        color: #8b5cf6;
+        margin-bottom: 1rem;
         font-weight: bold;
     }
 
-    .logo .icon {
-        width: 40px;
-        height: 40px;
-        background: linear-gradient(45deg, #7c3aed, #8b5cf6);
-        border-radius: 8px;
-        margin-right: 15px;
+    .card-description {
+        line-height: 1.6;
+        color: white;
+    }
+
+    .skills-section {
+        padding: 3rem 2rem;
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+
+    .skills-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 2rem;
+        margin-bottom: 4rem;
+    }
+
+    .skill-card {
+        background: rgba(0, 0, 0, 0.7);
+        backdrop-filter: blur(10px);
+        border: 2px solid rgba(255, 255, 255, 0.2);
+        border-radius: 15px;
+        padding: 2rem;
+        transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        opacity: 0;
+        animation: fadeInUp 1s ease-out forwards;
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .skill-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(139, 92, 246, 0.3), transparent);
+        transition: all 0.6s ease;
+    }
+
+    .skill-card:nth-child(1) { animation-delay: 0.8s; }
+    .skill-card:nth-child(2) { animation-delay: 1s; }
+    .skill-card:nth-child(3) { animation-delay: 1.2s; }
+    .skill-card:nth-child(4) { animation-delay: 1.4s; }
+
+    .skill-card:hover {
+        border-color: #8b5cf6;
+        transform: scale(1.08) translateY(-10px);
+        box-shadow: 0 20px 40px rgba(139, 92, 246, 0.4);
+        background: rgba(139, 92, 246, 0.1);
+    }
+
+    .skill-card:hover::before {
+        left: 100%;
+    }
+
+    .skill-card:active {
+        transform: scale(1.12) translateY(-10px);
+        box-shadow: 0 25px 50px rgba(139, 92, 246, 0.6);
+    }
+
+    .skill-name {
+        font-size: 1.2rem;
+        margin-bottom: 1rem;
+        color: #8b5cf6;
         display: flex;
         align-items: center;
-        justify-content: center;
-        font-size: 20px;
     }
 
-    .header-controls {
-        display: flex;
-        gap: 20px;
+    .skill-icon {
+        width: 24px;
+        height: 24px;
+        fill: #8b5cf6;
+        margin-right: 10px;
     }
 
-    .header-controls button {
-        background: none;
-        border: none;
-        color: white;
-        font-size: 20px;
+    .progress-bar {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+        height: 20px;
+        overflow: hidden;
+    }
+
+    .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #8b5cf6, #a855f7);
+        border-radius: 10px;
+        transition: width 2s ease-out;
+        position: relative;
+    }
+
+    .progress-text {
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 0.8rem;
+        font-weight: bold;
+    }
+
+    .contact-section {
+        padding: 3rem 2rem;
+        max-width: 600px;
+        margin: 0 auto;
+    }
+
+    .contact-form {
+        background: rgba(0, 0, 0, 0.7);
+        backdrop-filter: blur(10px);
+        border: 2px solid rgba(255, 255, 255, 0.2);
+        border-radius: 15px;
+        padding: 2rem;
+        opacity: 0;
+        animation: fadeInUp 1s ease-out 1.6s forwards;
+        transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
         cursor: pointer;
-        opacity: 0.8;
-        transition: opacity 0.3s;
+        position: relative;
+        overflow: hidden;
     }
 
-    .header-controls button:hover {
-        opacity: 1;
+    .contact-form::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(139, 92, 246, 0.3), transparent);
+        transition: all 0.6s ease;
     }
 
-    /* Sections */
-    .section {
-        margin-bottom: 80px;
-        animation: fadeInUp 0.8s ease-out;
+    .contact-form:hover {
+        border-color: #8b5cf6;
+        transform: scale(1.02);
+        box-shadow: 0 15px 30px rgba(139, 92, 246, 0.3);
+        background: rgba(139, 92, 246, 0.05);
+    }
+
+    .contact-form:hover::before {
+        left: 100%;
+    }
+
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        color: #8b5cf6;
+        font-weight: bold;
+    }
+
+    .form-group input,
+    .form-group textarea {
+        width: 100%;
+        padding: 1rem;
+        border: 2px solid rgba(255, 255, 255, 0.2);
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.05);
+        color: white;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+    }
+
+    .form-group input:focus,
+    .form-group textarea:focus {
+        outline: none;
+        border-color: #8b5cf6;
+        box-shadow: 0 0 10px rgba(139, 92, 246, 0.3);
+    }
+
+    .submit-btn {
+        width: 100%;
+        padding: 1rem;
+        background: linear-gradient(90deg, #8b5cf6, #a855f7);
+        border: none;
+        border-radius: 10px;
+        color: white;
+        font-size: 1.1rem;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .submit-btn:hover {
+        transform: translateY(-5px) scale(1.05);
+        box-shadow: 0 15px 30px rgba(139, 92, 246, 0.5);
+    }
+
+    .submit-btn:active {
+        transform: translateY(-3px) scale(1.02);
+        box-shadow: 0 10px 20px rgba(139, 92, 246, 0.4);
+    }
+
+    @keyframes ripple {
+        to {
+            transform: scale(4);
+            opacity: 0;
+        }
     }
 
     @keyframes fadeInUp {
@@ -90,835 +378,250 @@
         }
     }
 
-    /* Staggered animations */
-    .hobby-item {
-        opacity: 0;
-        animation: slideInLeft 0.8s ease-out forwards;
-    }
-
-    .hobby-item:nth-child(2) { animation-delay: 0.2s; }
-    .hobby-item:nth-child(3) { animation-delay: 0.4s; }
-    .hobby-item:nth-child(4) { animation-delay: 0.6s; }
-
-    @keyframes slideInLeft {
-        from {
-            opacity: 0;
-            transform: translateX(-50px);
+    @keyframes bounce {
+        0%, 20%, 50%, 80%, 100% {
+            transform: translateY(0);
         }
-        to {
-            opacity: 1;
-            transform: translateX(0);
+        40% {
+            transform: translateY(-10px);
+        }
+        60% {
+            transform: translateY(-5px);
         }
     }
 
-    .skill-item {
-        opacity: 0;
-        animation: slideInRight 0.6s ease-out forwards;
-    }
-
-    .skill-item:nth-child(1) { animation-delay: 0.1s; }
-    .skill-item:nth-child(2) { animation-delay: 0.2s; }
-    .skill-item:nth-child(3) { animation-delay: 0.3s; }
-    .skill-item:nth-child(4) { animation-delay: 0.4s; }
-    .skill-item:nth-child(5) { animation-delay: 0.5s; }
-    .skill-item:nth-child(6) { animation-delay: 0.6s; }
-    .skill-item:nth-child(7) { animation-delay: 0.7s; }
-    .skill-item:nth-child(8) { animation-delay: 0.8s; }
-    .skill-item:nth-child(9) { animation-delay: 0.9s; }
-    .skill-item:nth-child(10) { animation-delay: 1.0s; }
-    .skill-item:nth-child(11) { animation-delay: 1.1s; }
-    .skill-item:nth-child(12) { animation-delay: 1.2s; }
-
-    @keyframes slideInRight {
-        from {
-            opacity: 0;
-            transform: translateX(50px);
-        }
-        to {
-            opacity: 1;
-            transform: translateX(0);
-        }
-    }
-
-    .expertise-item {
-        opacity: 0;
-        animation: fadeInScale 0.8s ease-out forwards;
-    }
-
-    .expertise-item:nth-child(1) { animation-delay: 0.2s; }
-    .expertise-item:nth-child(2) { animation-delay: 0.4s; }
-    .expertise-item:nth-child(3) { animation-delay: 0.6s; }
-
-    @keyframes fadeInScale {
-        from {
-            opacity: 0;
-            transform: scale(0.8);
-        }
-        to {
-            opacity: 1;
-            transform: scale(1);
-        }
-    }
-
-    .section-title {
-        font-size: 42px;
-        font-weight: bold;
-        text-align: center;
-        margin-bottom: 60px;
-    }
-
-    /* Hobbies Section */
-    .hobby-item {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        text-align: center;
-        margin-bottom: 80px;
-        cursor: pointer;
-        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        padding: 30px;
-        border-radius: 20px;
-        background: rgba(0, 0, 0, 0.6);
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(124, 58, 237, 0.2);
-    }
-
-    .hobby-item:hover {
-        transform: translateY(-10px) scale(1.02);
-        background: rgba(0, 0, 0, 0.8);
-        border-color: rgba(124, 58, 237, 0.4);
-        box-shadow: 0 20px 40px rgba(124, 58, 237, 0.2);
-    }
-
-    .hobby-item:active {
-        transform: translateY(-5px) scale(0.98);
-    }
-
-    .hobby-icon {
-        width: 80px;
-        height: 80px;
-        background: rgba(124, 58, 237, 0.15);
-        border-radius: 16px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-bottom: 30px;
-        border: 2px solid rgba(124, 58, 237, 0.3);
-    }
-
-    .hobby-icon svg {
-        width: 40px;
-        height: 40px;
-        fill: #7c3aed;
-    }
-
-    .hobby-title {
-        font-size: 32px;
-        font-weight: bold;
-        margin-bottom: 15px;
-    }
-
-    .hobby-description {
-        font-size: 18px;
-        color: #94a3b8;
-        max-width: 400px;
-    }
-
-    /* Skills Section */
-    .skill-item {
-        margin-bottom: 25px;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        padding: 15px;
-        border-radius: 12px;
-        background: rgba(0, 0, 0, 0.4);
-        backdrop-filter: blur(5px);
-    }
-
-    .skill-item:hover {
-        transform: translateX(10px);
-        background: rgba(0, 0, 0, 0.6);
-        box-shadow: 0 10px 20px rgba(124, 58, 237, 0.1);
-    }
-
-    .skill-item:active {
-        transform: scale(0.98);
-    }
-
-    .skill-name {
-        font-size: 18px;
-        font-weight: 500;
-        margin-bottom: 8px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    .skill-percentage {
-        color: #94a3b8;
-    }
-
-    .skill-bar {
-        height: 8px;
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 4px;
-        overflow: hidden;
-    }
-
-    .skill-progress {
-        height: 100%;
-        background: linear-gradient(90deg, #7c3aed, #8b5cf6);
-        border-radius: 4px;
-        transition: width 1s ease-out;
-    }
-
-    /* Expertise Section */
-    .expertise-item {
-        display: flex;
-        align-items: flex-start;
-        margin-bottom: 60px;
-        cursor: pointer;
-        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        padding: 25px;
-        border-radius: 16px;
-        background: rgba(0, 0, 0, 0.5);
-        backdrop-filter: blur(8px);
-        border: 1px solid rgba(124, 58, 237, 0.15);
-    }
-
-    .expertise-item:hover {
-        transform: translateY(-8px);
-        background: rgba(0, 0, 0, 0.7);
-        border-color: rgba(124, 58, 237, 0.3);
-        box-shadow: 0 15px 30px rgba(124, 58, 237, 0.15);
-    }
-
-    .expertise-item:active {
-        transform: translateY(-4px) scale(0.98);
-    }
-
-    .expertise-icon {
-        width: 70px;
-        height: 70px;
-        background: linear-gradient(45deg, #7c3aed, #8b5cf6);
-        border-radius: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-right: 30px;
-        flex-shrink: 0;
-    }
-
-    .expertise-icon svg {
-        width: 35px;
-        height: 35px;
-        fill: white;
-    }
-
-    .expertise-content h3 {
-        font-size: 24px;
-        font-weight: bold;
-        margin-bottom: 10px;
-    }
-
-    .expertise-content p {
-        color: #94a3b8;
-        font-size: 16px;
-        line-height: 1.6;
-    }
-
-    /* Hero Section */
-    .hero-section {
-        text-align: center;
-        margin-bottom: 80px;
-        padding: 60px 0;
-    }
-
-    .hero-title {
-        font-size: 36px;
-        font-weight: bold;
-        margin-bottom: 30px;
-    }
-
-    .hero-subtitle {
-        font-size: 18px;
-        color: #94a3b8;
-        max-width: 600px;
-        margin: 0 auto 40px;
-        line-height: 1.6;
-    }
-
-    .hero-buttons {
-        display: flex;
-        gap: 20px;
-        justify-content: center;
-        flex-wrap: wrap;
-    }
-
-    .btn {
-        padding: 15px 30px;
-        border-radius: 8px;
-        font-size: 16px;
-        font-weight: 500;
-        text-decoration: none;
-        transition: all 0.3s ease;
-        cursor: pointer;
-        border: none;
-    }
-
-    .btn-primary {
-        background: linear-gradient(45deg, #7c3aed, #8b5cf6);
-        color: white;
-    }
-
-    .btn-primary:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 10px 25px rgba(124, 58, 237, 0.4);
-    }
-
-    .btn-outline {
-        background: transparent;
-        color: white;
-        border: 2px solid rgba(255, 255, 255, 0.3);
-    }
-
-    .btn-outline:hover {
-        border-color: #7c3aed;
-        background: rgba(124, 58, 237, 0.1);
-    }
-
-    /* Navigation */
-    .nav-indicator {
-        position: fixed;
-        right: 30px;
-        top: 50%;
-        transform: translateY(-50%);
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-        z-index: 100;
-    }
-
-    .nav-dot {
-        width: 12px;
-        height: 12px;
-        border-radius: 50%;
-        background: rgba(255, 255, 255, 0.3);
-        cursor: pointer;
-        transition: all 0.3s ease;
-    }
-
-    .nav-dot.active {
-        background: #7c3aed;
-        transform: scale(1.2);
-    }
-
-    /* Floating Heart */
-    .floating-heart {
-        position: fixed;
-        bottom: 30px;
-        right: 30px;
-        width: 60px;
-        height: 60px;
-        background: linear-gradient(45deg, #7c3aed, #8b5cf6);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        z-index: 100;
-        animation: pulse 2s infinite;
-    }
-
-    @keyframes pulse {
-        0%, 100% { transform: scale(1); }
-        50% { transform: scale(1.05); }
-    }
-
-    .floating-heart:hover {
-        transform: scale(1.1);
-        box-shadow: 0 10px 25px rgba(124, 58, 237, 0.4);
-    }
-
-    .floating-heart svg {
-        width: 24px;
-        height: 24px;
-        fill: white;
-    }
-
-    /* Responsive */
     @media (max-width: 768px) {
-        .container {
-            padding: 0 15px;
+        .main-title {
+            font-size: 2.5rem;
         }
         
-        .section-title {
-            font-size: 32px;
+        .description {
+            font-size: 1rem;
+            padding: 0 1rem;
         }
         
-        .hero-title {
-            font-size: 28px;
+        .cards-container {
+            grid-template-columns: 1fr;
         }
         
-        .expertise-item {
-            flex-direction: column;
-            text-align: center;
-        }
-        
-        .expertise-icon {
-            margin: 0 auto 20px;
-        }
-        
-        .nav-indicator {
-            display: none;
+        .skills-grid {
+            grid-template-columns: 1fr;
         }
     }
-
-    /* Smooth scrolling */
-    html {
-        scroll-behavior: smooth;
-    }
-
-    /* Section spacing */
-    #hobbies { padding-top: 100px; }
-    #skills { padding-top: 100px; }
-    #expertise { padding-top: 100px; }
-    #about { padding-top: 100px; }
-    #hero { padding-top: 100px; }
 </style>
 ```
 
 </head>
 <body>
-    <!-- Header -->
-    <div class="container">
-        <div class="header">
-            <div class="logo">
-                <div class="icon">C</div>
-                Jano &lt;/&gt;
-            </div>
-            <div class="header-controls">
-                <button onclick="toggleSound()">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/>
-                    </svg>
-                </button>
-                <button onclick="toggleTheme()">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-                    </svg>
-                </button>
-                <button onclick="toggleMenu()">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M3 12h18M3 6h18M3 18h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                    </svg>
-                </button>
-            </div>
-        </div>
-    </div>
+    <section class="hero-section">
+        <h1 class="main-title">
+            <span class="purple">The</span> <span class="white">Mókaa</span>
+        </h1>
 
 ```
-<!-- Hero Section -->
-<section id="hero" class="hero-section">
-    <div class="container">
-        <div class="logo" style="justify-content: center; margin-bottom: 40px;">
-            <div class="icon">C</div>
-            Jano &lt;/&gt;
-        </div>
-        <h1 class="hero-title">Crafting Digital Experiences</h1>
-        <p class="hero-subtitle">
-            Transforming ideas into elegant solutions through web development and Minecraft innovation
-        </p>
-        <div class="hero-buttons">
-            <a href="#expertise" class="btn btn-primary">View My Work</a>
-            <a href="#about" class="btn btn-outline">Learn More</a>
-        </div>
+    <p class="description">
+        I am Mókaa, a student in programming information technology, specializing in programming websites, Discord bots, tools, and a project manager. I was previously a@ manager in a probot. Now I am a manager of several bots and a manager of websites and projects. I always strive to progress toward the better.
+    </p>
+    
+    <div class="scroll-indicator" onclick="scrollToAbout()">
+        <span class="scroll-text">Scroll to explore</span>
+        <svg class="scroll-arrow" viewBox="0 0 24 24">
+            <path d="M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z"/>
+        </svg>
     </div>
 </section>
 
-<!-- Hobbies Section -->
-<section id="hobbies" class="section">
-    <div class="container">
-        <h2 class="section-title">My Hobbies</h2>
-        
-        <div class="hobby-item" onclick="playClickSound()">
-            <div class="hobby-icon">
-                <svg viewBox="0 0 24 24">
-                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                </svg>
-            </div>
-            <h3 class="hobby-title">Reading books</h3>
-            <p class="hobby-description">Exploring new worlds through literature</p>
-        </div>
-
-        <div class="hobby-item" onclick="playClickSound()">
-            <div class="hobby-icon">
-                <svg viewBox="0 0 24 24">
-                    <path d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0L19.2 12l-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"/>
-                </svg>
-            </div>
-            <h3 class="hobby-title">Programming</h3>
-            <p class="hobby-description">Building and creating digital solutions</p>
-        </div>
-
-        <div class="hobby-item" onclick="playClickSound()">
-            <div class="hobby-icon">
-                <svg viewBox="0 0 24 24">
-                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-                </svg>
-            </div>
-            <h3 class="hobby-title">Designing</h3>
-            <p class="hobby-description">Creating beautiful and functional interfaces</p>
-        </div>
-    </div>
-</section>
-
-<!-- About Section -->
-<section id="about" class="section">
-    <div class="container">
-        <h2 class="section-title">Kurdistan-Based Developer</h2>
-        <div style="max-width: 700px; margin: 0 auto; text-align: left; font-size: 16px; line-height: 1.8; color: #cbd5e1;">
-            <p style="margin-bottom: 30px;">
-                Hello! I'm Jano, a passionate developer from Kurdistan with a deep love for creating digital experiences. My journey in development has been focused on two main areas: web development and Minecraft server development.
+<section class="about-section" id="about">
+    <h2 class="section-title">About Me</h2>
+    
+    <div class="cards-container">
+        <div class="card">
+            <svg class="card-icon" viewBox="0 0 24 24">
+                <path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M7.07,18.28C7.5,17.38 10.12,16.5 12,16.5C13.88,16.5 16.5,17.38 16.93,18.28C15.57,19.36 13.86,20 12,20C10.14,20 8.43,19.36 7.07,18.28M18.36,16.83C16.93,15.09 13.46,14.5 12,14.5C10.54,14.5 7.07,15.09 5.64,16.83C4.62,15.5 4,13.82 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,13.82 19.38,15.5 18.36,16.83M12,6C10.06,6 8.5,7.56 8.5,9.5C8.5,11.44 10.06,13 12,13C13.94,13 15.5,11.44 15.5,9.5C15.5,7.56 13.94,6 12,6M12,11A1.5,1.5 0 0,1 10.5,9.5A1.5,1.5 0 0,1 12,8A1.5,1.5 0 0,1 13.5,9.5A1.5,1.5 0 0,1 12,11Z"/>
+            </svg>
+            <h3 class="card-title">Mókaa</h3>
+            <p class="card-description">
+                I am Mókaa, an expert in programming Discord bots, websites, and tools that improve your daily work.
             </p>
-            <p>
-                Through my studio on BuiltByBit, I've had the privilege of working with numerous Minecraft servers, creating custom solutions that enhance player experiences. With over 6 years of active participation in the Discord community, I've built a strong network and understanding of what makes online communities thrive.
+        </div>
+        
+        <div class="card">
+            <svg class="card-icon" viewBox="0 0 24 24">
+                <path d="M8,3A2,2 0 0,0 6,5V9A2,2 0 0,1 4,11H3V13H4A2,2 0 0,1 6,15V19A2,2 0 0,0 8,21H10V19H8V14A2,2 0 0,0 6,12A2,2 0 0,0 8,10V5H10V3H8M16,3A2,2 0 0,1 18,5V9A2,2 0 0,0 20,11H21V13H20A2,2 0 0,0 18,15V19A2,2 0 0,1 16,21H14V19H16V14A2,2 0 0,1 18,12A2,2 0 0,1 16,10V5H14V3H16Z"/>
+            </svg>
+            <h3 class="card-title">Api Development</h3>
+            <p class="card-description">
+                A famous API developer, and the current Qya @Manager is famous for linking websites, Discord bots, and much more..
+            </p>
+        </div>
+        
+        <div class="card">
+            <svg class="card-icon" viewBox="0 0 24 24">
+                <path d="M12,2C13.1,2 14,2.9 14,4C14,5.1 13.1,6 12,6C10.9,6 10,5.1 10,4C10,2.9 10.9,2 12,2M21,9V7L15,1H5C3.89,1 3,1.89 3,3V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V9M19,19H5V3H13V9H19V19Z"/>
+            </svg>
+            <h3 class="card-title">Website Development</h3>
+            <p class="card-description">
+                I am a very professional website developer. I work for large groups and teams in the community in exchange for financial compensation. One of my most famous sites is the Radar Technology portfolio, which has been in the spotlight previously..
             </p>
         </div>
     </div>
 </section>
 
-<!-- Expertise Section -->
-<section id="expertise" class="section">
-    <div class="container">
-        <h2 class="section-title">Expertise & Achievements</h2>
-
-        <div class="expertise-item">
-            <div class="expertise-icon">
-                <svg viewBox="0 0 24 24">
-                    <path d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0L19.2 12l-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"/>
+<section class="skills-section">
+    <h2 class="section-title">Skills</h2>
+    
+    <div class="skills-grid">
+        <div class="skill-card">
+            <div class="skill-name">
+                <svg class="skill-icon" viewBox="0 0 24 24">
+                    <path d="M12,1.85C12.73,1.85 13.45,2.11 14.03,2.69C14.61,3.27 14.87,3.99 14.87,4.72C14.87,5.45 14.61,6.17 14.03,6.75L13.09,7.69L5.04,15.74C4.46,16.32 3.74,16.58 3.01,16.58C2.28,16.58 1.56,16.32 0.98,15.74C0.4,15.16 0.14,14.44 0.14,13.71C0.14,12.98 0.4,12.26 0.98,11.68L9.03,3.63L9.97,2.69C10.55,2.11 11.27,1.85 12,1.85M12,3.04C11.64,3.04 11.29,3.18 11.03,3.44L10.09,4.38L2.04,12.43C1.78,12.69 1.64,13.04 1.64,13.4C1.64,13.76 1.78,14.11 2.04,14.37C2.3,14.63 2.65,14.77 3.01,14.77C3.37,14.77 3.72,14.63 3.98,14.37L12.03,6.32L12.97,5.38C13.23,5.12 13.37,4.77 13.37,4.41C13.37,4.05 13.23,3.7 12.97,3.44C12.71,3.18 12.36,3.04 12,3.04Z"/>
                 </svg>
+                Node.js
             </div>
-            <div class="expertise-content">
-                <h3>Web Development</h3>
-                <p>Full-stack development with modern technologies</p>
+            <div class="progress-bar">
+                <div class="progress-fill" style="width: 98%;">
+                    <span class="progress-text">98%</span>
+                </div>
             </div>
         </div>
-
-        <div class="expertise-item">
-            <div class="expertise-icon">
-                <svg viewBox="0 0 24 24">
-                    <path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-1 9H9V9h10v2zm-4 4H9v-2h6v2zm4-8H9V5h10v2z"/>
-                </svg>
-            </div>
-            <div class="expertise-content">
-                <h3>Minecraft Development</h3>
-                <p>Custom plugins and server development</p>
-            </div>
-        </div>
-
-        <div class="expertise-item">
-            <div class="expertise-icon">
-                <svg viewBox="0 0 24 24">
-                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-                </svg>
-            </div>
-            <div class="expertise-content">
-                <h3>International Experience</h3>
-                <p>Working with clients worldwide</p>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- Skills Section -->
-<section id="skills" class="section">
-    <div class="container">
-        <h2 class="section-title">Programming Languages</h2>
         
-        <div class="skill-item">
+        <div class="skill-card">
             <div class="skill-name">
-                <span>TypeScript</span>
-                <span class="skill-percentage">95%</span>
+                <svg class="skill-icon" viewBox="0 0 24 24">
+                    <path d="M3,3H21V21H3V3M7.73,18.04C8.13,18.89 8.92,19.59 10.27,19.59C11.77,19.59 12.8,18.79 12.8,17.04V11.26H11.1V17C11.1,17.86 10.75,18.08 10.2,18.08C9.62,18.08 9.38,17.68 9.11,17.21L7.73,18.04M13.71,17.86C14.21,18.84 15.22,19.59 16.8,19.59C18.4,19.59 19.6,18.76 19.6,17.23C19.6,15.82 18.79,15.19 17.35,14.57L16.93,14.39C16.2,14.08 15.89,13.87 15.89,13.48C15.89,13.15 16.11,12.91 16.54,12.91C16.90,12.91 17.15,13.06 17.35,13.48L18.56,12.64C18.03,11.75 17.22,11.34 16.54,11.34C15.18,11.34 14.26,12.12 14.26,13.48C14.26,14.81 15.11,15.44 16.21,15.94L16.63,16.11C17.45,16.47 17.91,16.68 17.91,17.16C17.91,17.57 17.54,17.85 16.99,17.85C16.32,17.85 15.84,17.53 15.56,17.16L13.71,17.86Z"/>
+                </svg>
+                JavaScript
             </div>
-            <div class="skill-bar">
-                <div class="skill-progress" style="width: 95%"></div>
+            <div class="progress-bar">
+                <div class="progress-fill" style="width: 95%;">
+                    <span class="progress-text">95%</span>
+                </div>
             </div>
         </div>
-
-        <div class="skill-item">
+        
+        <div class="skill-card">
             <div class="skill-name">
-                <span>JavaScript</span>
-                <span class="skill-percentage">90%</span>
+                <svg class="skill-icon" viewBox="0 0 24 24">
+                    <path d="M2,12A10,10 0 0,1 12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12M12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4M7,9L12,7L17,9V15L12,17L7,15V9M8,10.5V14L11,15.25V11.75L8,10.5M13,11.75V15.25L16,14V10.5L13,11.75Z"/>
+                </svg>
+                Express.js
             </div>
-            <div class="skill-bar">
-                <div class="skill-progress" style="width: 90%"></div>
+            <div class="progress-bar">
+                <div class="progress-fill" style="width: 88%;">
+                    <span class="progress-text">88%</span>
+                </div>
             </div>
         </div>
-
-        <div class="skill-item">
+        
+        <div class="skill-card">
             <div class="skill-name">
-                <span>HTML</span>
-                <span class="skill-percentage">95%</span>
+                <svg class="skill-icon" viewBox="0 0 24 24">
+                    <path d="M12,17.56L16.07,16.43L16.62,10.33H9.38L9.2,8.3H16.8L17,6.31H7L7.56,12.32H14.45L14.22,14.9L12,15.5L9.78,14.9L9.64,13.24H7.64L7.93,16.43L12,17.56M4.07,3H19.93L18.5,19.2L12,21L5.5,19.2L4.07,3Z"/>
+                </svg>
+                HTML
             </div>
-            <div class="skill-bar">
-                <div class="skill-progress" style="width: 95%"></div>
-            </div>
-        </div>
-
-        <div class="skill-item">
-            <div class="skill-name">
-                <span>CSS</span>
-                <span class="skill-percentage">90%</span>
-            </div>
-            <div class="skill-bar">
-                <div class="skill-progress" style="width: 90%"></div>
-            </div>
-        </div>
-
-        <div class="skill-item">
-            <div class="skill-name">
-                <span>Java</span>
-                <span class="skill-percentage">85%</span>
-            </div>
-            <div class="skill-bar">
-                <div class="skill-progress" style="width: 85%"></div>
-            </div>
-        </div>
-
-        <div class="skill-item">
-            <div class="skill-name">
-                <span>Python</span>
-                <span class="skill-percentage">80%</span>
-            </div>
-            <div class="skill-bar">
-                <div class="skill-progress" style="width: 80%"></div>
-            </div>
-        </div>
-
-        <h2 class="section-title" style="margin-top: 80px;">Frameworks & Technologies</h2>
-
-        <div class="skill-item">
-            <div class="skill-name">
-                <span>React</span>
-                <span class="skill-percentage">90%</span>
-            </div>
-            <div class="skill-bar">
-                <div class="skill-progress" style="width: 90%"></div>
-            </div>
-        </div>
-
-        <div class="skill-item">
-            <div class="skill-name">
-                <span>Vite</span>
-                <span class="skill-percentage">85%</span>
-            </div>
-            <div class="skill-bar">
-                <div class="skill-progress" style="width: 85%"></div>
-            </div>
-        </div>
-
-        <div class="skill-item">
-            <div class="skill-name">
-                <span>Next.js</span>
-                <span class="skill-percentage">85%</span>
-            </div>
-            <div class="skill-bar">
-                <div class="skill-progress" style="width: 85%"></div>
-            </div>
-        </div>
-
-        <div class="skill-item">
-            <div class="skill-name">
-                <span>Tailwind CSS</span>
-                <span class="skill-percentage">90%</span>
-            </div>
-            <div class="skill-bar">
-                <div class="skill-progress" style="width: 90%"></div>
-            </div>
-        </div>
-
-        <div class="skill-item">
-            <div class="skill-name">
-                <span>Node.js</span>
-                <span class="skill-percentage">85%</span>
-            </div>
-            <div class="skill-bar">
-                <div class="skill-progress" style="width: 85%"></div>
-            </div>
-        </div>
-
-        <div class="skill-item">
-            <div class="skill-name">
-                <span>Express.js</span>
-                <span class="skill-percentage">80%</span>
-            </div>
-            <div class="skill-bar">
-                <div class="skill-progress" style="width: 80%"></div>
+            <div class="progress-bar">
+                <div class="progress-fill" style="width: 100%;">
+                    <span class="progress-text">100%</span>
+                </div>
             </div>
         </div>
     </div>
 </section>
 
-<!-- Navigation Dots -->
-<div class="nav-indicator">
-    <div class="nav-dot active" onclick="scrollToSection('hero')"></div>
-    <div class="nav-dot" onclick="scrollToSection('hobbies')"></div>
-    <div class="nav-dot" onclick="scrollToSection('skills')"></div>
-    <div class="nav-dot" onclick="scrollToSection('expertise')"></div>
-    <div class="nav-dot" onclick="scrollToSection('about')"></div>
-</div>
-
-<!-- Floating Heart -->
-<div class="floating-heart" onclick="likePortfolio()">
-    <svg viewBox="0 0 24 24">
-        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-    </svg>
-</div>
+<section class="contact-section">
+    <h2 class="section-title">Contact Me</h2>
+    
+    <form class="contact-form" onsubmit="handleSubmit(event)">
+        <div class="form-group">
+            <label for="name">Your Name</label>
+            <input type="text" id="name" name="name" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="message">Message</label>
+            <textarea id="message" name="message" rows="6" required></textarea>
+        </div>
+        
+        <button type="submit" class="submit-btn">Send Message</button>
+    </form>
+</section>
 
 <script>
-    // Navigation functionality
-    function scrollToSection(sectionId) {
-        document.getElementById(sectionId).scrollIntoView({ behavior: 'smooth' });
-    }
-
-    // Update active nav dot on scroll
-    window.addEventListener('scroll', () => {
-        const sections = ['hero', 'hobbies', 'about', 'expertise', 'skills'];
-        const dots = document.querySelectorAll('.nav-dot');
-        
-        let currentSection = 0;
-        sections.forEach((section, index) => {
-            const element = document.getElementById(section);
-            const rect = element.getBoundingClientRect();
-            if (rect.top <= window.innerHeight / 2 && rect.bottom >= window.innerHeight / 2) {
-                currentSection = index;
-            }
+    function scrollToAbout() {
+        document.getElementById('about').scrollIntoView({
+            behavior: 'smooth'
         });
+    }
 
-    observer.observe(document.getElementById('skills'));
+    function handleSubmit(event) {
+        event.preventDefault();
         
-        dots.forEach((dot, index) => {
-            dot.classList.toggle('active', index === currentSection);
-        });
-    });
-
-    // Header controls with sound
-    let soundEnabled = true;
-    
-    function playClickSound() {
-        if (soundEnabled) {
-            // Create a simple click sound using Web Audio API
-            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            const oscillator = audioContext.createOscillator();
-            const gainNode = audioContext.createGain();
-            
-            oscillator.connect(gainNode);
-            gainNode.connect(audioContext.destination);
-            
-            oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
-            oscillator.frequency.setValueAtTime(400, audioContext.currentTime + 0.1);
-            
-            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
-            
-            oscillator.start(audioContext.currentTime);
-            oscillator.stop(audioContext.currentTime + 0.1);
-        }
-    }
-
-    function toggleSound() {
-        soundEnabled = !soundEnabled;
-        const btn = event.target.closest('button');
-        const svg = btn.querySelector('svg path');
-        if (soundEnabled) {
-            svg.setAttribute('d', 'M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z');
-        } else {
-            svg.setAttribute('d', 'M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z');
-        }
-        playClickSound();
-    }
-
-    function toggleTheme() {
-        const btn = event.target.closest('button');
-        const svg = btn.querySelector('svg path');
-        const currentD = svg.getAttribute('d');
+        const name = document.getElementById('name').value;
+        const email = document.getElementById('email').value;
+        const message = document.getElementById('message').value;
         
-        if (currentD.includes('21 12.79')) {
-            // Switch to sun icon
-            svg.setAttribute('d', 'M12 2V1m0 22v-1m9-9h1M2 12H1m15.364-6.364l.707-.707M6.343 6.343l-.707-.707m12.728 12.728l-.707-.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z');
-        } else {
-            // Switch to moon icon
-            svg.setAttribute('d', 'M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z');
-        }
-        playClickSound();
+        // Here you can add your email sending logic
+        alert(`Thank you ${name}! Your message has been received.`);
+        
+        // Reset form
+        document.querySelector('.contact-form').reset();
     }
 
-    function toggleMenu() {
-        playClickSound();
-        console.log('Menu toggled');
-    }
-
-    // Like functionality
-    function likePortfolio() {
-        const heart = document.querySelector('.floating-heart');
-        heart.style.transform = 'scale(1.3)';
-        setTimeout(() => {
-            heart.style.transform = 'scale(1)';
-        }, 200);
-    }
-
-    // Animate skill bars on scroll
-    const observerOptions = {
-        threshold: 0.3,
-        rootMargin: '0px 0px -100px 0px'
-    };
-
+    // Animate progress bars when they come into view
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
-                const progressBars = entry.target.querySelectorAll('.skill-progress');
+                const progressBars = entry.target.querySelectorAll('.progress-fill');
                 progressBars.forEach(bar => {
                     const width = bar.style.width;
                     bar.style.width = '0%';
                     setTimeout(() => {
                         bar.style.width = width;
-                    }, 100);
+                    }, 500);
                 });
             }
         });
-    }, observerOptions);
+    });
 
-    // Add click sound to all interactive elements
+    // Add card click effects
     document.addEventListener('DOMContentLoaded', () => {
-        // Add click sound to hobby items
-        document.querySelectorAll('.hobby-item').forEach(item => {
-            item.addEventListener('click', playClickSound);
-        });
-
-        // Add click sound to skill items
-        document.querySelectorAll('.skill-item').forEach(item => {
-            item.addEventListener('click', playClickSound);
-        });
-
-        // Add click sound to expertise items
-        document.querySelectorAll('.expertise-item').forEach(item => {
-            item.addEventListener('click', playClickSound);
-        });
-
-        // Add click sound to buttons
-        document.querySelectorAll('.btn').forEach(btn => {
-            btn.addEventListener('click', playClickSound);
-        });
-
-        // Add click sound to nav dots
-        document.querySelectorAll('.nav-dot').forEach(dot => {
-            dot.addEventListener('click', playClickSound);
+        observer.observe(document.querySelector('.skills-section'));
+        
+        // Add ripple effect on card click
+        const cards = document.querySelectorAll('.card, .skill-card');
+        cards.forEach(card => {
+            card.addEventListener('click', function(e) {
+                const ripple = document.createElement('span');
+                const rect = this.getBoundingClientRect();
+                const size = Math.max(rect.width, rect.height);
+                const x = e.clientX - rect.left - size / 2;
+                const y = e.clientY - rect.top - size / 2;
+                
+                ripple.style.width = ripple.style.height = size + 'px';
+                ripple.style.left = x + 'px';
+                ripple.style.top = y + 'px';
+                ripple.style.position = 'absolute';
+                ripple.style.borderRadius = '50%';
+                ripple.style.background = 'rgba(139, 92, 246, 0.5)';
+                ripple.style.transform = 'scale(0)';
+                ripple.style.animation = 'ripple 0.6s linear';
+                ripple.style.pointerEvents = 'none';
+                
+                this.appendChild(ripple);
+                
+                setTimeout(() => {
+                    ripple.remove();
+                }, 600);
+            });
         });
     });
 </script>
-```
 
 </body>
 </html>
