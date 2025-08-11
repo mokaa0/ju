@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 
-<html lang="ar" dir="ltr">
+<html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Mókaa - Portfolio</title>
+    <title>Artix - When creativity meets quality</title>
     <style>
         * {
             margin: 0;
@@ -12,365 +12,377 @@
             box-sizing: border-box;
         }
 
+```
     body {
         font-family: 'Arial', sans-serif;
-        background: linear-gradient(135deg, #000000 0%, #2d1b3d 50%, #000000 100%);
-        color: white;
+        background: linear-gradient(135deg, #fce4ec 0%, #f8bbd9 50%, #e91e63 100%);
+        min-height: 100vh;
         overflow-x: hidden;
     }
 
-    .hero-section {
-        height: 100vh;
+    /* Navigation Bar */
+    .navbar {
+        background: rgba(0, 0, 0, 0.9);
+        padding: 15px 0;
+        position: fixed;
+        top: 0;
+        width: 100%;
+        z-index: 1000;
+        backdrop-filter: blur(10px);
+    }
+
+    .nav-container {
         display: flex;
-        flex-direction: column;
         justify-content: center;
         align-items: center;
-        text-align: center;
-        position: relative;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 20px;
     }
 
-    .main-title {
-        font-size: 4rem;
+    .logo {
+        color: #e91e63;
+        font-size: 24px;
         font-weight: bold;
-        margin-bottom: 2rem;
-        opacity: 0;
-        animation: fadeInUp 1s ease-out 0.5s forwards;
+        margin-left: 50px;
     }
 
-    .main-title .purple {
-        color: #8b5cf6;
-    }
-
-    .main-title .white {
-        color: white;
-    }
-
-    .description {
-        font-size: 1.2rem;
-        line-height: 1.6;
-        max-width: 800px;
-        margin-bottom: 4rem;
-        opacity: 0;
-        animation: fadeInUp 1s ease-out 1s forwards;
-    }
-
-    .scroll-indicator {
+    .nav-links {
         display: flex;
-        flex-direction: column;
-        align-items: center;
+        list-style: none;
+        gap: 40px;
+    }
+
+    .nav-links a {
+        color: white;
+        text-decoration: none;
+        font-weight: 500;
+        padding: 10px 20px;
+        border-radius: 25px;
+        transition: all 0.3s ease;
         cursor: pointer;
-        opacity: 0;
-        animation: fadeInUp 1s ease-out 1.5s forwards;
     }
 
-    .scroll-text {
-        font-size: 1rem;
-        margin-bottom: 1rem;
-        animation: bounce 2s infinite;
+    .nav-links a:hover, .nav-links a.active {
+        background: linear-gradient(45deg, #e91e63, #f06292);
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(233, 30, 99, 0.4);
     }
 
-    .scroll-arrow {
-        width: 30px;
-        height: 30px;
-        fill: #8b5cf6;
-        animation: bounce 2s infinite;
+    /* Page Container */
+    .page {
+        display: none;
+        padding-top: 80px;
+        min-height: 100vh;
     }
 
-    .about-section {
-        padding: 5rem 2rem;
+    .page.active {
+        display: block;
+    }
+
+    /* Home Page Styles */
+    .hero {
+        text-align: center;
+        padding: 100px 20px;
         max-width: 1200px;
         margin: 0 auto;
     }
 
-    .section-title {
-        font-size: 3rem;
-        text-align: center;
-        margin-bottom: 3rem;
-        color: #8b5cf6;
-        opacity: 0;
-        animation: fadeInUp 1s ease-out forwards;
+    .hero h1 {
+        font-size: 4rem;
+        background: linear-gradient(45deg, #e91e63, #f8bbd9);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 20px;
+        animation: fadeInUp 1s ease;
+    }
+
+    .hero p {
+        font-size: 1.5rem;
+        color: #666;
+        margin-bottom: 40px;
+        animation: fadeInUp 1s ease 0.2s both;
+    }
+
+    .scroll-text {
+        color: #e91e63;
+        font-size: 1.2rem;
+        cursor: pointer;
+        animation: bounce 2s infinite;
+        transition: all 0.3s ease;
+    }
+
+    .scroll-text:hover {
+        transform: scale(1.1);
+        text-shadow: 0 0 20px rgba(233, 30, 99, 0.5);
+    }
+
+    /* Cards Section */
+    .cards-section {
+        padding: 100px 20px;
+        max-width: 1200px;
+        margin: 0 auto;
     }
 
     .cards-container {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-        gap: 2rem;
-        margin-bottom: 4rem;
+        gap: 30px;
+        margin-top: 50px;
     }
 
     .card {
-        background: rgba(0, 0, 0, 0.7);
-        backdrop-filter: blur(10px);
-        border: 2px solid rgba(255, 255, 255, 0.2);
-        border-radius: 15px;
-        padding: 2rem;
-        transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-        opacity: 0;
-        transform: translateY(50px);
-        animation: fadeInUp 1s ease-out forwards;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
+        background: rgba(252, 228, 236, 0.9);
+        border-radius: 20px;
+        padding: 30px;
         text-align: center;
+        transition: all 0.3s ease;
+        backdrop-filter: blur(10px);
+        border: 2px solid transparent;
         cursor: pointer;
-        position: relative;
-        overflow: hidden;
     }
-
-    .card::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(139, 92, 246, 0.3), transparent);
-        transition: all 0.6s ease;
-    }
-
-    .card:nth-child(1) { animation-delay: 0.2s; }
-    .card:nth-child(2) { animation-delay: 0.4s; }
-    .card:nth-child(3) { animation-delay: 0.6s; }
 
     .card:hover {
-        border-color: #8b5cf6;
-        transform: translateY(-15px) scale(1.08);
-        box-shadow: 0 25px 50px rgba(139, 92, 246, 0.4);
-        background: rgba(139, 92, 246, 0.1);
+        transform: translateY(-10px) scale(1.05);
+        border: 2px solid #e91e63;
+        box-shadow: 0 20px 40px rgba(233, 30, 99, 0.3);
+        background: rgba(248, 187, 217, 0.95);
     }
 
-    .card:hover::before {
-        left: 100%;
+    .card h3 {
+        color: #e91e63;
+        font-size: 1.8rem;
+        margin-bottom: 15px;
     }
 
-    .card:active {
-        transform: translateY(-15px) scale(1.12);
-        box-shadow: 0 30px 60px rgba(139, 92, 246, 0.6);
-    }
-
-    .card-icon {
-        width: 60px;
-        height: 60px;
-        fill: #8b5cf6;
-        margin-bottom: 1.5rem;
-    }
-
-    .card-title {
-        font-size: 1.5rem;
-        color: #8b5cf6;
-        margin-bottom: 1rem;
-        font-weight: bold;
-    }
-
-    .card-description {
+    .card p {
+        color: #666;
         line-height: 1.6;
-        color: white;
     }
 
-    .skills-section {
-        padding: 3rem 2rem;
-        max-width: 1200px;
-        margin: 0 auto;
-    }
-
-    .skills-grid {
+    /* Price Page Styles */
+    .package-container {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-        gap: 2rem;
-        margin-bottom: 4rem;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 30px;
+        margin-top: 50px;
     }
 
-    .skill-card {
-        background: rgba(0, 0, 0, 0.7);
-        backdrop-filter: blur(10px);
-        border: 2px solid rgba(255, 255, 255, 0.2);
-        border-radius: 15px;
-        padding: 2rem;
-        transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-        opacity: 0;
-        animation: fadeInUp 1s ease-out forwards;
-        cursor: pointer;
+    .package {
+        background: rgba(252, 228, 236, 0.9);
+        border-radius: 20px;
+        padding: 30px;
+        text-align: center;
+        transition: all 0.3s ease;
+        border: 2px solid transparent;
         position: relative;
         overflow: hidden;
     }
 
-    .skill-card::before {
+    .package::before {
         content: '';
         position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(139, 92, 246, 0.3), transparent);
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: linear-gradient(45deg, transparent, rgba(233, 30, 99, 0.1), transparent);
+        transform: rotate(45deg);
         transition: all 0.6s ease;
+        opacity: 0;
     }
 
-    .skill-card:nth-child(1) { animation-delay: 0.8s; }
-    .skill-card:nth-child(2) { animation-delay: 1s; }
-    .skill-card:nth-child(3) { animation-delay: 1.2s; }
-    .skill-card:nth-child(4) { animation-delay: 1.4s; }
-
-    .skill-card:hover {
-        border-color: #8b5cf6;
-        transform: scale(1.08) translateY(-10px);
-        box-shadow: 0 20px 40px rgba(139, 92, 246, 0.4);
-        background: rgba(139, 92, 246, 0.1);
+    .package:hover::before {
+        animation: shimmer 1.5s ease-in-out;
+        opacity: 1;
     }
 
-    .skill-card:hover::before {
-        left: 100%;
+    .package:hover {
+        transform: translateY(-10px) scale(1.05);
+        border: 2px solid #e91e63;
+        box-shadow: 0 20px 40px rgba(233, 30, 99, 0.3);
     }
 
-    .skill-card:active {
-        transform: scale(1.12) translateY(-10px);
-        box-shadow: 0 25px 50px rgba(139, 92, 246, 0.6);
+    .package h3 {
+        color: #e91e63;
+        font-size: 1.5rem;
+        margin-bottom: 10px;
     }
 
-    .skill-name {
-        font-size: 1.2rem;
-        margin-bottom: 1rem;
-        color: #8b5cf6;
-        display: flex;
+    .package-number {
+        background: #e91e63;
+        color: white;
+        border-radius: 50%;
+        width: 30px;
+        height: 30px;
+        display: inline-flex;
         align-items: center;
+        justify-content: center;
+        margin-right: 10px;
+        font-size: 0.9rem;
     }
 
-    .skill-icon {
-        width: 24px;
-        height: 24px;
-        fill: #8b5cf6;
+    .package ul {
+        list-style: none;
+        margin: 20px 0;
+        text-align: left;
+    }
+
+    .package ul li {
+        padding: 5px 0;
+        color: #666;
+    }
+
+    .package ul li::before {
+        content: '✓';
+        color: #e91e63;
+        font-weight: bold;
         margin-right: 10px;
     }
 
-    .progress-bar {
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 10px;
-        height: 20px;
-        overflow: hidden;
-    }
-
-    .progress-fill {
-        height: 100%;
-        background: linear-gradient(90deg, #8b5cf6, #a855f7);
-        border-radius: 10px;
-        transition: width 2s ease-out;
-        position: relative;
-    }
-
-    .progress-text {
-        position: absolute;
-        right: 10px;
-        top: 50%;
-        transform: translateY(-50%);
-        font-size: 0.8rem;
+    .package .price {
+        font-size: 2rem;
         font-weight: bold;
+        color: #e91e63;
+        margin: 20px 0;
     }
 
-    .contact-section {
-        padding: 3rem 2rem;
-        max-width: 600px;
-        margin: 0 auto;
-    }
-
-    .contact-form {
-        background: rgba(0, 0, 0, 0.7);
-        backdrop-filter: blur(10px);
-        border: 2px solid rgba(255, 255, 255, 0.2);
-        border-radius: 15px;
-        padding: 2rem;
-        opacity: 0;
-        animation: fadeInUp 1s ease-out 1.6s forwards;
-        transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    .buy-btn {
+        background: linear-gradient(45deg, #e91e63, #f06292);
+        color: white;
+        border: none;
+        padding: 15px 40px;
+        border-radius: 25px;
+        font-size: 1.1rem;
         cursor: pointer;
+        transition: all 0.3s ease;
+        margin-top: 30px;
         position: relative;
         overflow: hidden;
     }
 
-    .contact-form::before {
+    .buy-btn::before {
         content: '';
         position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(139, 92, 246, 0.3), transparent);
+        top: 50%;
+        left: 50%;
+        width: 0;
+        height: 0;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
         transition: all 0.6s ease;
     }
 
-    .contact-form:hover {
-        border-color: #8b5cf6;
-        transform: scale(1.02);
-        box-shadow: 0 15px 30px rgba(139, 92, 246, 0.3);
-        background: rgba(139, 92, 246, 0.05);
+    .buy-btn:hover::before {
+        width: 300px;
+        height: 300px;
     }
 
-    .contact-form:hover::before {
-        left: 100%;
+    .buy-btn:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 30px rgba(233, 30, 99, 0.4);
+    }
+
+    /* Modal Styles */
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 2000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        backdrop-filter: blur(5px);
+    }
+
+    .modal-content {
+        background: linear-gradient(135deg, #fce4ec, #f8bbd9);
+        margin: 10% auto;
+        padding: 40px;
+        border-radius: 20px;
+        width: 90%;
+        max-width: 500px;
+        text-align: center;
+        position: relative;
+        animation: modalAppear 0.3s ease;
+    }
+
+    .close {
+        position: absolute;
+        top: 15px;
+        left: 25px;
+        color: #e91e63;
+        font-size: 28px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .close:hover {
+        color: #ad1457;
+        transform: scale(1.2);
     }
 
     .form-group {
-        margin-bottom: 1.5rem;
+        margin: 20px 0;
+        text-align: left;
     }
 
     .form-group label {
         display: block;
-        margin-bottom: 0.5rem;
-        color: #8b5cf6;
+        margin-bottom: 5px;
+        color: #e91e63;
         font-weight: bold;
     }
 
-    .form-group input,
-    .form-group textarea {
+    .form-group input, .form-group select {
         width: 100%;
-        padding: 1rem;
-        border: 2px solid rgba(255, 255, 255, 0.2);
+        padding: 12px;
+        border: 2px solid #f8bbd9;
         border-radius: 10px;
-        background: rgba(255, 255, 255, 0.05);
-        color: white;
         font-size: 1rem;
         transition: all 0.3s ease;
+        background: rgba(252, 228, 236, 0.9);
     }
 
-    .form-group input:focus,
-    .form-group textarea:focus {
+    .form-group input:focus, .form-group select:focus {
         outline: none;
-        border-color: #8b5cf6;
-        box-shadow: 0 0 10px rgba(139, 92, 246, 0.3);
+        border-color: #e91e63;
+        box-shadow: 0 0 10px rgba(233, 30, 99, 0.3);
     }
 
-    .submit-btn {
-        width: 100%;
-        padding: 1rem;
-        background: linear-gradient(90deg, #8b5cf6, #a855f7);
-        border: none;
-        border-radius: 10px;
+    .done-btn {
+        background: linear-gradient(45deg, #e91e63, #f06292);
         color: white;
-        font-size: 1.1rem;
-        font-weight: bold;
+        border: none;
+        padding: 12px 30px;
+        border-radius: 20px;
         cursor: pointer;
+        font-size: 1rem;
         transition: all 0.3s ease;
+        margin-top: 20px;
     }
 
-    .submit-btn:hover {
-        transform: translateY(-5px) scale(1.05);
-        box-shadow: 0 15px 30px rgba(139, 92, 246, 0.5);
+    .done-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(233, 30, 99, 0.4);
     }
 
-    .submit-btn:active {
-        transform: translateY(-3px) scale(1.02);
-        box-shadow: 0 10px 20px rgba(139, 92, 246, 0.4);
+    /* Footer */
+    .footer {
+        text-align: center;
+        padding: 40px;
+        color: #666;
+        margin-top: 100px;
     }
 
-    @keyframes ripple {
-        to {
-            transform: scale(4);
-            opacity: 0;
-        }
-    }
-
+    /* Animations */
     @keyframes fadeInUp {
         from {
             opacity: 0;
-            transform: translateY(50px);
+            transform: translateY(30px);
         }
         to {
             opacity: 1;
@@ -390,22 +402,40 @@
         }
     }
 
+    @keyframes shimmer {
+        0% {
+            transform: translateX(-100%) translateY(-100%) rotate(45deg);
+        }
+        100% {
+            transform: translateX(100%) translateY(100%) rotate(45deg);
+        }
+    }
+
+    @keyframes modalAppear {
+        from {
+            opacity: 0;
+            transform: scale(0.8);
+        }
+        to {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+
+    /* Responsive Design */
     @media (max-width: 768px) {
-        .main-title {
+        .hero h1 {
             font-size: 2.5rem;
         }
-        
-        .description {
-            font-size: 1rem;
-            padding: 0 1rem;
+        .hero p {
+            font-size: 1.2rem;
         }
-        
-        .cards-container {
-            grid-template-columns: 1fr;
+        .nav-links {
+            gap: 20px;
         }
-        
-        .skills-grid {
-            grid-template-columns: 1fr;
+        .nav-links a {
+            padding: 8px 15px;
+            font-size: 0.9rem;
         }
     }
 </style>
@@ -413,215 +443,299 @@
 
 </head>
 <body>
-    <section class="hero-section">
-        <h1 class="main-title">
-            <span class="purple">The</span> <span class="white">Mókaa</span>
-        </h1>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="logo">Artix</div>
+            <ul class="nav-links">
+                <li><a href="#" onclick="showPage('home')" class="active">Home</a></li>
+                <li><a href="#" onclick="showPage('price')">Price</a></li>
+                <li><a href="#" onclick="window.open('https://discord.gg/Fhc7Yt3JEd', '_blank')">Discord</a></li>
+            </ul>
+        </div>
+    </nav>
 
 ```
-    <p class="description">
-        I am Mókaa, a student in programming information technology, specializing in programming websites, Discord bots, tools, and a project manager. I was previously a@ manager in a probot. Now I am a manager of several bots and a manager of websites and projects. I always strive to progress toward the better.
-    </p>
-    
-    <div class="scroll-indicator" onclick="scrollToAbout()">
-        <span class="scroll-text">Scroll to explore</span>
-        <svg class="scroll-arrow" viewBox="0 0 24 24">
-            <path d="M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z"/>
-        </svg>
-    </div>
-</section>
+<!-- Home Page -->
+<div id="home" class="page active">
+    <section class="hero">
+        <h1>Artix</h1>
+        <p>When creativity meets quality and price under the name Artix</p>
+        <div class="scroll-text" onclick="scrollToCards()">Scroll to explore</div>
+    </section>
 
-<section class="about-section" id="about">
-    <h2 class="section-title">About Me</h2>
-    
-    <div class="cards-container">
-        <div class="card">
-            <svg class="card-icon" viewBox="0 0 24 24">
-                <path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M7.07,18.28C7.5,17.38 10.12,16.5 12,16.5C13.88,16.5 16.5,17.38 16.93,18.28C15.57,19.36 13.86,20 12,20C10.14,20 8.43,19.36 7.07,18.28M18.36,16.83C16.93,15.09 13.46,14.5 12,14.5C10.54,14.5 7.07,15.09 5.64,16.83C4.62,15.5 4,13.82 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,13.82 19.38,15.5 18.36,16.83M12,6C10.06,6 8.5,7.56 8.5,9.5C8.5,11.44 10.06,13 12,13C13.94,13 15.5,11.44 15.5,9.5C15.5,7.56 13.94,6 12,6M12,11A1.5,1.5 0 0,1 10.5,9.5A1.5,1.5 0 0,1 12,8A1.5,1.5 0 0,1 13.5,9.5A1.5,1.5 0 0,1 12,11Z"/>
-            </svg>
-            <h3 class="card-title">Mókaa</h3>
-            <p class="card-description">
-                I am Mókaa, an expert in programming Discord bots, websites, and tools that improve your daily work.
-            </p>
+    <section class="cards-section" id="cards">
+        <div class="cards-container">
+            <div class="card">
+                <div style="margin-bottom: 15px;">
+                    <svg width="60" height="60" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2L13.09 8.26L22 9L13.09 9.74L12 16L10.91 9.74L2 9L10.91 8.26L12 2Z" fill="#e91e63"/>
+                        <path d="M19 15L19.31 16.32L21 16L19.31 15.68L19 14L18.69 15.68L17 16L18.69 16.32L19 15Z" fill="#f06292"/>
+                    </svg>
+                </div>
+                <h3>Artix</h3>
+                <p>Artix, where creativity meets quality and the best prices. We offer the finest and best types of designs. Try now!</p>
+            </div>
+            <div class="card">
+                <div style="margin-bottom: 15px;">
+                    <svg width="60" height="60" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M13 3L3.5 14.5L6.5 17.5L18 6L13 3Z" fill="#e91e63"/>
+                        <path d="M6.5 17.5L3.5 14.5L5 13L8 16L6.5 17.5Z" fill="#f06292"/>
+                        <circle cx="15.5" cy="8.5" r="2.5" fill="#e91e63" opacity="0.6"/>
+                    </svg>
+                </div>
+                <h3>What do?</h3>
+                <p>We offer modern and classic designs and profile designs at cheap prices, of course, with the highest possible quality. We have suitable packages available to everyone.</p>
+            </div>
         </div>
-        
-        <div class="card">
-            <svg class="card-icon" viewBox="0 0 24 24">
-                <path d="M8,3A2,2 0 0,0 6,5V9A2,2 0 0,1 4,11H3V13H4A2,2 0 0,1 6,15V19A2,2 0 0,0 8,21H10V19H8V14A2,2 0 0,0 6,12A2,2 0 0,0 8,10V5H10V3H8M16,3A2,2 0 0,1 18,5V9A2,2 0 0,0 20,11H21V13H20A2,2 0 0,0 18,15V19A2,2 0 0,1 16,21H14V19H16V14A2,2 0 0,1 18,12A2,2 0 0,1 16,10V5H14V3H16Z"/>
-            </svg>
-            <h3 class="card-title">Api Development</h3>
-            <p class="card-description">
-                A famous API developer, and the current Qya @Manager is famous for linking websites, Discord bots, and much more..
-            </p>
-        </div>
-        
-        <div class="card">
-            <svg class="card-icon" viewBox="0 0 24 24">
-                <path d="M12,2C13.1,2 14,2.9 14,4C14,5.1 13.1,6 12,6C10.9,6 10,5.1 10,4C10,2.9 10.9,2 12,2M21,9V7L15,1H5C3.89,1 3,1.89 3,3V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V9M19,19H5V3H13V9H19V19Z"/>
-            </svg>
-            <h3 class="card-title">Website Development</h3>
-            <p class="card-description">
-                I am a very professional website developer. I work for large groups and teams in the community in exchange for financial compensation. One of my most famous sites is the Radar Technology portfolio, which has been in the spotlight previously..
-            </p>
-        </div>
-    </div>
-</section>
+    </section>
 
-<section class="skills-section">
-    <h2 class="section-title">Skills</h2>
-    
-    <div class="skills-grid">
-        <div class="skill-card">
-            <div class="skill-name">
-                <svg class="skill-icon" viewBox="0 0 24 24">
-                    <path d="M12,1.85C12.73,1.85 13.45,2.11 14.03,2.69C14.61,3.27 14.87,3.99 14.87,4.72C14.87,5.45 14.61,6.17 14.03,6.75L13.09,7.69L5.04,15.74C4.46,16.32 3.74,16.58 3.01,16.58C2.28,16.58 1.56,16.32 0.98,15.74C0.4,15.16 0.14,14.44 0.14,13.71C0.14,12.98 0.4,12.26 0.98,11.68L9.03,3.63L9.97,2.69C10.55,2.11 11.27,1.85 12,1.85M12,3.04C11.64,3.04 11.29,3.18 11.03,3.44L10.09,4.38L2.04,12.43C1.78,12.69 1.64,13.04 1.64,13.4C1.64,13.76 1.78,14.11 2.04,14.37C2.3,14.63 2.65,14.77 3.01,14.77C3.37,14.77 3.72,14.63 3.98,14.37L12.03,6.32L12.97,5.38C13.23,5.12 13.37,4.77 13.37,4.41C13.37,4.05 13.23,3.7 12.97,3.44C12.71,3.18 12.36,3.04 12,3.04Z"/>
-                </svg>
-                Node.js
-            </div>
-            <div class="progress-bar">
-                <div class="progress-fill" style="width: 98%;">
-                    <span class="progress-text">98%</span>
-                </div>
-            </div>
-        </div>
-        
-        <div class="skill-card">
-            <div class="skill-name">
-                <svg class="skill-icon" viewBox="0 0 24 24">
-                    <path d="M3,3H21V21H3V3M7.73,18.04C8.13,18.89 8.92,19.59 10.27,19.59C11.77,19.59 12.8,18.79 12.8,17.04V11.26H11.1V17C11.1,17.86 10.75,18.08 10.2,18.08C9.62,18.08 9.38,17.68 9.11,17.21L7.73,18.04M13.71,17.86C14.21,18.84 15.22,19.59 16.8,19.59C18.4,19.59 19.6,18.76 19.6,17.23C19.6,15.82 18.79,15.19 17.35,14.57L16.93,14.39C16.2,14.08 15.89,13.87 15.89,13.48C15.89,13.15 16.11,12.91 16.54,12.91C16.90,12.91 17.15,13.06 17.35,13.48L18.56,12.64C18.03,11.75 17.22,11.34 16.54,11.34C15.18,11.34 14.26,12.12 14.26,13.48C14.26,14.81 15.11,15.44 16.21,15.94L16.63,16.11C17.45,16.47 17.91,16.68 17.91,17.16C17.91,17.57 17.54,17.85 16.99,17.85C16.32,17.85 15.84,17.53 15.56,17.16L13.71,17.86Z"/>
-                </svg>
-                JavaScript
-            </div>
-            <div class="progress-bar">
-                <div class="progress-fill" style="width: 95%;">
-                    <span class="progress-text">95%</span>
-                </div>
-            </div>
-        </div>
-        
-        <div class="skill-card">
-            <div class="skill-name">
-                <svg class="skill-icon" viewBox="0 0 24 24">
-                    <path d="M2,12A10,10 0 0,1 12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12M12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4M7,9L12,7L17,9V15L12,17L7,15V9M8,10.5V14L11,15.25V11.75L8,10.5M13,11.75V15.25L16,14V10.5L13,11.75Z"/>
-                </svg>
-                Express.js
-            </div>
-            <div class="progress-bar">
-                <div class="progress-fill" style="width: 88%;">
-                    <span class="progress-text">88%</span>
-                </div>
-            </div>
-        </div>
-        
-        <div class="skill-card">
-            <div class="skill-name">
-                <svg class="skill-icon" viewBox="0 0 24 24">
-                    <path d="M12,17.56L16.07,16.43L16.62,10.33H9.38L9.2,8.3H16.8L17,6.31H7L7.56,12.32H14.45L14.22,14.9L12,15.5L9.78,14.9L9.64,13.24H7.64L7.93,16.43L12,17.56M4.07,3H19.93L18.5,19.2L12,21L5.5,19.2L4.07,3Z"/>
-                </svg>
-                HTML
-            </div>
-            <div class="progress-bar">
-                <div class="progress-fill" style="width: 100%;">
-                    <span class="progress-text">100%</span>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
+    <footer class="footer">
+        <p>&copy; 2024 Artix. All rights reserved</p>
+    </footer>
+</div>
 
-<section class="contact-section">
-    <h2 class="section-title">Contact Me</h2>
-    
-    <form class="contact-form" onsubmit="handleSubmit(event)">
+<!-- Price Page -->
+<div id="price" class="page">
+    <section class="hero">
+        <h1>Artix</h1>
+        <p>When creativity meets quality and price under the name Artix</p>
+        <div class="scroll-text" onclick="scrollToPackages()">Scroll to explore</div>
+    </section>
+
+    <section class="cards-section" id="packages">
+        <div class="package-container">
+            <div class="package">
+                <div style="margin-bottom: 15px;">
+                    <svg width="60" height="60" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2L10 8H6L12 22L14 16H18L12 2Z" fill="#8B4513"/>
+                        <path d="M12 8L10 14L12 16L14 14L12 8Z" fill="#A0522D"/>
+                        <circle cx="12" cy="4" r="1.5" fill="#654321"/>
+                        <circle cx="9" cy="10" r="1" fill="#654321"/>
+                        <circle cx="15" cy="10" r="1" fill="#654321"/>
+                    </svg>
+                </div>
+                <h3>Wood Package <span class="package-number">1</span></h3>
+                <ul>
+                    <li>Banner</li>
+                    <li>Logo</li>
+                    <li>Line</li>
+                    <li>5 info</li>
+                    <li>3 applications photo</li>
+                </ul>
+                <div class="price">$5</div>
+            </div>
+
+            <div class="package">
+                <div style="margin-bottom: 15px;">
+                    <svg width="60" height="60" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="10" fill="#C0C0C0"/>
+                        <circle cx="12" cy="12" r="8" fill="#E5E5E5"/>
+                        <circle cx="12" cy="12" r="6" fill="#F0F0F0"/>
+                        <path d="M12 6L14 10H18L15 13L16 18L12 15L8 18L9 13L6 10H10L12 6Z" fill="#B8860B"/>
+                        <circle cx="12" cy="12" r="2" fill="#FFD700"/>
+                    </svg>
+                </div>
+                <h3>Silver Package <span class="package-number">2</span></h3>
+                <ul>
+                    <li>Banner</li>
+                    <li>Gif Logo</li>
+                    <li>Line</li>
+                    <li>10 info</li>
+                    <li>6 applications photo</li>
+                </ul>
+                <div class="price">$7</div>
+            </div>
+
+            <div class="package">
+                <div style="margin-bottom: 15px;">
+                    <svg width="60" height="60" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2L15.5 8.5L22 9L16 15L18 22L12 19L6 22L8 15L2 9L8.5 8.5L12 2Z" fill="#00CED1"/>
+                        <path d="M12 4L14.5 9L19 9.5L15 13.5L16.5 19L12 16.5L7.5 19L9 13.5L5 9.5L9.5 9L12 4Z" fill="#40E0D0"/>
+                        <path d="M12 6L13.5 10L17 10.5L14 13.5L15 17L12 15.5L9 17L10 13.5L7 10.5L10.5 10L12 6Z" fill="#87CEEB"/>
+                        <circle cx="12" cy="12" r="3" fill="#E0FFFF"/>
+                        <circle cx="12" cy="12" r="1.5" fill="#F0F8FF"/>
+                    </svg>
+                </div>
+                <h3>Diamond Package <span class="package-number">3</span></h3>
+                <ul>
+                    <li>Gif Banner</li>
+                    <li>Gif Logo</li>
+                    <li>Line</li>
+                    <li>15 info</li>
+                    <li>8 applications photo</li>
+                </ul>
+                <div class="price">$10</div>
+            </div>
+        </div>
+
+        <button class="buy-btn" onclick="openModal()">Buy</button>
+    </section>
+
+    <footer class="footer">
+        <p>&copy; 2024 Artix. All rights reserved</p>
+    </footer>
+</div>
+
+<!-- Purchase Modal -->
+<div id="purchaseModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal()">&times;</span>
+        <h2 style="color: #e91e63; margin-bottom: 30px;">Purchase Details</h2>
+        
         <div class="form-group">
-            <label for="name">Your Name</label>
-            <input type="text" id="name" name="name" required>
+            <label for="discordUser">Discord User:</label>
+            <input type="text" id="discordUser" placeholder="Enter your Discord username" required>
         </div>
         
         <div class="form-group">
-            <label for="email">Email</label>
-            <input type="email" id="email" name="email" required>
+            <label for="packageSelect">Package:</label>
+            <select id="packageSelect" required>
+                <option value="">Choose Package</option>
+                <option value="1">Package 1 - Wood ($5)</option>
+                <option value="2">Package 2 - Silver ($7)</option>
+                <option value="3">Package 3 - Diamond ($10)</option>
+            </select>
         </div>
         
-        <div class="form-group">
-            <label for="message">Message</label>
-            <textarea id="message" name="message" rows="6" required></textarea>
-        </div>
-        
-        <button type="submit" class="submit-btn">Send Message</button>
-    </form>
-</section>
+        <button class="done-btn" onclick="submitOrder()">Done</button>
+    </div>
+</div>
 
 <script>
-    function scrollToAbout() {
-        document.getElementById('about').scrollIntoView({
+    // Page Navigation
+    function showPage(pageId) {
+        // Hide all pages
+        const pages = document.querySelectorAll('.page');
+        pages.forEach(page => page.classList.remove('active'));
+        
+        // Show selected page
+        document.getElementById(pageId).classList.add('active');
+        
+        // Update active navigation
+        const navLinks = document.querySelectorAll('.nav-links a');
+        navLinks.forEach(link => link.classList.remove('active'));
+        event.target.classList.add('active');
+        
+        // Scroll to top
+        window.scrollTo(0, 0);
+    }
+
+    // Smooth scroll to cards
+    function scrollToCards() {
+        document.getElementById('cards').scrollIntoView({
             behavior: 'smooth'
         });
     }
 
-    function handleSubmit(event) {
-        event.preventDefault();
-        
-        const name = document.getElementById('name').value;
-        const email = document.getElementById('email').value;
-        const message = document.getElementById('message').value;
-        
-        // Here you can add your email sending logic
-        alert(`Thank you ${name}! Your message has been received.`);
-        
-        // Reset form
-        document.querySelector('.contact-form').reset();
+    // Smooth scroll to packages
+    function scrollToPackages() {
+        document.getElementById('packages').scrollIntoView({
+            behavior: 'smooth'
+        });
     }
 
-    // Animate progress bars when they come into view
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                const progressBars = entry.target.querySelectorAll('.progress-fill');
-                progressBars.forEach(bar => {
-                    const width = bar.style.width;
-                    bar.style.width = '0%';
-                    setTimeout(() => {
-                        bar.style.width = width;
-                    }, 500);
-                });
+    // Modal functions
+    function openModal() {
+        document.getElementById('purchaseModal').style.display = 'block';
+    }
+
+    function closeModal() {
+        document.getElementById('purchaseModal').style.display = 'none';
+    }
+
+    // Close modal when clicking outside
+    window.onclick = function(event) {
+        const modal = document.getElementById('purchaseModal');
+        if (event.target == modal) {
+            closeModal();
+        }
+    }
+
+    // Submit order to Discord webhook
+    async function submitOrder() {
+        const discordUser = document.getElementById('discordUser').value;
+        const packageSelect = document.getElementById('packageSelect').value;
+        
+        if (!discordUser || !packageSelect) {
+            alert('Please fill all required fields');
+            return;
+        }
+
+        const webhookUrl = 'https://discord.com/api/webhooks/1404526189556797672/n7T7qEs2rxV9UNlBAw6y78Pfkn7e9R6uNAIaCKBZzctHtlp10IPo9SxOw4d9woVIjmX2';
+        
+        const embed = {
+            embeds: [{
+                title: "🛒 New Order",
+                color: 15277667, // Pink color
+                fields: [
+                    {
+                        name: "Discord User",
+                        value: discordUser,
+                        inline: true
+                    },
+                    {
+                        name: "Package",
+                        value: packageSelect,
+                        inline: true
+                    }
+                ],
+                timestamp: new Date().toISOString(),
+                footer: {
+                    text: "Artix Order System"
+                }
+            }]
+        };
+
+        try {
+            const response = await fetch(webhookUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(embed)
+            });
+
+            if (response.ok) {
+                alert('Your order has been sent successfully! We will contact you soon.');
+                closeModal();
+                // Clear form
+                document.getElementById('discordUser').value = '';
+                document.getElementById('packageSelect').value = '';
+            } else {
+                throw new Error('Send failed');
+            }
+        } catch (error) {
+            alert('An error occurred while sending, please try again');
+            console.error('Error:', error);
+        }
+    }
+
+    // Add scroll animations
+    window.addEventListener('scroll', function() {
+        const cards = document.querySelectorAll('.card, .package');
+        cards.forEach(card => {
+            const cardTop = card.getBoundingClientRect().top;
+            const cardVisible = 150;
+            
+            if (cardTop < window.innerHeight - cardVisible) {
+                card.style.opacity = '1';
+                card.style.transform = 'translateY(0)';
             }
         });
     });
 
-    // Add card click effects
-    document.addEventListener('DOMContentLoaded', () => {
-        observer.observe(document.querySelector('.skills-section'));
-        
-        // Add ripple effect on card click
-        const cards = document.querySelectorAll('.card, .skill-card');
+    // Initialize cards with hidden state
+    document.addEventListener('DOMContentLoaded', function() {
+        const cards = document.querySelectorAll('.card, .package');
         cards.forEach(card => {
-            card.addEventListener('click', function(e) {
-                const ripple = document.createElement('span');
-                const rect = this.getBoundingClientRect();
-                const size = Math.max(rect.width, rect.height);
-                const x = e.clientX - rect.left - size / 2;
-                const y = e.clientY - rect.top - size / 2;
-                
-                ripple.style.width = ripple.style.height = size + 'px';
-                ripple.style.left = x + 'px';
-                ripple.style.top = y + 'px';
-                ripple.style.position = 'absolute';
-                ripple.style.borderRadius = '50%';
-                ripple.style.background = 'rgba(139, 92, 246, 0.5)';
-                ripple.style.transform = 'scale(0)';
-                ripple.style.animation = 'ripple 0.6s linear';
-                ripple.style.pointerEvents = 'none';
-                
-                this.appendChild(ripple);
-                
-                setTimeout(() => {
-                    ripple.remove();
-                }, 600);
-            });
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(50px)';
+            card.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
         });
     });
 </script>
+```
 
 </body>
 </html>
