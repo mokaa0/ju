@@ -1,104 +1,57 @@
 const express = require('express');
+const axios = require('axios');
 const session = require('express-session');
-const MongoClient = require('mongodb').MongoClient;
-const OAuth2 = require('discord-oauth2');
-const path = require('path');
-
 const app = express();
-app.set('view engine', 'ejs');
-app.set('views', path.join(__dirname));
-app.use(express.static(__dirname));
+const PORT = process.env.PORT || 3000;
+
+// Middleware
+app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(express.static('public'));
+app.set('view engine', 'ejs');
 
 app.use(session({
-    secret: 'keyboard cat',
+    secret: 'secret-key',
     resave: false,
-    saveUninitialized: false
+    saveUninitialized: true
 }));
 
-// MongoDB
-const MONGO_URI = 'mongodb+srv://fahddhom44:eKY6tbkr0lq78Ueu@astro.pplzxcy.mongodb.net/?retryWrites=true&w=majority&appName=astro';
-let db, guildSettings;
-MongoClient.connect(MONGO_URI).then(client => {
-    db = client.db('discord_bot');
-    guildSettings = db.collection('guild_settings');
-    console.log('✅ MongoDB Connected');
-});
+// إعدادات البوت
+const BOT_IP = 'http://YOUR_BOT_IP'; // ضع هنا IP البوت
+const BOT_PORT = 1818;
 
-// Discord OAuth2
-const oauth = new OAuth2();
-const CLIENT_ID = 'ضع هنا Client ID';
-const CLIENT_SECRET = 'ضع هنا Client Secret';
-const REDIRECT_URI = 'https://astrog.xo.je/callback'; // رابط موقعك النهائي
-
-// صفحة Login
+// Routes
 app.get('/', (req, res) => {
-    if (!req.session.user) return res.render('index'); 
-    res.redirect('/dashboard');
+    res.render('dashboard', { guilds: req.session.guilds || [] });
 });
 
-// صفحة Dashboard
-app.get('/dashboard', async (req, res) => {
-    if (!req.session.user) return res.redirect('/');
-    
-    const guildsWithSettings = [];
-    for (const g of req.session.guilds) {
-        const settings = await guildSettings.findOne({ guildId: g.id });
-        guildsWithSettings.push({
-            ...g,
-            prefix: settings ? settings.prefix : '#',
-            giveawayEmoji: settings ? settings.giveawayEmoji : '🎉'
-        });
-    }
-
-    res.render('dashboard', { user: req.session.user, guilds: guildsWithSettings });
+app.get('/guild/:guildId', (req, res) => {
+    const guildId = req.params.guildId;
+    const guildData = req.session.guildSettings ? req.session.guildSettings[guildId] : null;
+    res.render('guild', { guildId, guildData });
 });
 
-// Login
-app.get('/login', (req, res) => {
-    const url = `https://discord.com/api/oauth2/authorize?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=code&scope=identify%20guilds`;
-    res.redirect(url);
-});
+app.post('/guild/:guildId/save', async (req, res) => {
+    const guildId = req.params.guildId;
+    const { prefix, giveawayEmoji, ownerRole } = req.body;
 
-// Callback
-app.get('/callback', async (req, res) => {
-    const code = req.query.code;
     try {
-        const tokenData = await oauth.tokenRequest({
-            clientId: CLIENT_ID,
-            clientSecret: CLIENT_SECRET,
-            code,
-            scope: 'identify guilds',
-            grantType: 'authorization_code',
-            redirectUri: REDIRECT_URI
+        const response = await axios.post(`${BOT_IP}:${BOT_PORT}/update-settings`, {
+            guildId,
+            prefix,
+            giveawayEmoji,
+            ownerRole
         });
-        const user = await oauth.getUser(tokenData.access_token);
-        const guildsRaw = await oauth.getUserGuilds(tokenData.access_token);
 
-        const guilds = guildsRaw.filter(g => (g.permissions & 0x8) === 0x8); // فقط الادمن
+        if (!req.session.guildSettings) req.session.guildSettings = {};
+        req.session.guildSettings[guildId] = response.data.data;
 
-        req.session.user = user;
-        req.session.guilds = guilds;
-        res.redirect('/dashboard');
+        res.redirect(`/guild/${guildId}`);
     } catch (err) {
-        console.log(err);
-        res.send("Error during Discord OAuth2");
+        console.error(err);
+        res.send('Error connecting to the bot API');
     }
 });
 
-// تحديث البريفكس والإيموجي
-app.post('/update', async (req, res) => {
-    if (!req.session.user) return res.redirect('/');
-    const { guildId, prefix, giveawayEmoji } = req.body;
-
-    await guildSettings.updateOne(
-        { guildId },
-        { $set: { prefix, giveawayEmoji } },
-        { upsert: true }
-    );
-    res.redirect('/dashboard');
-});
-
-// تشغيل السيرفر
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+// Start server
+app.listen(PORT, () => console.log(`Dashboard running on port ${PORT}`));
