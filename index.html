@@ -1,14 +1,55 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Login - Discord Dashboard</title>
-<link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Discord Dashboard</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div class="center-login">
-    <h1>Welcome to Astro Dashboard</h1>
-    <a class="login-btn" href="/login">Login with Discord</a>
-</div>
+    <header>
+        <h1>Discord Dashboard</h1>
+        <nav>
+            <button onclick="login()">Login</button>
+        </nav>
+    </header>
+
+    <main>
+        <section id="guilds">
+            <h2>Your Servers</h2>
+            <ul id="guild-list">
+                <!-- السيرفرات تظهر هنا بعد تسجيل الدخول -->
+            </ul>
+        </section>
+    </main>
+
+    <script src="main.js"></script>
+    <script>
+        function login() {
+            // رابط OAuth2 تسجيل الدخول
+            window.location.href = "https://discord.com/oauth2/authorize?client_id=1404934627411623946&response_type=code&redirect_uri=https%3A%2F%2Fastrog.xo.je%2Fcallback&scope=identify+email+guilds+guilds.channels.read";
+        }
+
+        // مثال لجلب السيرفرات بعد تسجيل الدخول
+        async function loadGuilds() {
+            try {
+                const response = await fetch('/api/guilds'); // لاحقاً ستوفر API السيرفر
+                const data = await response.json();
+
+                const list = document.getElementById('guild-list');
+                list.innerHTML = '';
+                data.forEach(guild => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `<a href="/guild/${guild.id}">${guild.name}</a>`;
+                    list.appendChild(li);
+                });
+            } catch (err) {
+                console.error('Failed to load guilds:', err);
+            }
+        }
+
+        // استدعاء بعد التحميل
+        loadGuilds();
+    </script>
 </body>
 </html>
