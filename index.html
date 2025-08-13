@@ -1,55 +1,93 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Discord Dashboard</title>
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
-    <header>
-        <h1>Discord Dashboard</h1>
-        <nav>
-            <button onclick="login()">Login</button>
-        </nav>
-    </header>
+require('dotenv').config();
+const express = require('express');
+const session = require('express-session');
+const passport = require('passport');
+const DiscordStrategy = require('passport-discord').Strategy;
+const MongoClient = require('mongodb').MongoClient;
+const path = require('path');
+const axios = require('axios');
 
-    <main>
-        <section id="guilds">
-            <h2>Your Servers</h2>
-            <ul id="guild-list">
-                <!-- السيرفرات تظهر هنا بعد تسجيل الدخول -->
-            </ul>
-        </section>
-    </main>
+const app = express();
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
+app.set('view engine', 'ejs');
+app.use(express.static(path.join(__dirname, 'public')));
 
-    <script src="main.js"></script>
-    <script>
-        function login() {
-            // رابط OAuth2 تسجيل الدخول
-            window.location.href = "https://discord.com/oauth2/authorize?client_id=1404934627411623946&response_type=code&redirect_uri=https%3A%2F%2Fastrog.xo.je%2Fcallback&scope=identify+email+guilds+guilds.channels.read";
-        }
+const scopes = ['identify', 'guilds'];
 
-        // مثال لجلب السيرفرات بعد تسجيل الدخول
-        async function loadGuilds() {
-            try {
-                const response = await fetch('/api/guilds'); // لاحقاً ستوفر API السيرفر
-                const data = await response.json();
+passport.serializeUser((user, done) => done(null, user));
+passport.deserializeUser((obj, done) => done(null, obj));
 
-                const list = document.getElementById('guild-list');
-                list.innerHTML = '';
-                data.forEach(guild => {
-                    const li = document.createElement('li');
-                    li.innerHTML = `<a href="/guild/${guild.id}">${guild.name}</a>`;
-                    list.appendChild(li);
-                });
-            } catch (err) {
-                console.error('Failed to load guilds:', err);
-            }
-        }
+passport.use(new DiscordStrategy({
+    clientID: process.env.CLIENT_ID,
+    clientSecret: process.env.CLIENT_SECRET,
+    callbackURL: process.env.CALLBACK_URL,
+    scope: scopes
+}, function(accessToken, refreshToken, profile, done) {
+    process.nextTick(() => done(null, profile));
+}));
 
-        // استدعاء بعد التحميل
-        loadGuilds();
-    </script>
-</body>
-</html>
+app.use(session({
+    secret: process.env.SESSION_SECRET,
+    resave: false,
+    saveUninitialized: false
+}));
+
+app.use(passport.initialize());
+app.use(passport.session());
+
+let db;
+MongoClient.connect(process.env.MONGO_URI, { useUnifiedTopology: true }, (err, client) => {
+    if (err) console.error(err);
+    db = client.db('giveawayDB');
+});
+
+// Routes
+app.get('/', (req, res) => {
+    res.render('index', { user: req.user });
+});
+
+app.get('/login', passport.authenticate('discord'));
+
+app.get('/callback',
+    passport.authenticate('discord', { failureRedirect: '/' }),
+    (req, res) => {
+        res.redirect('/dashboard');
+    }
+);
+
+function checkAuth(req, res, next) {
+    if (req.isAuthenticated()) return next();
+    res.redirect('/');
+}
+
+app.get('/dashboard', checkAuth, async (req, res) => {
+    // جلب السيرفرات اللي فيها المستخدم حق الادمن
+    const guilds = req.user.guilds.filter(g => (g.permissions & 0x8) === 0x8); // ADMINISTRATOR
+    const settings = {};
+    for (const g of guilds) {
+        const guildSettings = await db.collection('servers').findOne({ guildId: g.id }) || {
+            prefix: '#',
+            giveawayEmoji: 'giveaway001',
+            accessRole: null
+        };
+        settings[g.id] = guildSettings;
+    }
+    res.render('dashboard', { user: req.user, guilds, settings });
+});
+
+app.post('/update/:guildId', checkAuth, async (req, res) => {
+    const { prefix, giveawayEmoji, accessRole } = req.body;
+    await db.collection('servers').updateOne(
+        { guildId: req.params.guildId },
+        { $set: { prefix, giveawayEmoji, accessRole } },
+        { upsert: true }
+    );
+    res.redirect('/dashboard');
+});
+
+app.get('/logout', (req, res) => {
+    req.logout(() => { res.redirect('/'); });
+});
+
+app.listen(process.env.PORT, () => console.log(`Dashboard running on port ${process.env.PORT}`));l
