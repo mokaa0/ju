@@ -31,23 +31,23 @@ const CLIENT_ID = 'ضع هنا Client ID';
 const CLIENT_SECRET = 'ضع هنا Client Secret';
 const REDIRECT_URI = 'https://astrog.xo.je/callback'; // رابط موقعك النهائي
 
-// صفحات
+// صفحة Login
 app.get('/', (req, res) => {
-    if (!req.session.user) return res.render('index'); // صفحة Login
+    if (!req.session.user) return res.render('index'); 
     res.redirect('/dashboard');
 });
 
+// صفحة Dashboard
 app.get('/dashboard', async (req, res) => {
     if (!req.session.user) return res.redirect('/');
     
-    // جلب الإعدادات من DB لكل سيرفر
     const guildsWithSettings = [];
     for (const g of req.session.guilds) {
         const settings = await guildSettings.findOne({ guildId: g.id });
         guildsWithSettings.push({
             ...g,
-            prefix: settings?.prefix || '#',
-            giveawayEmoji: settings?.giveawayEmoji || '🎉'
+            prefix: settings ? settings.prefix : '#',
+            giveawayEmoji: settings ? settings.giveawayEmoji : '🎉'
         });
     }
 
@@ -75,8 +75,7 @@ app.get('/callback', async (req, res) => {
         const user = await oauth.getUser(tokenData.access_token);
         const guildsRaw = await oauth.getUserGuilds(tokenData.access_token);
 
-        // عرض فقط السيرفرات التي لديه فيها ادمن
-        const guilds = guildsRaw.filter(g => (g.permissions & 0x8) === 0x8);
+        const guilds = guildsRaw.filter(g => (g.permissions & 0x8) === 0x8); // فقط الادمن
 
         req.session.user = user;
         req.session.guilds = guilds;
@@ -102,4 +101,4 @@ app.post('/update', async (req, res) => {
 
 // تشغيل السيرفر
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));ة
+app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
