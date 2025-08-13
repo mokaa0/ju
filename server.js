@@ -6,6 +6,7 @@ const path = require('path');
 
 const app = express();
 app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname));
 app.use(express.static(__dirname));
 app.use(express.urlencoded({ extended: true }));
 
@@ -32,45 +33,73 @@ const REDIRECT_URI = 'https://astrog.xo.je/callback'; // رابط موقعك ا�
 
 // صفحات
 app.get('/', (req, res) => {
-    if (!req.session.user) return res.redirect('/login');
-    res.render('views', { user: req.session.user, guilds: req.session.guilds });
+    if (!req.session.user) return res.render('index'); // صفحة Login
+    res.redirect('/dashboard');
 });
 
+app.get('/dashboard', async (req, res) => {
+    if (!req.session.user) return res.redirect('/');
+    
+    // جلب الإعدادات من DB لكل سيرفر
+    const guildsWithSettings = [];
+    for (const g of req.session.guilds) {
+        const settings = await guildSettings.findOne({ guildId: g.id });
+        guildsWithSettings.push({
+            ...g,
+            prefix: settings?.prefix || '#',
+            giveawayEmoji: settings?.giveawayEmoji || '🎉'
+        });
+    }
+
+    res.render('dashboard', { user: req.session.user, guilds: guildsWithSettings });
+});
+
+// Login
 app.get('/login', (req, res) => {
     const url = `https://discord.com/api/oauth2/authorize?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=code&scope=identify%20guilds`;
     res.redirect(url);
 });
 
+// Callback
 app.get('/callback', async (req, res) => {
     const code = req.query.code;
-    const tokenData = await oauth.tokenRequest({
-        clientId: CLIENT_ID,
-        clientSecret: CLIENT_SECRET,
-        code,
-        scope: 'identify guilds',
-        grantType: 'authorization_code',
-        redirectUri: REDIRECT_URI
-    });
-    const user = await oauth.getUser(tokenData.access_token);
-    const guildsRaw = await oauth.getUserGuilds(tokenData.access_token);
+    try {
+        const tokenData = await oauth.tokenRequest({
+            clientId: CLIENT_ID,
+            clientSecret: CLIENT_SECRET,
+            code,
+            scope: 'identify guilds',
+            grantType: 'authorization_code',
+            redirectUri: REDIRECT_URI
+        });
+        const user = await oauth.getUser(tokenData.access_token);
+        const guildsRaw = await oauth.getUserGuilds(tokenData.access_token);
 
-    // اختيارات: عرض فقط السيرفرات التي لديه فيها ادمن
-    const guilds = guildsRaw.filter(g => (g.permissions & 0x8) === 0x8); 
+        // عرض فقط السيرفرات التي لديه فيها ادمن
+        const guilds = guildsRaw.filter(g => (g.permissions & 0x8) === 0x8);
 
-    req.session.user = user;
-    req.session.guilds = guilds;
-    res.redirect('/');
+        req.session.user = user;
+        req.session.guilds = guilds;
+        res.redirect('/dashboard');
+    } catch (err) {
+        console.log(err);
+        res.send("Error during Discord OAuth2");
+    }
 });
 
 // تحديث البريفكس والإيموجي
 app.post('/update', async (req, res) => {
+    if (!req.session.user) return res.redirect('/');
     const { guildId, prefix, giveawayEmoji } = req.body;
+
     await guildSettings.updateOne(
         { guildId },
         { $set: { prefix, giveawayEmoji } },
         { upsert: true }
     );
-    res.redirect('/');
+    res.redirect('/dashboard');
 });
 
-app.listen(3000, () => console.log('Server running on http://localhost:3000'));
+// تشغيل السيرفر
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));ة
