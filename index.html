@@ -1,160 +1,96 @@
-/* ---------- Reset & Base ---------- */
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+const express = require("express");
+const session = require("express-session");
+const passport = require("passport");
+const DiscordStrategy = require("passport-discord").Strategy;
+const fetch = require("node-fetch");
+const path = require("path");
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// ===== إعدادات البوت والموقع =====
+const CLIENT_ID = "ضع_CLIENT_ID_هنا";
+const CLIENT_SECRET = "ضع_CLIENT_SECRET_هنا";
+const CALLBACK_URL = "https://اسم_الموقع_حقك.up.railway.app/auth/discord/callback";
+const BOT_API_URL = "http://IP_البوت_العام:PORT"; // مثال: http://123.45.67.89:3000
+
+// ===== إعدادات الجلسة =====
+app.use(session({
+    secret: "secret_key",
+    resave: false,
+    saveUninitialized: false
+}));
+
+app.use(passport.initialize());
+app.use(passport.session());
+app.use(express.json());
+app.use(express.static(path.join(__dirname, "public")));
+
+// ===== إعداد الباسبور للـ Discord OAuth2 =====
+passport.serializeUser((user, done) => done(null, user));
+passport.deserializeUser((obj, done) => done(null, obj));
+
+passport.use(new DiscordStrategy({
+    clientID: CLIENT_ID,
+    clientSecret: CLIENT_SECRET,
+    callbackURL: CALLBACK_URL,
+    scope: ['identify', 'email', 'guilds']
+}, (accessToken, refreshToken, profile, done) => {
+    return done(null, profile);
+}));
+
+// ===== تسجيل الدخول =====
+app.get("/auth/discord", passport.authenticate("discord"));
+app.get("/auth/discord/callback",
+    passport.authenticate("discord", { failureRedirect: "/" }),
+    (req, res) => res.redirect("/dashboard")
+);
+
+// ===== التحقق من تسجيل الدخول =====
+function checkAuth(req, res, next) {
+    if (req.isAuthenticated()) return next();
+    res.redirect("/");
 }
 
-body {
-    display: flex;
-    min-height: 100vh;
-    background-color: #1e1f22;
-    color: #ffffff;
-}
+// ===== تسجيل الخروج =====
+app.get("/logout", (req, res) => {
+    req.logout(() => {});
+    res.redirect("/");
+});
 
-/* ---------- Sidebar ---------- */
-#sidebar {
-    width: 220px;
-    background-color: #2f3136;
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    border-right: 1px solid #202225;
-}
+// ===== API لجلب بيانات المستخدم =====
+app.get("/api/user", checkAuth, (req, res) => {
+    const guilds = req.user.guilds.filter(g => (g.permissions & 0x8) === 0x8);
+    res.json({ user: req.user, guilds });
+});
 
-#sidebar h2 {
-    font-size: 18px;
-    margin-bottom: 15px;
-    color: #ffffff;
-    text-align: center;
-}
-
-#sidebar ul {
-    list-style: none;
-}
-
-#sidebar ul li {
-    padding: 10px 15px;
-    margin-bottom: 5px;
-    background-color: #36393f;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.2s ease-in-out;
-}
-
-#sidebar ul li:hover {
-    background-color: #5865f2;
-    transform: translateX(5px);
-    color: #ffffff;
-}
-
-/* ---------- Main Content ---------- */
-#main {
-    flex: 1;
-    padding: 30px;
-    overflow-y: auto;
-}
-
-.guild-settings {
-    background-color: #2f3136;
-    padding: 20px;
-    border-radius: 12px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-}
-
-.guild-settings h2 {
-    margin-bottom: 20px;
-    color: #ffffff;
-    font-size: 22px;
-}
-
-label {
-    display: block;
-    margin-bottom: 5px;
-    color: #b9bbbe;
-    font-weight: 500;
-}
-
-input, select {
-    width: 100%;
-    padding: 10px 12px;
-    margin-bottom: 15px;
-    border-radius: 8px;
-    border: none;
-    background-color: #202225;
-    color: #ffffff;
-    font-size: 14px;
-}
-
-input:focus, select:focus {
-    outline: 2px solid #5865f2;
-}
-
-/* ---------- Buttons ---------- */
-button {
-    padding: 10px 20px;
-    border-radius: 8px;
-    border: none;
-    background: linear-gradient(90deg, #5865f2, #7289da);
-    color: #ffffff;
-    font-weight: bold;
-    cursor: pointer;
-    transition: all 0.2s ease-in-out;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-}
-
-button:hover {
-    transform: scale(1.05);
-    background: linear-gradient(90deg, #7289da, #5865f2);
-}
-
-/* ---------- Scrollbar ---------- */
-#main::-webkit-scrollbar {
-    width: 8px;
-}
-
-#main::-webkit-scrollbar-track {
-    background: #1e1f22;
-}
-
-#main::-webkit-scrollbar-thumb {
-    background-color: #5865f2;
-    border-radius: 4px;
-}
-
-/* ---------- Alerts ---------- */
-.alert {
-    padding: 10px 15px;
-    border-radius: 8px;
-    margin-bottom: 15px;
-    background-color: #43b581;
-    color: #ffffff;
-    animation: fadeIn 0.5s;
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(-10px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-/* ---------- Responsive ---------- */
-@media screen and (max-width: 768px) {
-    #sidebar {
-        width: 60px;
-        padding: 10px;
+// ===== API لجلب البريفكس =====
+app.get("/api/prefix", checkAuth, async (req, res) => {
+    try {
+        const data = await fetch(`${BOT_API_URL}/prefix`).then(r => r.json());
+        res.json(data);
+    } catch (err) {
+        res.status(500).send("تعذر جلب البريفكس");
     }
+});
 
-    #sidebar h2 {
-        display: none;
+// ===== API لتغيير البريفكس =====
+app.post("/api/prefix", checkAuth, async (req, res) => {
+    try {
+        const body = req.body;
+        await fetch(`${BOT_API_URL}/prefix`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ prefix: body.prefix })
+        });
+        res.send("تم تغيير البريفكس");
+    } catch (err) {
+        res.status(500).send("تعذر تغيير البريفكس");
     }
+});
 
-    #sidebar ul li {
-        padding: 10px;
-        font-size: 12px;
-    }
+// ===== صفحات HTML =====
+app.get("/", (req, res) => res.sendFile(path.join(__dirname, "public", "index.html")));
+app.get("/dashboard", checkAuth, (req, res) => res.sendFile(path.join(__dirname, "public", "dashboard.html")));
 
-    #main {
-        padding: 15px;
-    }
-}
+app.listen(PORT, () => console.log(`الموقع يعمل على البورت ${PORT}`));
