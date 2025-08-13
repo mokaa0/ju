@@ -1,55 +1,14 @@
-<!doctype html>
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <title>Giveaway Dashboard</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <style>
-    body{background:#000;color:#fff;font-family:Inter,Arial,sans-serif;margin:0}
-    header{display:flex;justify-content:space-between;align-items:center;padding:18px 24px;border-bottom:1px solid #1a1a1a}
-    .btn{background:#111;border:1px solid #222;padding:10px 16px;border-radius:8px;color:#fff;cursor:pointer}
-    .btn:hover{border-color:#444}
-    .row{display:flex;gap:12px}
-    main{padding:48px 24px;text-align:center}
-    .avatar{width:36px;height:36px;border-radius:50%;vertical-align:middle;margin-right:8px}
-    .logo{font-weight:700;letter-spacing:.5px}
-  </style>
+<meta charset="UTF-8">
+<title>Login - Discord Dashboard</title>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <header>
-    <div class="logo">Giveaway Bot</div>
-    <div id="auth">
-      <button class="btn" onclick="location.href='/login'">Login</button>
-    </div>
-  </header>
-  <main>
-    <h1>Simple, fast giveaways for your server</h1>
-    <div class="row" style="justify-content:center;margin-top:24px">
-      <button class="btn" onclick="location.href='/login'">Login</button>
-      <button class="btn" onclick="location.href='/dashboard.html'">Dashboard</button>
-      <button class="btn" id="addBtn">Add To Server</button>
-    </div>
-  </main>
-  <script>
-    // swap login button with avatar if logged-in
-    fetch('/api/me').then(r=>r.json()).then(({user})=>{
-      const el=document.getElementById('auth');
-      const addBtn=document.getElementById('addBtn');
-      if(user){
-        const avatar = user.avatar ? 
-          `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=64` :
-          `https://cdn.discordapp.com/embed/avatars/${(+user.discriminator)%5}.png`;
-        el.innerHTML = `
-          <img class="avatar" src="${avatar}" alt="">
-          <span>${user.username}</span>
-          <button class="btn" style="margin-left:12px" onclick="location.href='/logout'">Logout</button>
-        `;
-        // use CLIENT_ID on server: provide via meta tag if you want dynamic; here simple href:
-        addBtn.onclick = ()=>location.href='https://discord.com/oauth2/authorize?client_id=YOUR_CLIENT_ID&permissions=8&scope=bot%20applications.commands';
-      }else{
-        addBtn.onclick = ()=>location.href='https://discord.com/oauth2/authorize?client_id=YOUR_CLIENT_ID&permissions=8&scope=bot%20applications.commands';
-      }
-    });
-  </script>
+<div class="center-login">
+    <h1>Welcome to Astro Dashboard</h1>
+    <a class="login-btn" href="/login">Login with Discord</a>
+</div>
 </body>
 </html>
