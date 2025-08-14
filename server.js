@@ -1,123 +1,77 @@
-const { Client, GatewayIntentBits, Partials, EmbedBuilder } = require("discord.js");
-const express = require("express");
-const session = require("express-session");
-const fs = require("fs");
-const path = require("path");
-const fetch = require("node-fetch");
+1
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Discord Giveaway Dashboard</title>
+<link href="style.css" rel="stylesheet">
+</head>
+<body class="bg-gray-900 text-white">
+<div id="root"></div>
+<script type="module" src="main.jsx"></script>
+</body>
+</html>
 
-// ---------- إعدادات ----------
-const TOKEN = "توكن_البوت_هنا";
-const CLIENT_ID = "ايدي_البوت_هنا";
-const CLIENT_SECRET = "سيكرت_التطبيق";
-const REDIRECT_URI = "http://localhost:3000/api/callback";
+3
+import React, { useState, useEffect } from "react";
+import ReactDOM from "react-dom/client";
+import axios from "axios";
 
-const DATA_PATH = path.join(__dirname, "data.json");
-if (!fs.existsSync(DATA_PATH)) fs.writeFileSync(DATA_PATH, "{}");
-let guildData = JSON.parse(fs.readFileSync(DATA_PATH));
-function saveData() { fs.writeFileSync(DATA_PATH, JSON.stringify(guildData, null, 2)); }
+function App(){
+  const [guilds,setGuilds]=useState([]);
+  const [selectedGuild,setSelectedGuild]=useState(null);
+  const [settings,setSettings]=useState({prefix:"#",accessRole:null,autoReplies:{enabled:false,list:[]}});
 
-// ---------- بوت ----------
-const client = new Client({
-  intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent,
-    GatewayIntentBits.GuildMessageReactions
-  ],
-  partials: [Partials.Message, Partials.Channel, Partials.Reaction]
-});
+  useEffect(()=>{axios.get("/api/guilds").then(res=>setGuilds(res.data)).catch(()=>{});},[]);
+  useEffect(()=>{if(selectedGuild){axios.get(`/api/guild/${selectedGuild}/settings`).then(res=>setSettings(res.data))}},[selectedGuild]);
 
-client.on("ready", () => console.log(`✅ Logged in as ${client.user.tag}`));
+  const login=()=>{window.location.href="/api/login";}
+  const saveSettings=()=>{axios.post(`/api/guild/${selectedGuild}/settings`,settings).then(()=>alert("Saved!"));}
+  const addAutoReply=()=>{setSettings(prev=>({...prev,autoReplies:{...prev.autoReplies,list:[...prev.autoReplies.list,{short:"",reply:""}]}}));}
 
-// رفع الإيموجي عند دخول سيرفر
-client.on("guildCreate", async guild => {
-  try {
-    await guild.emojis.create({ attachment: path.join(__dirname,"giveaway.png"), name: "giveaway0011" });
-  } catch {}
-});
-
-// أمر #gstart
-client.on("messageCreate", async msg => {
-  if (msg.author.bot) return;
-  let prefix = guildData[msg.guildId]?.prefix || "#";
-  if (!msg.content.startsWith(prefix)) return;
-
-  let args = msg.content.slice(prefix.length).trim().split(/ +/);
-  let cmd = args.shift().toLowerCase();
-
-  if (cmd === "gstart") {
-    let [duration, winnersCount, ...prizeArr] = args;
-    if (!duration || !winnersCount || !prizeArr.length) return msg.reply(`❌ Usage: ${prefix}gstart <duration> <winners> <prize>`);
-
-    let timeMs = parseDuration(duration);
-    if (!timeMs || timeMs > 24 * 24*60*60*1000) return msg.reply("❌ Max duration 24d");
-
-    let prize = prizeArr.join(" ");
-    let embed = new EmbedBuilder()
-      .setTitle("🎉 GIVEAWAY 🎉")
-      .setDescription(`:giveaway0011: Prize: **${prize}**\n:giveaway0011: Ends at: in ${duration}\n:giveaway0011: Hosted By: ${msg.author}\n:giveaway0011: Winners: **${winnersCount}**`)
-      .setColor("Yellow");
-
-    let giveawayMsg = await msg.channel.send({ embeds: [embed] });
-    let emoji = msg.guild.emojis.cache.find(e => e.name === "giveaway0011");
-    if (emoji) await giveawayMsg.react(emoji);
-
-    setTimeout(async () => {
-      await giveawayMsg.fetch();
-      let reaction = giveawayMsg.reactions.cache.first();
-      if (!reaction) return msg.channel.send("No participants 😢");
-      let users = (await reaction.users.fetch()).filter(u => !u.bot).map(u => u);
-      if (!users.length) return msg.channel.send("No participants 😢");
-
-      let winners = [];
-      for (let i=0;i<winnersCount && users.length;i++){
-        winners.push(users.splice(Math.floor(Math.random()*users.length),1)[0]);
-      }
-      msg.channel.send(`The winners of this gif are: ${winners.map(w=>w).join(" ")}`);
-    }, timeMs);
-  }
-});
-
-function parseDuration(str){
-  let m = str.match(/(\d+)([smhd])/);
-  if(!m) return null;
-  let mult={s:1e3,m:6e4,h:36e5,d:864e5};
-  return parseInt(m[1])*mult[m[2]];
+  return(
+    <div className="flex h-screen">
+      <div className="w-64 bg-gray-800 p-4">
+        <h2 className="font-bold mb-4">Servers</h2>
+        <button onClick={login} className="w-full bg-red-500 py-2 mb-4 rounded">Login with Discord</button>
+        {guilds.map(g=>(
+          <div key={g.id} onClick={()=>setSelectedGuild(g.id)} className="p-2 hover:bg-gray-700 rounded cursor-pointer">{g.name}</div>
+        ))}
+      </div>
+      <div className="flex-1 p-6 overflow-y-auto">
+        {selectedGuild?(
+          <div className="space-y-6">
+            <div className="bg-gray-800 p-4 rounded">
+              <h3 className="font-bold mb-2">Prefix</h3>
+              <input value={settings.prefix} onChange={e=>setSettings({...settings,prefix:e.target.value})} className="bg-gray-700 px-2 py-1 rounded mr-2"/>
+              <button onClick={saveSettings} className="bg-black px-4 py-1 rounded">Save</button>
+            </div>
+            <div className="bg-gray-800 p-4 rounded">
+              <h3 className="font-bold mb-2">Access Role</h3>
+              <select value={settings.accessRole||""} onChange={e=>setSettings({...settings,accessRole:e.target.value})} className="bg-gray-700 px-2 py-1 rounded">
+                <option value="">None</option>
+                <option value="123">Role 1</option>
+                <option value="456">Role 2</option>
+              </select>
+            </div>
+            <div className="bg-gray-800 p-4 rounded">
+              <h3 className="font-bold mb-2 flex items-center">Auto Replies
+                <input type="checkbox" checked={settings.autoReplies.enabled} onChange={e=>setSettings({...settings,autoReplies:{...settings.autoReplies,enabled:e.target.checked}})} className="ml-2"/>
+              </h3>
+              {settings.autoReplies.list.map((ar,i)=>(
+                <div key={i} className="flex gap-2 mb-2">
+                  <input placeholder="Short" value={ar.short} onChange={e=>{const newList=[...settings.autoReplies.list]; newList[i].short=e.target.value; setSettings({...settings,autoReplies:{...settings.autoReplies,list:newList}})}} className="bg-gray-700 px-2 py-1 rounded flex-1"/>
+                  <input placeholder="Reply" value={ar.reply} onChange={e=>{const newList=[...settings.autoReplies.list]; newList[i].reply=e.target.value; setSettings({...settings,autoReplies:{...settings.autoReplies,list:newList}})}} className="bg-gray-700 px-2 py-1 rounded flex-1"/>
+                </div>
+              ))}
+              <button onClick={addAutoReply} className="bg-black px-4 py-1 rounded">+</button>
+            </div>
+          </div>
+        ):<div className="text-gray-400">Select a server from the left panel.</div>}
+      </div>
+    </div>
+  );
 }
 
-// ---------- API للموقع ----------
-const app = express();
-app.use(express.json());
-app.use(session({ secret:"secret", resave:false, saveUninitialized:false }));
-
-app.get("/api/login",(req,res)=>{
-  res.redirect(`https://discord.com/api/oauth2/authorize?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=code&scope=identify email guilds guilds.members.read`);
-});
-
-app.get("/api/callback", async (req,res)=>{
-  let code = req.query.code;
-  let body = new URLSearchParams({ client_id:CLIENT_ID,client_secret:CLIENT_SECRET,grant_type:"authorization_code",code,redirect_uri:REDIRECT_URI });
-  let tokenRes = await fetch("https://discord.com/api/oauth2/token",{method:"POST",body,headers:{"Content-Type":"application/x-www-form-urlencoded"}});
-  let tokens = await tokenRes.json();
-  req.session.tokens = tokens;
-  res.redirect("/"); // يمكن توجيه للواجهة
-});
-
-app.get("/api/guilds", async (req,res)=>{
-  // هذه نسخة تجريبية، يفضل تعديلها لتجلب السيرفرات الحقيقية
-  res.json([{id:"123",name:"Test Server"}]);
-});
-
-app.get("/api/guild/:id/settings",(req,res)=>{
-  res.json(guildData[req.params.id] || {prefix:"#",accessRole:null,autoReplies:{enabled:false,list:[]}})
-});
-
-app.post("/api/guild/:id/settings",(req,res)=>{
-  guildData[req.params.id] = req.body;
-  saveData();
-  res.json({ok:true});
-});
-
-app.listen(3000,()=>console.log("🌐 API running on 3000"));
-
-client.login(TOKEN);
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
