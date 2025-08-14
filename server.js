@@ -1,77 +1,133 @@
-1
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Discord Giveaway Dashboard</title>
-<link href="style.css" rel="stylesheet">
-</head>
-<body class="bg-gray-900 text-white">
-<div id="root"></div>
-<script type="module" src="main.jsx"></script>
-</body>
-</html>
+const fs = require('fs');
+const path = require('path');
+const express = require('express');
+const session = require('cookie-session');
+const bodyParser = require('body-parser');
+const fetch = require('node-fetch');
+const { Client, GatewayIntentBits, Partials, EmbedBuilder } = require('discord.js');
 
-3
-import React, { useState, useEffect } from "react";
-import ReactDOM from "react-dom/client";
-import axios from "axios";
+// =====================
+// المتغيرات مباشرة
+const DISCORD_TOKEN = "ضع_توكن_البوت_هنا";
+const DISCORD_CLIENT_ID = "ضع_كلينت_آيدي_هنا";
+const DISCORD_CLIENT_SECRET = "ضع_كلينت_سكرت_هنا";
+const OAUTH_REDIRECT_URI = "http://localhost:3000/auth/callback";
+const GEMINI_API_KEY = "ضع_مفتاح_Gemini_2_0_Flash_هنا";
+const PORT = 3000;
 
-function App(){
-  const [guilds,setGuilds]=useState([]);
-  const [selectedGuild,setSelectedGuild]=useState(null);
-  const [settings,setSettings]=useState({prefix:"#",accessRole:null,autoReplies:{enabled:false,list:[]}});
-
-  useEffect(()=>{axios.get("/api/guilds").then(res=>setGuilds(res.data)).catch(()=>{});},[]);
-  useEffect(()=>{if(selectedGuild){axios.get(`/api/guild/${selectedGuild}/settings`).then(res=>setSettings(res.data))}},[selectedGuild]);
-
-  const login=()=>{window.location.href="/api/login";}
-  const saveSettings=()=>{axios.post(`/api/guild/${selectedGuild}/settings`,settings).then(()=>alert("Saved!"));}
-  const addAutoReply=()=>{setSettings(prev=>({...prev,autoReplies:{...prev.autoReplies,list:[...prev.autoReplies.list,{short:"",reply:""}]}}));}
-
-  return(
-    <div className="flex h-screen">
-      <div className="w-64 bg-gray-800 p-4">
-        <h2 className="font-bold mb-4">Servers</h2>
-        <button onClick={login} className="w-full bg-red-500 py-2 mb-4 rounded">Login with Discord</button>
-        {guilds.map(g=>(
-          <div key={g.id} onClick={()=>setSelectedGuild(g.id)} className="p-2 hover:bg-gray-700 rounded cursor-pointer">{g.name}</div>
-        ))}
-      </div>
-      <div className="flex-1 p-6 overflow-y-auto">
-        {selectedGuild?(
-          <div className="space-y-6">
-            <div className="bg-gray-800 p-4 rounded">
-              <h3 className="font-bold mb-2">Prefix</h3>
-              <input value={settings.prefix} onChange={e=>setSettings({...settings,prefix:e.target.value})} className="bg-gray-700 px-2 py-1 rounded mr-2"/>
-              <button onClick={saveSettings} className="bg-black px-4 py-1 rounded">Save</button>
-            </div>
-            <div className="bg-gray-800 p-4 rounded">
-              <h3 className="font-bold mb-2">Access Role</h3>
-              <select value={settings.accessRole||""} onChange={e=>setSettings({...settings,accessRole:e.target.value})} className="bg-gray-700 px-2 py-1 rounded">
-                <option value="">None</option>
-                <option value="123">Role 1</option>
-                <option value="456">Role 2</option>
-              </select>
-            </div>
-            <div className="bg-gray-800 p-4 rounded">
-              <h3 className="font-bold mb-2 flex items-center">Auto Replies
-                <input type="checkbox" checked={settings.autoReplies.enabled} onChange={e=>setSettings({...settings,autoReplies:{...settings.autoReplies,enabled:e.target.checked}})} className="ml-2"/>
-              </h3>
-              {settings.autoReplies.list.map((ar,i)=>(
-                <div key={i} className="flex gap-2 mb-2">
-                  <input placeholder="Short" value={ar.short} onChange={e=>{const newList=[...settings.autoReplies.list]; newList[i].short=e.target.value; setSettings({...settings,autoReplies:{...settings.autoReplies,list:newList}})}} className="bg-gray-700 px-2 py-1 rounded flex-1"/>
-                  <input placeholder="Reply" value={ar.reply} onChange={e=>{const newList=[...settings.autoReplies.list]; newList[i].reply=e.target.value; setSettings({...settings,autoReplies:{...settings.autoReplies,list:newList}})}} className="bg-gray-700 px-2 py-1 rounded flex-1"/>
-                </div>
-              ))}
-              <button onClick={addAutoReply} className="bg-black px-4 py-1 rounded">+</button>
-            </div>
-          </div>
-        ):<div className="text-gray-400">Select a server from the left panel.</div>}
-      </div>
-    </div>
-  );
+// =====================
+// إعدادات السيرفرات
+const SETTINGS_FILE = path.join(__dirname,'settings.json');
+let SETTINGS = {};
+try { SETTINGS = JSON.parse(fs.readFileSync(SETTINGS_FILE,'utf8')); } catch { SETTINGS={}; }
+function saveSettings(){ fs.writeFileSync(SETTINGS_FILE, JSON.stringify(SETTINGS,null,2)); }
+function defaultGuildSettings(gid){
+  if(!SETTINGS[gid]) SETTINGS[gid] = { embedColor:'#000000', aiChannelId:null };
+  return SETTINGS[gid];
 }
 
-ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+// =====================
+// بوت ديسكورد
+const client = new Client({
+  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent],
+  partials:[Partials.Channel]
+});
+
+async function askGemini(prompt){
+  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      contents:[{role:'user', parts:[{text:prompt}]}],
+      generationConfig:{temperature:0.7, topK:40, topP:0.9, maxOutputTokens:800}
+    })
+  });
+  const data = await res.json();
+  return data?.candidates?.[0]?.content?.parts?.map(p=>p.text).join('\n')||'تعذر توليد رد';
+}
+
+function buildAIEmbed(gid, author, prompt, answer){
+  const { embedColor } = defaultGuildSettings(gid);
+  return new EmbedBuilder()
+    .setColor(parseInt(embedColor.replace('#',''),16))
+    .setAuthor({ name: author })
+    .setDescription(answer.slice(0,4096))
+    .setFooter({ text:'Front AI • Gemini 2.0 Flash' })
+    .setTimestamp();
+}
+
+// الرد على روم AI فقط
+client.on('messageCreate', async msg=>{
+  if(msg.author.bot || !msg.guild) return;
+  const gset = defaultGuildSettings(msg.guild.id);
+  if(!gset.aiChannelId || msg.channel.id!==gset.aiChannelId) return;
+  try{
+    await msg.channel.sendTyping();
+    const reply = await askGemini(msg.content);
+    await msg.reply({ embeds:[buildAIEmbed(msg.guild.id, msg.author.username, msg.content, reply)] });
+  }catch(e){ console.error(e); }
+});
+
+client.once('ready', ()=>console.log(`🤖 البوت جاهز: ${client.user.tag}`));
+client.login(DISCORD_TOKEN);
+
+// =====================
+// خادم ويب
+const app = express();
+app.use(session({ name:'frontai_sess', keys:['frontai_secret'], maxAge:1000*60*60*24*7 }));
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({extended:true}));
+app.use(express.static(path.join(__dirname,'web')));
+
+// OAuth2 callback
+app.get('/auth/callback', async (req,res)=>{
+  const code = req.query.code;
+  if(!code) return res.redirect('/');
+  const params = new URLSearchParams({
+    client_id: DISCORD_CLIENT_ID,
+    client_secret: DISCORD_CLIENT_SECRET,
+    grant_type: 'authorization_code',
+    code,
+    redirect_uri: OAUTH_REDIRECT_URI,
+    scope: 'identify email guilds'
+  });
+  const tokenRes = await fetch('https://discord.com/api/oauth2/token',{
+    method:'POST',
+    body: params,
+    headers:{'Content-Type':'application/x-www-form-urlencoded'}
+  });
+  const data = await tokenRes.json();
+  req.session.token = data.access_token;
+  res.redirect('/dashboard.html');
+});
+
+// API لجلب السيرفرات التي لديك فيها Admin
+app.get('/api/guilds', async (req,res)=>{
+  if(!req.session.token) return res.status(401).json({error:'Unauthorized'});
+  const guildsRes = await fetch('https://discord.com/api/users/@me/guilds',{
+    headers:{Authorization:`Bearer ${req.session.token}`}
+  });
+  const guilds = await guildsRes.json();
+  const filtered = guilds.filter(g=> (g.permissions & 0x8) !==0 );
+  res.json(filtered);
+});
+
+// API لجلب رومات السيرفر
+app.get('/api/channels/:guildId', async (req,res)=>{
+  const gid = req.params.guildId;
+  if(!client.guilds.cache.has(gid)) return res.json([]);
+  const guild = client.guilds.cache.get(gid);
+  const channels = guild.channels.cache.filter(c=>c.type===0); // 0 = Text
+  res.json(channels.map(c=>({id:c.id,name:c.name})));
+});
+
+// API لحفظ الإعدادات
+app.post('/api/save', async (req,res)=>{
+  const { guildId, aiChannelId, embedColor } = req.body;
+  if(!guildId) return res.status(400).json({error:'Missing guildId'});
+  SETTINGS[guildId] = { aiChannelId, embedColor };
+  saveSettings();
+  res.json({success:true});
+});
+
+app.listen(PORT, ()=>console.log(`🌐 موقع Front AI يعمل على http://localhost:${PORT}`));
