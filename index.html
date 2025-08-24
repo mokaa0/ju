@@ -1,228 +1,442 @@
-import React from "react";
+<!DOCTYPE html>
 
-const FrontMaxWebsite = () => {
-  const features = [
-    {
-      title: "Premium Giveaway System",
-      description:
-        "Create amazing giveaways with advanced customization options, multiple entry methods, and automatic winner selection.",
-      icon: (
-        <svg className="w-12 h-12" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-        </svg>
-      ),
-    },
-    {
-      title: "Auto Role Management",
-      description:
-        "Automatically assign roles to giveaway winners and participants. Smart role distribution system for better server management.",
-      icon: (
-        <svg className="w-12 h-12" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M16 4c0-1.11.89-2 2-2s2 .89 2 2-.89 2-2 2-2-.89-2-2m4 18v-6h2.5l-2.54-7.63A1.5 1.5 0 0 0 18.54 8H16c-.8 0-1.54.37-2 1l-3.72 5.6L8.54 11.4A1.5 1.5 0 0 0 7.18 11H3v2h3.54l2.26 6.8c.18.53.63.95 1.18 1.18L12 22l2.04-1.02c.55-.23 1-.65 1.18-1.18L17.46 13H20v9h4z" />
-        </svg>
-      ),
-    },
-    {
-      title: "Real-time Analytics",
-      description:
-        "Track your giveaway performance with detailed analytics, participant insights, and engagement metrics in real-time.",
-      icon: (
-        <svg className="w-12 h-12" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z" />
-        </svg>
-      ),
-    },
-    {
-      title: "Smart Entry System",
-      description:
-        "Multiple entry methods including reactions, messages, invites, and custom requirements. Anti-cheat protection included.",
-      icon: (
-        <svg className="w-12 h-12" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11V12z" />
-        </svg>
-      ),
-    },
-    {
-      title: "Custom Rewards",
-      description:
-        "Set up any type of reward from Discord Nitro to custom server perks. Flexible prize distribution system.",
-      icon: (
-        <svg className="w-12 h-12" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
-        </svg>
-      ),
-    },
-    {
-      title: "24/7 Support",
-      description:
-        "Our dedicated support team is always ready to help. Premium support with fast response times and expert assistance.",
-      icon: (
-        <svg className="w-12 h-12" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M20 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h4l4 4 4-4h4c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-7 13h-2v-2h2v2zm0-4h-2V7h2v4z" />
-        </svg>
-      ),
-    },
-  ];
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FrontMax - The Future of Discord Giveaways</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <style>
+        @keyframes bounce {
+            0%, 20%, 53%, 80%, 100% {
+                transform: translateY(0);
+            }
+            40%, 43% {
+                transform: translateY(-10px);
+            }
+            70% {
+                transform: translateY(-5px);
+            }
+        }
 
-  return (
-    <div className="min-h-screen bg-gray-900">
-      {/* Hero Section */}
-      <div className="flex flex-col lg:flex-row items-center justify-between px-6 lg:px-20 py-20 min-h-screen">
-        {/* Left Side - Text Content */}
-        <div className="flex-1 max-w-2xl mb-16 lg:mb-0">
-          {/* Brand Name */}
-          <div className="mb-8">
-            <span className="text-5xl lg:text-7xl font-bold text-purple-400">Front</span>
-            <span className="text-5xl lg:text-7xl font-bold text-white">Max</span>
-          </div>
+    @keyframes pulse {
+        0% {
+            opacity: 1;
+        }
+        50% {
+            opacity: .5;
+        }
+        100% {
+            opacity: 1;
+        }
+    }
+    
+    @keyframes ping {
+        75%, 100% {
+            transform: scale(2);
+            opacity: 0;
+        }
+    }
+    
+    .animate-bounce {
+        animation: bounce 1s infinite;
+    }
+    
+    .animate-pulse {
+        animation: pulse 2s infinite;
+    }
+    
+    .animate-ping {
+        animation: ping 1s infinite;
+    }
+    
+    .transition-all {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    .group:hover .group-hover\:animate-bounce {
+        animation: bounce 1s infinite;
+    }
+    
+    .group:hover .group-hover\:animate-pulse {
+        animation: pulse 2s infinite;
+    }
+    
+    .group:active .group-active\:animate-bounce {
+        animation: bounce 0.5s;
+    }
+    
+    .group:active .group-active\:animate-ping {
+        animation: ping 0.5s;
+    }
+    
+    .backdrop-blur-lg {
+        backdrop-filter: blur(16px);
+    }
+    
+    .bg-gray-900 {
+        background-color: #111827;
+    }
+    
+    .bg-gray-800 {
+        background-color: #1f2937;
+    }
+    
+    .bg-gray-700 {
+        background-color: #374151;
+    }
+    
+    .bg-gray-600 {
+        background-color: #4b5563;
+    }
+    
+    .bg-gray-500 {
+        background-color: #6b7280;
+    }
+    
+    .text-purple-400 {
+        color: #a78bfa;
+    }
+    
+    .text-purple-300 {
+        color: #c4b5fd;
+    }
+    
+    .text-purple-200 {
+        color: #ddd6fe;
+    }
+    
+    .bg-purple-500 {
+        background-color: #8b5cf6;
+    }
+    
+    .bg-purple-600 {
+        background-color: #7c3aed;
+    }
+    
+    .bg-blue-500 {
+        background-color: #3b82f6;
+    }
+    
+    .bg-blue-400 {
+        background-color: #60a5fa;
+    }
+    
+    .bg-green-400 {
+        background-color: #4ade80;
+    }
+    
+    .bg-pink-400 {
+        background-color: #f472b6;
+    }
+    
+    .bg-cyan-400 {
+        background-color: #22d3ee;
+    }
+    
+    .border-purple-500 {
+        border-color: #8b5cf6;
+    }
+    
+    .border-purple-400 {
+        border-color: #a78bfa;
+    }
+    
+    .shadow-purple-500 {
+        box-shadow: 0 0 30px rgba(139, 92, 246, 0.3);
+    }
+</style>
 
-          {/* Headline */}
-          <h1 className="text-4xl lg:text-5xl font-bold text-white leading-tight mb-6">
+</head>
+<body class="min-h-screen bg-gray-900">
+
+<!-- Hero Section -->
+<div class="flex flex-col lg:flex-row items-center justify-between px-6 lg:px-20 py-20 min-h-screen">
+    
+    <!-- Left Side - Text Content -->
+    <div class="flex-1 max-w-2xl mb-16 lg:mb-0">
+        
+        <!-- Brand Name -->
+        <div class="mb-8">
+            <span class="text-5xl lg:text-7xl font-bold text-purple-400">Front</span>
+            <span class="text-5xl lg:text-7xl font-bold text-white">Max</span>
+        </div>
+        
+        <!-- Headline -->
+        <h1 class="text-4xl lg:text-5xl font-bold text-white leading-tight mb-6">
             The Future of
             <br />
             Discord Giveaways
-          </h1>
-
-          {/* Description */}
-          <p className="text-gray-400 text-lg lg:text-xl leading-relaxed mb-10">
+        </h1>
+        
+        <!-- Description -->
+        <p class="text-gray-400 text-lg lg:text-xl leading-relaxed mb-10">
             Run smarter giveaways with advanced conditions, 
             real-time analytics, and seamless Discord 
             integration. Grow your community like never 
             before.
-          </p>
-
-          {/* Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4">
-            <a
-              href="http://uk-01.rrhosting.eu:1652/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group px-8 py-4 bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white font-semibold rounded-lg transition-all duration-300 transform hover:scale-110 hover:shadow-2xl hover:shadow-purple-500/50 active:scale-90 text-center hover:rotate-1 hover:-translate-y-1"
-            >
-              <span className="group-hover:animate-pulse group-active:animate-bounce">Dashboard</span>
-            </a>
-
-            <a
-              href="https://discord.com/oauth2/authorize?client_id=1406633234648797264&permissions=8&integration_type=0&scope=bot"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group px-8 py-4 bg-transparent border-2 border-gray-600 hover:border-purple-400 hover:bg-purple-500/20 text-white font-semibold rounded-lg transition-all duration-300 transform hover:scale-110 hover:shadow-2xl hover:shadow-purple-500/40 active:scale-90 text-center hover:-rotate-1 hover:-translate-y-1"
-            >
-              <span className="group-hover:animate-pulse group-active:animate-bounce">Invite Bot</span>
-            </a>
-          </div>
-        </div>
-
-        {/* Right Side - Discord Interface Mockup */}
-        <div className="flex-1 max-w-2xl">
-          <div className="bg-gray-800/50 backdrop-blur-lg rounded-2xl p-8 shadow-2xl border border-gray-700/50 transition-all duration-500 hover:shadow-purple-500/30 hover:border-purple-500/30 transform hover:scale-105 hover:-translate-y-2 active:scale-95 cursor-pointer">
-            {/* Header */}
-            <div className="flex items-center gap-3 mb-6 p-3 bg-gray-700/60 rounded-lg transition-all duration-300 hover:bg-gray-600/60 active:bg-gray-500/60">
-              <div className="w-6 h-6 bg-blue-500 rounded transition-all duration-300 hover:animate-pulse active:animate-bounce"></div>
-              <div className="h-3 bg-gray-500 rounded-full flex-1 transition-all duration-300 hover:bg-gray-400"></div>
-            </div>
-
-            {/* Top Row - Two Cards */}
-            <div className="grid grid-cols-2 gap-6 mb-6">
-              <div className="bg-gray-700/60 rounded-xl p-6 transition-all duration-300 hover:bg-gray-600/60 hover:scale-105 active:scale-95 cursor-pointer">
-                <div className="w-8 h-8 bg-green-400 rounded-lg mb-3 transition-all duration-300 hover:animate-pulse"></div>
-                <div className="space-y-2">
-                  <div className="h-3 bg-gray-500 rounded-full"></div>
-                  <div className="h-2 bg-gray-600 rounded-full w-3/4"></div>
-                  <div className="h-2 bg-gray-600 rounded-full w-1/2"></div>
-                </div>
-              </div>
-
-              <div className="bg-gray-700/60 rounded-xl p-6 transition-all duration-300 hover:bg-gray-600/60 hover:scale-105 active:scale-95 cursor-pointer">
-                <div className="w-8 h-8 bg-pink-400 rounded-lg mb-3 transition-all duration-300 hover:animate-pulse"></div>
-                <div className="space-y-2">
-                  <div className="h-3 bg-gray-500 rounded-full"></div>
-                  <div className="h-2 bg-gray-600 rounded-full w-4/5"></div>
-                  <div className="h-2 bg-gray-600 rounded-full w-2/3"></div>
-                </div>
-              </div>
-            </div>
-
-            {/* Middle Row - Full Width Card */}
-            <div className="bg-gray-700/60 rounded-xl p-6 mb-6 transition-all duration-300 hover:bg-gray-600/60 hover:scale-105 active:scale-95 cursor-pointer">
-              <div className="flex items-center gap-4">
-                <div className="w-8 h-8 bg-cyan-400 rounded-lg transition-all duration-300 hover:animate-pulse"></div>
-                <div className="flex-1 space-y-2">
-                  <div className="h-3 bg-gray-500 rounded-full w-3/5"></div>
-                  <div className="h-2 bg-gray-600 rounded-full w-4/5"></div>
-                </div>
-                <div className="bg-blue-500 text-white px-4 py-2 rounded-lg text-sm transition-all duration-300 hover:bg-blue-400 hover:scale-110 active:scale-90">
-                  Enter
-                </div>
-              </div>
-            </div>
-
-            {/* Bottom Row - Full Width Card */}
-            <div className="bg-gray-700/60 rounded-xl p-6 transition-all duration-300 hover:bg-gray-600/60 hover:scale-105 active:scale-95 cursor-pointer">
-              <div className="flex items-center gap-4">
-                <div className="w-8 h-8 bg-purple-400 rounded-lg transition-all duration-300 hover:animate-pulse"></div>
-                <div className="flex-1 space-y-2">
-                  <div className="h-3 bg-gray-500 rounded-full w-2/5"></div>
-                  <div className="h-2 bg-gray-600 rounded-full w-3/5"></div>
-                </div>
-                <div className="bg-blue-500 text-white px-4 py-2 rounded-lg text-sm transition-all duration-300 hover:bg-blue-400 hover:scale-110 active:scale-90">
-                  Join
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Features Cards Section */}
-      <div className="px-6 lg:px-20 pb-20">
-        <div className="text-center mb-16">
-          <h2 className="text-4xl lg:text-5xl font-bold text-white mb-6">
-            Why Choose FrontMax?
-          </h2>
-          <p className="text-gray-400 text-xl max-w-3xl mx-auto">
-            The most advanced Discord giveaway bot with powerful features designed to grow your community
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
-          {features.map((feature, index) => (
-            <div
-              key={index}
-              className="group bg-gray-800 rounded-2xl p-8 border border-gray-700 transition-all duration-500 hover:bg-gray-750 hover:border-purple-500/50 hover:shadow-2xl hover:shadow-purple-500/40 transform hover:scale-110 hover:-translate-y-3 hover:rotate-1 active:scale-90 active:rotate-0 active:translate-y-0 cursor-pointer"
-            >
-              {/* Icon */}
-              <div className="text-purple-400 mb-6 group-hover:text-purple-300 transition-colors duration-300 group-hover:animate-bounce group-active:animate-ping transform group-hover:scale-125 group-active:scale-150">
-                {feature.icon}
-              </div>
-
-              {/* Title */}
-              <h3 className="text-2xl font-bold text-white mb-4 group-hover:text-purple-200 transition-colors duration-300">
-                {feature.title}
-              </h3>
-
-              {/* Description */}
-              <p className="text-gray-400 group-hover:text-gray-300 transition-colors duration-300 leading-relaxed text-lg">
-                {feature.description}
-              </p>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Footer */}
-      <div className="text-center pb-10 px-6">
-        <p className="text-gray-400 text-lg mb-4">
-          The Ultimate Discord Giveaway Bot Experience
         </p>
-        <div className="flex justify-center space-x-2">
-          <div className="animate-pulse h-2 w-2 bg-purple-400 rounded-full"></div>
-          <div className="animate-pulse h-2 w-2 bg-purple-500 rounded-full" style={{ animationDelay: "0.2s" }}></div>
-          <div className="animate-pulse h-2 w-2 bg-purple-600 rounded-full" style={{ animationDelay: "0.4s" }}></div>
+        
+        <!-- Buttons -->
+        <div class="flex flex-col sm:flex-row gap-4">
+            <a
+                href="http://uk-01.rrhosting.eu:1652/"
+                target="_blank"
+                class="group px-8 py-4 bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white font-semibold rounded-lg transition-all duration-300 transform hover:scale-110 hover:shadow-2xl active:scale-90 text-center hover:rotate-1 hover:-translate-y-1"
+                style="background: linear-gradient(to right, #8b5cf6, #3b82f6);"
+                onmouseover="this.style.background='linear-gradient(to right, #7c3aed, #2563eb)'"
+                onmouseout="this.style.background='linear-gradient(to right, #8b5cf6, #3b82f6)'"
+            >
+                <span class="group-hover:animate-pulse group-active:animate-bounce">Dashboard</span>
+            </a>
+            
+            <a
+                href="https://discord.com/oauth2/authorize?client_id=1406633234648797264&permissions=8&integration_type=0&scope=bot"
+                target="_blank"
+                class="group px-8 py-4 bg-transparent border-2 border-gray-600 hover:border-purple-400 text-white font-semibold rounded-lg transition-all duration-300 transform hover:scale-110 hover:shadow-2xl active:scale-90 text-center hover:-rotate-1 hover:-translate-y-1"
+            >
+                <span class="group-hover:animate-pulse group-active:animate-bounce">Invite Bot</span>
+            </a>
         </div>
-      </div>
+        
     </div>
-  );
-};
 
-export default FrontMaxWebsite;
+    <!-- Right Side - Discord Interface Mockup -->
+    <div class="flex-1 max-w-2xl">
+        <div class="bg-gray-800 backdrop-blur-lg rounded-2xl p-8 shadow-2xl border border-gray-700 transition-all duration-500 hover:shadow-purple-500 transform hover:scale-105 hover:-translate-y-2 active:scale-95 cursor-pointer"
+             style="background-color: rgba(31, 41, 55, 0.5);">
+            
+            <!-- Header -->
+            <div class="flex items-center gap-3 mb-6 p-3 rounded-lg transition-all duration-300 hover:bg-gray-600 active:bg-gray-500"
+                 style="background-color: rgba(55, 65, 81, 0.6);">
+                <div class="w-6 h-6 bg-blue-500 rounded transition-all duration-300 hover:animate-pulse active:animate-bounce"></div>
+                <div class="h-3 bg-gray-500 rounded-full flex-1 transition-all duration-300 hover:bg-gray-400"></div>
+            </div>
+            
+            <!-- Top Row - Two Cards -->
+            <div class="grid grid-cols-2 gap-6 mb-6">
+                
+                <div class="rounded-xl p-6 transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer"
+                     style="background-color: rgba(55, 65, 81, 0.6);"
+                     onmouseover="this.style.backgroundColor='rgba(75, 85, 99, 0.6)'"
+                     onmouseout="this.style.backgroundColor='rgba(55, 65, 81, 0.6)'">
+                    <div class="w-8 h-8 bg-green-400 rounded-lg mb-3 transition-all duration-300 hover:animate-pulse"></div>
+                    <div class="space-y-2">
+                        <div class="h-3 bg-gray-500 rounded-full"></div>
+                        <div class="h-2 bg-gray-600 rounded-full" style="width: 75%;"></div>
+                        <div class="h-2 bg-gray-600 rounded-full" style="width: 50%;"></div>
+                    </div>
+                </div>
+                
+                <div class="rounded-xl p-6 transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer"
+                     style="background-color: rgba(55, 65, 81, 0.6);"
+                     onmouseover="this.style.backgroundColor='rgba(75, 85, 99, 0.6)'"
+                     onmouseout="this.style.backgroundColor='rgba(55, 65, 81, 0.6)'">
+                    <div class="w-8 h-8 bg-pink-400 rounded-lg mb-3 transition-all duration-300 hover:animate-pulse"></div>
+                    <div class="space-y-2">
+                        <div class="h-3 bg-gray-500 rounded-full"></div>
+                        <div class="h-2 bg-gray-600 rounded-full" style="width: 80%;"></div>
+                        <div class="h-2 bg-gray-600 rounded-full" style="width: 67%;"></div>
+                    </div>
+                </div>
+                
+            </div>
+            
+            <!-- Middle Row - Full Width Card -->
+            <div class="rounded-xl p-6 mb-6 transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer"
+                 style="background-color: rgba(55, 65, 81, 0.6);"
+                 onmouseover="this.style.backgroundColor='rgba(75, 85, 99, 0.6)'"
+                 onmouseout="this.style.backgroundColor='rgba(55, 65, 81, 0.6)'">
+                <div class="flex items-center gap-4">
+                    <div class="w-8 h-8 bg-cyan-400 rounded-lg transition-all duration-300 hover:animate-pulse"></div>
+                    <div class="flex-1 space-y-2">
+                        <div class="h-3 bg-gray-500 rounded-full" style="width: 60%;"></div>
+                        <div class="h-2 bg-gray-600 rounded-full" style="width: 80%;"></div>
+                    </div>
+                    <div class="bg-blue-500 text-white px-4 py-2 rounded-lg text-sm transition-all duration-300 hover:bg-blue-400 hover:scale-110 active:scale-90">
+                        Enter
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Bottom Row - Full Width Card -->
+            <div class="rounded-xl p-6 transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer"
+                 style="background-color: rgba(55, 65, 81, 0.6);"
+                 onmouseover="this.style.backgroundColor='rgba(75, 85, 99, 0.6)'"
+                 onmouseout="this.style.backgroundColor='rgba(55, 65, 81, 0.6)'">
+                <div class="flex items-center gap-4">
+                    <div class="w-8 h-8 bg-purple-500 rounded-lg transition-all duration-300 hover:animate-pulse"></div>
+                    <div class="flex-1 space-y-2">
+                        <div class="h-3 bg-gray-500 rounded-full" style="width: 40%;"></div>
+                        <div class="h-2 bg-gray-600 rounded-full" style="width: 60%;"></div>
+                    </div>
+                    <div class="bg-blue-500 text-white px-4 py-2 rounded-lg text-sm transition-all duration-300 hover:bg-blue-400 hover:scale-110 active:scale-90">
+                        Join
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+    
+</div>
+
+<!-- Features Cards Section -->
+<div class="px-6 lg:px-20 pb-20">
+    
+    <div class="text-center mb-16">
+        <h2 class="text-4xl lg:text-5xl font-bold text-white mb-6">
+            Why Choose FrontMax?
+        </h2>
+        <p class="text-gray-400 text-xl max-w-3xl mx-auto">
+            The most advanced Discord giveaway bot with powerful features designed to grow your community
+        </p>
+    </div>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
+        
+        <!-- Feature Card 1 -->
+        <div class="group bg-gray-800 rounded-2xl p-8 border border-gray-700 transition-all duration-500 hover:border-purple-500 hover:shadow-2xl transform hover:scale-110 hover:-translate-y-3 hover:rotate-1 active:scale-90 active:rotate-0 active:translate-y-0 cursor-pointer"
+             onmouseover="this.style.boxShadow='0 0 30px rgba(139, 92, 246, 0.4)'"
+             onmouseout="this.style.boxShadow=''">
+            
+            <div class="text-purple-400 mb-6 transition-colors duration-300 transform hover:scale-125 active:scale-150">
+                <svg class="w-12 h-12" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                </svg>
+            </div>
+            
+            <h3 class="text-2xl font-bold text-white mb-4 transition-colors duration-300">
+                Premium Giveaway System
+            </h3>
+            
+            <p class="text-gray-400 transition-colors duration-300 leading-relaxed text-lg">
+                Create amazing giveaways with advanced customization options, multiple entry methods, and automatic winner selection.
+            </p>
+            
+        </div>
+        
+        <!-- Feature Card 2 -->
+        <div class="group bg-gray-800 rounded-2xl p-8 border border-gray-700 transition-all duration-500 hover:border-purple-500 hover:shadow-2xl transform hover:scale-110 hover:-translate-y-3 hover:rotate-1 active:scale-90 active:rotate-0 active:translate-y-0 cursor-pointer"
+             onmouseover="this.style.boxShadow='0 0 30px rgba(139, 92, 246, 0.4)'"
+             onmouseout="this.style.boxShadow=''">
+            
+            <div class="text-purple-400 mb-6 transition-colors duration-300 transform hover:scale-125 active:scale-150">
+                <svg class="w-12 h-12" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M16 4c0-1.11.89-2 2-2s2 .89 2 2-.89 2-2 2-2-.89-2-2m4 18v-6h2.5l-2.54-7.63A1.5 1.5 0 0 0 18.54 8H16c-.8 0-1.54.37-2 1l-3.72 5.6L8.54 11.4A1.5 1.5 0 0 0 7.18 11H3v2h3.54l2.26 6.8c.18.53.63.95 1.18 1.18L12 22l2.04-1.02c.55-.23 1-.65 1.18-1.18L17.46 13H20v9h4z"/>
+                </svg>
+            </div>
+            
+            <h3 class="text-2xl font-bold text-white mb-4 transition-colors duration-300">
+                Auto Role Management
+            </h3>
+            
+            <p class="text-gray-400 transition-colors duration-300 leading-relaxed text-lg">
+                Automatically assign roles to giveaway winners and participants. Smart role distribution system for better server management.
+            </p>
+            
+        </div>
+        
+        <!-- Feature Card 3 -->
+        <div class="group bg-gray-800 rounded-2xl p-8 border border-gray-700 transition-all duration-500 hover:border-purple-500 hover:shadow-2xl transform hover:scale-110 hover:-translate-y-3 hover:rotate-1 active:scale-90 active:rotate-0 active:translate-y-0 cursor-pointer"
+             onmouseover="this.style.boxShadow='0 0 30px rgba(139, 92, 246, 0.4)'"
+             onmouseout="this.style.boxShadow=''">
+            
+            <div class="text-purple-400 mb-6 transition-colors duration-300 transform hover:scale-125 active:scale-150">
+                <svg class="w-12 h-12" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/>
+                </svg>
+            </div>
+            
+            <h3 class="text-2xl font-bold text-white mb-4 transition-colors duration-300">
+                Real-time Analytics
+            </h3>
+            
+            <p class="text-gray-400 transition-colors duration-300 leading-relaxed text-lg">
+                Track your giveaway performance with detailed analytics, participant insights, and engagement metrics in real-time.
+            </p>
+            
+        </div>
+        
+        <!-- Feature Card 4 -->
+        <div class="group bg-gray-800 rounded-2xl p-8 border border-gray-700 transition-all duration-500 hover:border-purple-500 hover:shadow-2xl transform hover:scale-110 hover:-translate-y-3 hover:rotate-1 active:scale-90 active:rotate-0 active:translate-y-0 cursor-pointer"
+             onmouseover="this.style.boxShadow='0 0 30px rgba(139, 92, 246, 0.4)'"
+             onmouseout="this.style.boxShadow=''">
+            
+            <div class="text-purple-400 mb-6 transition-colors duration-300 transform hover:scale-125 active:scale-150">
+                <svg class="w-12 h-12" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11V12z"/>
+                </svg>
+            </div>
+            
+            <h3 class="text-2xl font-bold text-white mb-4 transition-colors duration-300">
+                Smart Entry System
+            </h3>
+            
+            <p class="text-gray-400 transition-colors duration-300 leading-relaxed text-lg">
+                Multiple entry methods including reactions, messages, invites, and custom requirements. Anti-cheat protection included.
+            </p>
+            
+        </div>
+        
+        <!-- Feature Card 5 -->
+        <div class="group bg-gray-800 rounded-2xl p-8 border border-gray-700 transition-all duration-500 hover:border-purple-500 hover:shadow-2xl transform hover:scale-110 hover:-translate-y-3 hover:rotate-1 active:scale-90 active:rotate-0 active:translate-y-0 cursor-pointer"
+             onmouseover="this.style.boxShadow='0 0 30px rgba(139, 92, 246, 0.4)'"
+             onmouseout="this.style.boxShadow=''">
+            
+            <div class="text-purple-400 mb-6 transition-colors duration-300 transform hover:scale-125 active:scale-150">
+                <svg class="w-12 h-12" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                </svg>
+            </div>
+            
+            <h3 class="text-2xl font-bold text-white mb-4 transition-colors duration-300">
+                Custom Rewards
+            </h3>
+            
+            <p class="text-gray-400 transition-colors duration-300 leading-relaxed text-lg">
+                Set up any type of reward from Discord Nitro to custom server perks. Flexible prize distribution system.
+            </p>
+            
+        </div>
+        
+        <!-- Feature Card 6 -->
+        <div class="group bg-gray-800 rounded-2xl p-8 border border-gray-700 transition-all duration-500 hover:border-purple-500 hover:shadow-2xl transform hover:scale-110 hover:-translate-y-3 hover:rotate-1 active:scale-90 active:rotate-0 active:translate-y-0 cursor-pointer"
+             onmouseover="this.style.boxShadow='0 0 30px rgba(139, 92, 246, 0.4)'"
+             onmouseout="this.style.boxShadow=''">
+            
+            <div class="text-purple-400 mb-6 transition-colors duration-300 transform hover:scale-125 active:scale-150">
+                <svg class="w-12 h-12" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M20 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h4l4 4 4-4h4c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-7 13h-2v-2h2v2zm0-4h-2V7h2v4z"/>
+                </svg>
+            </div>
+            
+            <h3 class="text-2xl font-bold text-white mb-4 transition-colors duration-300">
+                24/7 Support
+            </h3>
+            
+            <p class="text-gray-400 transition-colors duration-300 leading-relaxed text-lg">
+                Our dedicated support team is always ready to help. Premium support with fast response times and expert assistance.
+            </p>
+            
+        </div>
+        
+    </div>
+    
+</div>
+
+<!-- Footer -->
+<div class="text-center pb-10 px-6">
+    <p class="text-gray-400 text-lg mb-4">
+        The Ultimate Discord Giveaway Bot Experience
+    </p>
+    <div class="flex justify-center space-x-2">
+        <div class="animate-pulse h-2 w-2 bg-purple-400 rounded-full"></div>
+        <div class="animate-pulse h-2 w-2 bg-purple-500 rounded-full" style="animation-delay: 0.2s;"></div>
+        <div class="animate-pulse h-2 w-2 bg-purple-600 rounded-full" style="animation-delay: 0.4s;"></div>
+    </div>
+</div>
+
+</body>
+</html>
