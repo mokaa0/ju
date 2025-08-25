@@ -1,442 +1,399 @@
 <!DOCTYPE html>
 
-<html lang="en">
+<html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FrontMax - The Future of Discord Giveaways</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.js"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <title>Arab School</title>
     <style>
-        @keyframes bounce {
-            0%, 20%, 53%, 80%, 100% {
-                transform: translateY(0);
-            }
-            40%, 43% {
-                transform: translateY(-10px);
-            }
-            70% {
-                transform: translateY(-5px);
-            }
-        }
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@200;300;400;500;600;700;800;900&display=swap');
 
-    @keyframes pulse {
-        0% {
-            opacity: 1;
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        font-family: 'Cairo', sans-serif;
+        font-weight: 700;
+        background: linear-gradient(135deg, #2d1b69 0%, #1a0033 50%, #000000 100%);
+        color: white;
+        min-height: 100vh;
+        overflow-x: hidden;
+        position: relative;
+    }
+
+    /* النجوم المتحركة */
+    .stars {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: 1;
+    }
+
+    .star {
+        position: absolute;
+        background: white;
+        border-radius: 50%;
+        animation: twinkle 3s infinite alternate;
+    }
+
+    .star:nth-child(odd) {
+        animation-duration: 2s;
+    }
+
+    .star:nth-child(even) {
+        animation-duration: 4s;
+    }
+
+    @keyframes twinkle {
+        0% { opacity: 0.3; transform: scale(0.8); }
+        100% { opacity: 1; transform: scale(1.2); }
+    }
+
+    @keyframes float {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-10px); }
+    }
+
+    .container {
+        position: relative;
+        z-index: 2;
+        padding: 2rem;
+        text-align: center;
+    }
+
+    /* تصميم العنوان الرئيسي */
+    .main-title {
+        font-size: 4rem;
+        font-weight: 900;
+        font-family: 'Cairo', sans-serif;
+        margin: 2rem 0;
+        letter-spacing: 0.1em;
+        position: relative;
+        display: inline-block;
+    }
+
+    .title-char {
+        display: inline-block;
+        transition: all 0.3s ease;
+        position: relative;
+    }
+
+    .title-char.special {
+        background: linear-gradient(45deg, #8a2be2, #da70d6);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .title-char:hover {
+        transform: scale(1.2) rotate(5deg);
+        text-shadow: 0 0 20px #8a2be2;
+    }
+
+    /* زر الانضمام */
+    .join-button {
+        background: linear-gradient(135deg, #1a1a1a, #000000);
+        color: white;
+        border: 2px solid #8a2be2;
+        padding: 1rem 3rem;
+        font-size: 1.2rem;
+        border-radius: 50px;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-block;
+        margin: 2rem 0;
+        transition: all 0.3s ease;
+        box-shadow: 0 5px 20px rgba(138, 43, 226, 0.3);
+    }
+
+    .join-button:hover {
+        background: linear-gradient(135deg, #8a2be2, #da70d6);
+        transform: translateY(-3px) scale(1.05);
+        box-shadow: 0 10px 30px rgba(138, 43, 226, 0.6);
+    }
+
+    /* العناوين الفرعية */
+    .section-title {
+        font-size: 2.5rem;
+        color: #000;
+        margin: 3rem 0 2rem 0;
+        font-weight: bold;
+    }
+
+    /* الكروت */
+    .cards-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 2rem;
+        margin: 2rem 0;
+        padding: 0 1rem;
+    }
+
+    .card {
+        background: linear-gradient(135deg, rgba(138, 43, 226, 0.1), rgba(0, 0, 0, 0.3));
+        border: 2px solid rgba(138, 43, 226, 0.3);
+        border-radius: 20px;
+        padding: 2rem;
+        position: relative;
+        overflow: hidden;
+        cursor: pointer;
+        transition: all 0.5s ease;
+        backdrop-filter: blur(10px);
+    }
+
+    .card::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: linear-gradient(45deg, transparent, rgba(138, 43, 226, 0.1), transparent);
+        transform: rotate(45deg);
+        transition: all 0.5s ease;
+        opacity: 0;
+    }
+
+    .card:hover::before {
+        animation: shimmer 1s ease-in-out;
+    }
+
+    @keyframes shimmer {
+        0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); opacity: 0; }
+        50% { opacity: 1; }
+        100% { transform: translateX(100%) translateY(100%) rotate(45deg); opacity: 0; }
+    }
+
+    .card:hover {
+        transform: rotateY(10deg) rotateX(5deg) scale(1.05);
+        border-color: #8a2be2;
+        box-shadow: 0 20px 40px rgba(138, 43, 226, 0.4);
+    }
+
+    .card-icon {
+        width: 60px;
+        height: 60px;
+        margin-bottom: 1rem;
+        fill: #8a2be2;
+    }
+
+    .card-text {
+        font-size: 1.1rem;
+        line-height: 1.6;
+        opacity: 0;
+        transform: translateY(20px);
+        transition: all 0.6s ease;
+    }
+
+    .card:hover .card-text {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    .card-line {
+        display: block;
+        margin-bottom: 0.5rem;
+    }
+
+    .card-line:nth-child(odd) {
+        animation-delay: 0.1s;
+    }
+
+    .card-line:nth-child(even) {
+        animation-delay: 0.3s;
+    }
+
+    .card:hover .card-line:nth-child(odd) {
+        animation: slideInRight 0.8s ease forwards;
+    }
+
+    .card:hover .card-line:nth-child(even) {
+        animation: slideInLeft 0.8s ease forwards;
+    }
+
+    @keyframes slideInRight {
+        0% { transform: translateX(100%); opacity: 0; }
+        100% { transform: translateX(0); opacity: 1; }
+    }
+
+    @keyframes slideInLeft {
+        0% { transform: translateX(-100%); opacity: 0; }
+        100% { transform: translateX(0); opacity: 1; }
+    }
+
+    @keyframes typewriter {
+        from { width: 0; }
+        to { width: 100%; }
+    }
+
+    /* تأثير الكتابة */
+    .typewriter {
+        overflow: hidden;
+        white-space: nowrap;
+        border-right: 2px solid #8a2be2;
+        animation: typewriter 0.5s steps(20) forwards, blink 1s infinite;
+    }
+
+    @keyframes blink {
+        0%, 50% { border-color: #8a2be2; }
+        51%, 100% { border-color: transparent; }
+    }
+
+    /* للهواتف */
+    @media (max-width: 768px) {
+        .main-title {
+            font-size: 2.5rem;
         }
-        50% {
-            opacity: .5;
+        
+        .section-title {
+            font-size: 2rem;
         }
-        100% {
-            opacity: 1;
+        
+        .cards-container {
+            grid-template-columns: 1fr;
         }
-    }
-    
-    @keyframes ping {
-        75%, 100% {
-            transform: scale(2);
-            opacity: 0;
+        
+        .container {
+            padding: 1rem;
         }
-    }
-    
-    .animate-bounce {
-        animation: bounce 1s infinite;
-    }
-    
-    .animate-pulse {
-        animation: pulse 2s infinite;
-    }
-    
-    .animate-ping {
-        animation: ping 1s infinite;
-    }
-    
-    .transition-all {
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    
-    .group:hover .group-hover\:animate-bounce {
-        animation: bounce 1s infinite;
-    }
-    
-    .group:hover .group-hover\:animate-pulse {
-        animation: pulse 2s infinite;
-    }
-    
-    .group:active .group-active\:animate-bounce {
-        animation: bounce 0.5s;
-    }
-    
-    .group:active .group-active\:animate-ping {
-        animation: ping 0.5s;
-    }
-    
-    .backdrop-blur-lg {
-        backdrop-filter: blur(16px);
-    }
-    
-    .bg-gray-900 {
-        background-color: #111827;
-    }
-    
-    .bg-gray-800 {
-        background-color: #1f2937;
-    }
-    
-    .bg-gray-700 {
-        background-color: #374151;
-    }
-    
-    .bg-gray-600 {
-        background-color: #4b5563;
-    }
-    
-    .bg-gray-500 {
-        background-color: #6b7280;
-    }
-    
-    .text-purple-400 {
-        color: #a78bfa;
-    }
-    
-    .text-purple-300 {
-        color: #c4b5fd;
-    }
-    
-    .text-purple-200 {
-        color: #ddd6fe;
-    }
-    
-    .bg-purple-500 {
-        background-color: #8b5cf6;
-    }
-    
-    .bg-purple-600 {
-        background-color: #7c3aed;
-    }
-    
-    .bg-blue-500 {
-        background-color: #3b82f6;
-    }
-    
-    .bg-blue-400 {
-        background-color: #60a5fa;
-    }
-    
-    .bg-green-400 {
-        background-color: #4ade80;
-    }
-    
-    .bg-pink-400 {
-        background-color: #f472b6;
-    }
-    
-    .bg-cyan-400 {
-        background-color: #22d3ee;
-    }
-    
-    .border-purple-500 {
-        border-color: #8b5cf6;
-    }
-    
-    .border-purple-400 {
-        border-color: #a78bfa;
-    }
-    
-    .shadow-purple-500 {
-        box-shadow: 0 0 30px rgba(139, 92, 246, 0.3);
     }
 </style>
 
 </head>
-<body class="min-h-screen bg-gray-900">
+<body>
+    <!-- النجوم المتحركة -->
+    <div class="stars" id="stars"></div>
 
-<!-- Hero Section -->
-<div class="flex flex-col lg:flex-row items-center justify-between px-6 lg:px-20 py-20 min-h-screen">
+```
+<div class="container">
+    <!-- العنوان الرئيسي -->
+    <h1 class="main-title" id="mainTitle" dir="ltr">Arab School</h1>
     
-    <!-- Left Side - Text Content -->
-    <div class="flex-1 max-w-2xl mb-16 lg:mb-0">
-        
-        <!-- Brand Name -->
-        <div class="mb-8">
-            <span class="text-5xl lg:text-7xl font-bold text-purple-400">Front</span>
-            <span class="text-5xl lg:text-7xl font-bold text-white">Max</span>
+    <!-- زر الانضمام -->
+    <a href="https://discord.gg/ZXJSTmcshu" class="join-button" target="_blank">Join Server</a>
+    
+    <!-- قسم حول السيرفر -->
+    <h2 class="section-title">About Server</h2>
+    
+    <div class="cards-container">
+        <div class="card">
+            <svg class="card-icon" viewBox="0 0 24 24">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+            </svg>
+            <div class="card-text">
+                <span class="card-line">نبذة عن سيرفرنا Arabschool.Old، المكان اللي يجمع بين اللعب، والطقطقة، والوناسة بكل أريحية!</span>
+                <span class="card-line">الأعضاء هنا مو بس ناس عابرة، لا! هم عيلة وحدة، وكل واحد فيهم جزء من عائلتنا الكبيرة في السيرفر</span>
+            </div>
         </div>
         
-        <!-- Headline -->
-        <h1 class="text-4xl lg:text-5xl font-bold text-white leading-tight mb-6">
-            The Future of
-            <br />
-            Discord Giveaways
-        </h1>
-        
-        <!-- Description -->
-        <p class="text-gray-400 text-lg lg:text-xl leading-relaxed mb-10">
-            Run smarter giveaways with advanced conditions, 
-            real-time analytics, and seamless Discord 
-            integration. Grow your community like never 
-            before.
-        </p>
-        
-        <!-- Buttons -->
-        <div class="flex flex-col sm:flex-row gap-4">
-            <a
-                href="http://uk-01.rrhosting.eu:1652/"
-                target="_blank"
-                class="group px-8 py-4 bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white font-semibold rounded-lg transition-all duration-300 transform hover:scale-110 hover:shadow-2xl active:scale-90 text-center hover:rotate-1 hover:-translate-y-1"
-                style="background: linear-gradient(to right, #8b5cf6, #3b82f6);"
-                onmouseover="this.style.background='linear-gradient(to right, #7c3aed, #2563eb)'"
-                onmouseout="this.style.background='linear-gradient(to right, #8b5cf6, #3b82f6)'"
-            >
-                <span class="group-hover:animate-pulse group-active:animate-bounce">Dashboard</span>
-            </a>
-            
-            <a
-                href="https://discord.com/oauth2/authorize?client_id=1406633234648797264&permissions=8&integration_type=0&scope=bot"
-                target="_blank"
-                class="group px-8 py-4 bg-transparent border-2 border-gray-600 hover:border-purple-400 text-white font-semibold rounded-lg transition-all duration-300 transform hover:scale-110 hover:shadow-2xl active:scale-90 text-center hover:-rotate-1 hover:-translate-y-1"
-            >
-                <span class="group-hover:animate-pulse group-active:animate-bounce">Invite Bot</span>
-            </a>
-        </div>
-        
-    </div>
-
-    <!-- Right Side - Discord Interface Mockup -->
-    <div class="flex-1 max-w-2xl">
-        <div class="bg-gray-800 backdrop-blur-lg rounded-2xl p-8 shadow-2xl border border-gray-700 transition-all duration-500 hover:shadow-purple-500 transform hover:scale-105 hover:-translate-y-2 active:scale-95 cursor-pointer"
-             style="background-color: rgba(31, 41, 55, 0.5);">
-            
-            <!-- Header -->
-            <div class="flex items-center gap-3 mb-6 p-3 rounded-lg transition-all duration-300 hover:bg-gray-600 active:bg-gray-500"
-                 style="background-color: rgba(55, 65, 81, 0.6);">
-                <div class="w-6 h-6 bg-blue-500 rounded transition-all duration-300 hover:animate-pulse active:animate-bounce"></div>
-                <div class="h-3 bg-gray-500 rounded-full flex-1 transition-all duration-300 hover:bg-gray-400"></div>
+        <div class="card">
+            <svg class="card-icon" viewBox="0 0 24 24">
+                <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <div class="card-text">
+                <span class="card-line">وعشان تحسّوا بالوناسة أكثر، كل يوم عندنا فعاليات شيّقة وطقطقة متواصلة، يعني ما في لحظة مملة أبداً!</span>
+                <span class="card-line">إذا دخلتوا Arabschool.Old بتلقون نفسكم بين ناس يحبون يتسامرون، يلعبون، ويضحكون مع بعض، وكل يوم فيه جديد يحمّسكم وتستمتعون فيه.</span>
             </div>
-            
-            <!-- Top Row - Two Cards -->
-            <div class="grid grid-cols-2 gap-6 mb-6">
-                
-                <div class="rounded-xl p-6 transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer"
-                     style="background-color: rgba(55, 65, 81, 0.6);"
-                     onmouseover="this.style.backgroundColor='rgba(75, 85, 99, 0.6)'"
-                     onmouseout="this.style.backgroundColor='rgba(55, 65, 81, 0.6)'">
-                    <div class="w-8 h-8 bg-green-400 rounded-lg mb-3 transition-all duration-300 hover:animate-pulse"></div>
-                    <div class="space-y-2">
-                        <div class="h-3 bg-gray-500 rounded-full"></div>
-                        <div class="h-2 bg-gray-600 rounded-full" style="width: 75%;"></div>
-                        <div class="h-2 bg-gray-600 rounded-full" style="width: 50%;"></div>
-                    </div>
-                </div>
-                
-                <div class="rounded-xl p-6 transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer"
-                     style="background-color: rgba(55, 65, 81, 0.6);"
-                     onmouseover="this.style.backgroundColor='rgba(75, 85, 99, 0.6)'"
-                     onmouseout="this.style.backgroundColor='rgba(55, 65, 81, 0.6)'">
-                    <div class="w-8 h-8 bg-pink-400 rounded-lg mb-3 transition-all duration-300 hover:animate-pulse"></div>
-                    <div class="space-y-2">
-                        <div class="h-3 bg-gray-500 rounded-full"></div>
-                        <div class="h-2 bg-gray-600 rounded-full" style="width: 80%;"></div>
-                        <div class="h-2 bg-gray-600 rounded-full" style="width: 67%;"></div>
-                    </div>
-                </div>
-                
-            </div>
-            
-            <!-- Middle Row - Full Width Card -->
-            <div class="rounded-xl p-6 mb-6 transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer"
-                 style="background-color: rgba(55, 65, 81, 0.6);"
-                 onmouseover="this.style.backgroundColor='rgba(75, 85, 99, 0.6)'"
-                 onmouseout="this.style.backgroundColor='rgba(55, 65, 81, 0.6)'">
-                <div class="flex items-center gap-4">
-                    <div class="w-8 h-8 bg-cyan-400 rounded-lg transition-all duration-300 hover:animate-pulse"></div>
-                    <div class="flex-1 space-y-2">
-                        <div class="h-3 bg-gray-500 rounded-full" style="width: 60%;"></div>
-                        <div class="h-2 bg-gray-600 rounded-full" style="width: 80%;"></div>
-                    </div>
-                    <div class="bg-blue-500 text-white px-4 py-2 rounded-lg text-sm transition-all duration-300 hover:bg-blue-400 hover:scale-110 active:scale-90">
-                        Enter
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Bottom Row - Full Width Card -->
-            <div class="rounded-xl p-6 transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer"
-                 style="background-color: rgba(55, 65, 81, 0.6);"
-                 onmouseover="this.style.backgroundColor='rgba(75, 85, 99, 0.6)'"
-                 onmouseout="this.style.backgroundColor='rgba(55, 65, 81, 0.6)'">
-                <div class="flex items-center gap-4">
-                    <div class="w-8 h-8 bg-purple-500 rounded-lg transition-all duration-300 hover:animate-pulse"></div>
-                    <div class="flex-1 space-y-2">
-                        <div class="h-3 bg-gray-500 rounded-full" style="width: 40%;"></div>
-                        <div class="h-2 bg-gray-600 rounded-full" style="width: 60%;"></div>
-                    </div>
-                    <div class="bg-blue-500 text-white px-4 py-2 rounded-lg text-sm transition-all duration-300 hover:bg-blue-400 hover:scale-110 active:scale-90">
-                        Join
-                    </div>
-                </div>
-            </div>
-            
         </div>
     </div>
     
+    <!-- قسم حول الخريطة -->
+    <h2 class="section-title">About Map</h2>
+    
+    <div class="cards-container">
+        <div class="card">
+            <svg class="card-icon" viewBox="0 0 24 24">
+                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+            </svg>
+            <div class="card-text">
+                <span class="card-line">ماب Arabschool.Old هو تجربة فريدة من نوعها داخل ريك روم، يجمع بين أجواء المدرسة القديمة مع لمسة عربية مليانة طقطقة ووناسة!</span>
+                <span class="card-line">أجواء كلاسيكية تعطيك إحساس النوستالجيا</span>
+            </div>
+        </div>
+        
+        <div class="card">
+            <svg class="card-icon" viewBox="0 0 24 24">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                <circle cx="9" cy="7" r="4"></circle>
+                <path d="m22 21-3-3m0 0a5.5 5.5 0 1 0-7.78 7.78 5.5 5.5 0 0 0 7.78-7.78Z"></path>
+            </svg>
+            <div class="card-text">
+                <span class="card-line">أماكن مخصصة للتجمع والدردشة مع الأصحاب</span>
+                <span class="card-line">فعاليات وألعاب ممتعة تخلّي الوقت يمر بسرعة</span>
+            </div>
+        </div>
+        
+        <div class="card">
+            <svg class="card-icon" viewBox="0 0 24 24">
+                <path d="M8 21l4-7-4-7H3l4 7-4 7h5zm8 0l4-7-4-7h-5l4 7-4 7h5z"/>
+            </svg>
+            <div class="card-text">
+                <span class="card-line">مساحة حرة للضحك والطقطقة بدون قيود</span>
+                <span class="card-line">باختصار، Arabschool.Old مو مجرد ماب عادي، هو مكان يجمعنا كعائلة وحدة نستمتع فيه باللعب والوناسة، ونصنع فيه أجمل الذكريات!</span>
+            </div>
+        </div>
+    </div>
 </div>
 
-<!-- Features Cards Section -->
-<div class="px-6 lg:px-20 pb-20">
-    
-    <div class="text-center mb-16">
-        <h2 class="text-4xl lg:text-5xl font-bold text-white mb-6">
-            Why Choose FrontMax?
-        </h2>
-        <p class="text-gray-400 text-xl max-w-3xl mx-auto">
-            The most advanced Discord giveaway bot with powerful features designed to grow your community
-        </p>
-    </div>
-    
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
-        
-        <!-- Feature Card 1 -->
-        <div class="group bg-gray-800 rounded-2xl p-8 border border-gray-700 transition-all duration-500 hover:border-purple-500 hover:shadow-2xl transform hover:scale-110 hover:-translate-y-3 hover:rotate-1 active:scale-90 active:rotate-0 active:translate-y-0 cursor-pointer"
-             onmouseover="this.style.boxShadow='0 0 30px rgba(139, 92, 246, 0.4)'"
-             onmouseout="this.style.boxShadow=''">
-            
-            <div class="text-purple-400 mb-6 transition-colors duration-300 transform hover:scale-125 active:scale-150">
-                <svg class="w-12 h-12" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                </svg>
-            </div>
-            
-            <h3 class="text-2xl font-bold text-white mb-4 transition-colors duration-300">
-                Premium Giveaway System
-            </h3>
-            
-            <p class="text-gray-400 transition-colors duration-300 leading-relaxed text-lg">
-                Create amazing giveaways with advanced customization options, multiple entry methods, and automatic winner selection.
-            </p>
-            
-        </div>
-        
-        <!-- Feature Card 2 -->
-        <div class="group bg-gray-800 rounded-2xl p-8 border border-gray-700 transition-all duration-500 hover:border-purple-500 hover:shadow-2xl transform hover:scale-110 hover:-translate-y-3 hover:rotate-1 active:scale-90 active:rotate-0 active:translate-y-0 cursor-pointer"
-             onmouseover="this.style.boxShadow='0 0 30px rgba(139, 92, 246, 0.4)'"
-             onmouseout="this.style.boxShadow=''">
-            
-            <div class="text-purple-400 mb-6 transition-colors duration-300 transform hover:scale-125 active:scale-150">
-                <svg class="w-12 h-12" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M16 4c0-1.11.89-2 2-2s2 .89 2 2-.89 2-2 2-2-.89-2-2m4 18v-6h2.5l-2.54-7.63A1.5 1.5 0 0 0 18.54 8H16c-.8 0-1.54.37-2 1l-3.72 5.6L8.54 11.4A1.5 1.5 0 0 0 7.18 11H3v2h3.54l2.26 6.8c.18.53.63.95 1.18 1.18L12 22l2.04-1.02c.55-.23 1-.65 1.18-1.18L17.46 13H20v9h4z"/>
-                </svg>
-            </div>
-            
-            <h3 class="text-2xl font-bold text-white mb-4 transition-colors duration-300">
-                Auto Role Management
-            </h3>
-            
-            <p class="text-gray-400 transition-colors duration-300 leading-relaxed text-lg">
-                Automatically assign roles to giveaway winners and participants. Smart role distribution system for better server management.
-            </p>
-            
-        </div>
-        
-        <!-- Feature Card 3 -->
-        <div class="group bg-gray-800 rounded-2xl p-8 border border-gray-700 transition-all duration-500 hover:border-purple-500 hover:shadow-2xl transform hover:scale-110 hover:-translate-y-3 hover:rotate-1 active:scale-90 active:rotate-0 active:translate-y-0 cursor-pointer"
-             onmouseover="this.style.boxShadow='0 0 30px rgba(139, 92, 246, 0.4)'"
-             onmouseout="this.style.boxShadow=''">
-            
-            <div class="text-purple-400 mb-6 transition-colors duration-300 transform hover:scale-125 active:scale-150">
-                <svg class="w-12 h-12" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/>
-                </svg>
-            </div>
-            
-            <h3 class="text-2xl font-bold text-white mb-4 transition-colors duration-300">
-                Real-time Analytics
-            </h3>
-            
-            <p class="text-gray-400 transition-colors duration-300 leading-relaxed text-lg">
-                Track your giveaway performance with detailed analytics, participant insights, and engagement metrics in real-time.
-            </p>
-            
-        </div>
-        
-        <!-- Feature Card 4 -->
-        <div class="group bg-gray-800 rounded-2xl p-8 border border-gray-700 transition-all duration-500 hover:border-purple-500 hover:shadow-2xl transform hover:scale-110 hover:-translate-y-3 hover:rotate-1 active:scale-90 active:rotate-0 active:translate-y-0 cursor-pointer"
-             onmouseover="this.style.boxShadow='0 0 30px rgba(139, 92, 246, 0.4)'"
-             onmouseout="this.style.boxShadow=''">
-            
-            <div class="text-purple-400 mb-6 transition-colors duration-300 transform hover:scale-125 active:scale-150">
-                <svg class="w-12 h-12" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11V12z"/>
-                </svg>
-            </div>
-            
-            <h3 class="text-2xl font-bold text-white mb-4 transition-colors duration-300">
-                Smart Entry System
-            </h3>
-            
-            <p class="text-gray-400 transition-colors duration-300 leading-relaxed text-lg">
-                Multiple entry methods including reactions, messages, invites, and custom requirements. Anti-cheat protection included.
-            </p>
-            
-        </div>
-        
-        <!-- Feature Card 5 -->
-        <div class="group bg-gray-800 rounded-2xl p-8 border border-gray-700 transition-all duration-500 hover:border-purple-500 hover:shadow-2xl transform hover:scale-110 hover:-translate-y-3 hover:rotate-1 active:scale-90 active:rotate-0 active:translate-y-0 cursor-pointer"
-             onmouseover="this.style.boxShadow='0 0 30px rgba(139, 92, 246, 0.4)'"
-             onmouseout="this.style.boxShadow=''">
-            
-            <div class="text-purple-400 mb-6 transition-colors duration-300 transform hover:scale-125 active:scale-150">
-                <svg class="w-12 h-12" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-                </svg>
-            </div>
-            
-            <h3 class="text-2xl font-bold text-white mb-4 transition-colors duration-300">
-                Custom Rewards
-            </h3>
-            
-            <p class="text-gray-400 transition-colors duration-300 leading-relaxed text-lg">
-                Set up any type of reward from Discord Nitro to custom server perks. Flexible prize distribution system.
-            </p>
-            
-        </div>
-        
-        <!-- Feature Card 6 -->
-        <div class="group bg-gray-800 rounded-2xl p-8 border border-gray-700 transition-all duration-500 hover:border-purple-500 hover:shadow-2xl transform hover:scale-110 hover:-translate-y-3 hover:rotate-1 active:scale-90 active:rotate-0 active:translate-y-0 cursor-pointer"
-             onmouseover="this.style.boxShadow='0 0 30px rgba(139, 92, 246, 0.4)'"
-             onmouseout="this.style.boxShadow=''">
-            
-            <div class="text-purple-400 mb-6 transition-colors duration-300 transform hover:scale-125 active:scale-150">
-                <svg class="w-12 h-12" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M20 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h4l4 4 4-4h4c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-7 13h-2v-2h2v2zm0-4h-2V7h2v4z"/>
-                </svg>
-            </div>
-            
-            <h3 class="text-2xl font-bold text-white mb-4 transition-colors duration-300">
-                24/7 Support
-            </h3>
-            
-            <p class="text-gray-400 transition-colors duration-300 leading-relaxed text-lg">
-                Our dedicated support team is always ready to help. Premium support with fast response times and expert assistance.
-            </p>
-            
-        </div>
-        
-    </div>
-    
-</div>
+<script>
+    // إنشاء النجوم المتحركة
+    function createStars() {
+        const starsContainer = document.getElementById('stars');
+        const numberOfStars = 150;
 
-<!-- Footer -->
-<div class="text-center pb-10 px-6">
-    <p class="text-gray-400 text-lg mb-4">
-        The Ultimate Discord Giveaway Bot Experience
-    </p>
-    <div class="flex justify-center space-x-2">
-        <div class="animate-pulse h-2 w-2 bg-purple-400 rounded-full"></div>
-        <div class="animate-pulse h-2 w-2 bg-purple-500 rounded-full" style="animation-delay: 0.2s;"></div>
-        <div class="animate-pulse h-2 w-2 bg-purple-600 rounded-full" style="animation-delay: 0.4s;"></div>
-    </div>
-</div>
+        for (let i = 0; i < numberOfStars; i++) {
+            const star = document.createElement('div');
+            star.className = 'star';
+            
+            // حجم النجمة
+            const size = Math.random() * 3 + 1;
+            star.style.width = size + 'px';
+            star.style.height = size + 'px';
+            
+            // موقع النجمة
+            star.style.left = Math.random() * 100 + '%';
+            star.style.top = Math.random() * 100 + '%';
+            
+            // تأخير الأنيميشن
+            star.style.animationDelay = Math.random() * 3 + 's';
+            
+            starsContainer.appendChild(star);
+        }
+    }
+
+    // تأثير الأحرف الخاصة في العنوان
+    function setupTitle() {
+        const title = document.getElementById('mainTitle');
+        const titleText = 'Arab School';
+        const specialChars = ['o', 'a', 'b', 'A'];
+        
+        title.innerHTML = '';
+        
+        for (let i = 0; i < titleText.length; i++) {
+            const span = document.createElement('span');
+            span.className = 'title-char';
+            span.textContent = titleText[i];
+            
+            if (specialChars.includes(titleText[i])) {
+                span.classList.add('special');
+            }
+            
+            title.appendChild(span);
+        }
+    }
+
+    // تفعيل التأثيرات عند تحميل الصفحة
+    document.addEventListener('DOMContentLoaded', function() {
+        createStars();
+        setupTitle();
+    });
+</script>
 
 </body>
 </html>
