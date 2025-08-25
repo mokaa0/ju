@@ -1,173 +1,3 @@
-box
-
-// commands/box.js
-const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
-const { getGuildSettings } = require('../utils/settings');
-
-module.exports = {
-  name: 'box',
-  description: 'Send a claim box with a button',
-  async execute(message, args) {
-    if (!message.guild) return;
-
-    const settings = getGuildSettings(message.guild.id, { prefix: '#', embedColor: '#000000' });
-    const embedColor = settings.embedColor ? parseInt(settings.embedColor.replace('#',''), 16) : 0x000000;
-
-    const boxEmbed = new EmbedBuilder()
-      .setColor(embedColor)
-      .setDescription('**Click Button 🎉**');
-
-    const guildEmoji = message.guild.emojis.cache.find(e => e.name === 'giveaway0011');
-    const buttonEmoji = guildEmoji ? { id: guildEmoji.id, name: guildEmoji.name } : '🎉';
-
-    const button = new ButtonBuilder()
-      .setCustomId('claim_box')
-      .setLabel(' ')
-      .setStyle(ButtonStyle.Secondary)
-      .setEmoji(buttonEmoji);
-
-    const row = new ActionRowBuilder().addComponents(button);
-
-    await message.channel.send({ embeds: [boxEmbed], components: [row] });
-  }
-};
-
-
-
-
-gstart
-
-const { EmbedBuilder } = require('discord.js');
-const { parseDuration, msToHuman, clampTo24h } = require('../utils/duration');
-const { getGuildSettings } = require('../utils/settings');
-
-module.exports = {
-  name: 'gstart',
-  description: 'Start a giveaway',
-  async execute(message, args, client, runningGiveaways) {
-    if (args.length < 3) {
-      return message.reply(`Usage: ${args.prefix || '#'}gstart <duration e.g. 1h> <winners> <prize name>`);
-    }
-    await message.delete().catch(()=>{});
-    const dur = parseDuration(args[0]);
-    if (!dur) {
-      const embed = new EmbedBuilder().setColor(0x000000).setDescription('Invalid duration. Use s/m/h/d');
-      return message.channel.send({ embeds: [embed] });
-    }
-    const limited = clampTo24h(dur);
-    const winnersCount = Math.max(1, Math.min(25, parseInt(args[1], 10) || 1));
-    const prize = args.slice(2).join(' ').trim();
-    if (!prize) {
-      const embed = new EmbedBuilder().setColor(0x000000).setDescription('Please provide a prize name.');
-      return message.channel.send({ embeds: [embed] });
-    }
-
-    const guildSettings = getGuildSettings(message.guild.id, { prefix: '#', embedColor: '#000000' });
-    const embedColor = guildSettings.embedColor ? parseInt(guildSettings.embedColor.replace('#',''),16) : 0x000000;
-
-    const hostedBy = `<@${message.author.id}>`;
-    const endsIn = msToHuman(limited);
-    const guildEmoji = message.guild.emojis.cache.find(e => e.name === 'giveaway0011');
-    const reactionLabel = guildEmoji ? `<:${guildEmoji.name}:${guildEmoji.id}>` : '🎉';
-
-    const embed = new EmbedBuilder()
-      .setColor(embedColor)
-      .setDescription([
-        `🎉 **Prize :** **${prize}**`,
-        `🎉 **Ends at :** \`in ${endsIn}\``,
-        `🎉 **Hosted By :** ${hostedBy}`,
-        `🎉 **Winners:** **${winnersCount}**`
-      ].join('\n'));
-
-    const giveawayMsg = await message.channel.send({ content: '🎉 GIVEAWAY 🎉', embeds: [embed] });
-    try {
-      if (guildEmoji) await giveawayMsg.react(guildEmoji);
-      else await giveawayMsg.react('🎉');
-    } catch (_) {}
-
-    const timeout = setTimeout(async () => {
-      try {
-        const msg = await message.channel.messages.fetch(giveawayMsg.id);
-        let reaction;
-        if (guildEmoji) {
-          reaction = msg.reactions.cache.find(r => (r.emoji.id && r.emoji.id === guildEmoji.id) || r.emoji.name === guildEmoji.name);
-        } else {
-          reaction = msg.reactions.cache.find(r => r.emoji.name === '🎉');
-        }
-        let users = [];
-        if (reaction) {
-          const fetched = await reaction.users.fetch();
-          users = fetched.filter(u => !u.bot).map(u => `<@${u.id}>`);
-        }
-        if (users.length === 0) {
-          await message.channel.send('No participants.');
-        } else {
-          const shuffled = users.sort(() => Math.random() - 0.5);
-          const selected = shuffled.slice(0, Math.min(winnersCount, users.length));
-          const embed = new EmbedBuilder().setColor(0x000000).setDescription(`**🎉 The winners:**\n${selected.join('  ')}`).setTimestamp();
-          await message.channel.send({ embeds: [embed] });
-        }
-      } catch (e) {
-        console.error('Error finishing giveaway:', e);
-      } finally {
-        runningGiveaways.delete(giveawayMsg.id);
-      }
-    }, limited);
-
-    runningGiveaways.set(giveawayMsg.id, timeout);
-  }
-};
-
-
-help
-
-const { EmbedBuilder, SlashCommandBuilder } = require('discord.js');
-const { getGuildSettings } = require('../utils/settings');
-
-module.exports = {
-  name: 'help',
-  description: 'Show help',
-  
-  // لتعريف الـ slash command
-  data: new SlashCommandBuilder()
-    .setName('help')
-    .setDescription('Show help'),
-
-  // تنفيذ الأمر بالـ prefix
-  async execute(message, args) {
-    const { embedColor, prefix } = getGuildSettings(message.guild.id, { prefix: '#', embedColor: '#000000' });
-    const helpEmbed = new EmbedBuilder()
-      .setColor(embedColor ? parseInt(embedColor.replace('#',''),16) : 0x000000)
-      .setTitle('Bot Commands')
-      .setDescription([
-        `\`${prefix}help\` - Show this help message`,
-        `\`${prefix}box\` - Claim a giveaway box`,
-        `\`${prefix}server\` - Show server info`,
-        `\`${prefix}gstart\` - Start a giveaway`
-      ].join('\n'));
-    return message.channel.send({ embeds: [helpEmbed] });
-  },
-
-  // تنفيذ الأمر بالـ slash
-  async executeSlash(interaction) {
-    const { embedColor, prefix } = getGuildSettings(interaction.guild.id, { prefix: '#', embedColor: '#000000' });
-    const helpEmbed = new EmbedBuilder()
-      .setColor(embedColor ? parseInt(embedColor.replace('#',''),16) : 0x000000)
-      .setTitle('Bot Commands')
-      .setDescription([
-        `\`${prefix}help\` - Show this help message`,
-        `\`${prefix}box\` - Claim a giveaway box`,
-        `\`${prefix}server\` - Show server info`,
-        `\`${prefix}gstart\` - Start a giveaway`
-      ].join('\n'));
-    return interaction.reply({ embeds: [helpEmbed], ephemeral: true });
-  }
-};
-
-
-
-server
-
 // commands/server.js
 const { EmbedBuilder } = require('discord.js');
 const { getGuildSettings } = require('../utils/settings');
@@ -182,14 +12,28 @@ module.exports = {
       ? parseInt(settings.embedColor.replace('#',''), 16)
       : 0x000000;
 
+    // احصائيات القنوات
+    const totalChannels = guild.channels.cache.size;
+    const voiceChannels = guild.channels.cache.filter(c => c.type === 2).size; // الرومات الصوتية
+
+    // احصائيات الأعضاء الأونلاين
+    const onlineMembers = guild.members.cache.filter(
+      member => member.presence && ['online','idle','dnd'].includes(member.presence.status)
+    ).size;
+
     const serverEmbed = new EmbedBuilder()
       .setColor(embedColor)
       .setTitle(guild.name)
       .addFields(
         { name: 'Members', value: `${guild.memberCount}`, inline: true },
+        { name: 'Online Members', value: `${onlineMembers}`, inline: true },
         { name: 'Owner', value: `<@${guild.ownerId}>`, inline: true },
         { name: 'ID', value: guild.id, inline: false },
-        { name: 'Created At', value: `${guild.createdAt.toDateString()}`, inline: false }
+        { name: 'Created At', value: `${guild.createdAt.toDateString()}`, inline: false },
+        { name: 'Roles', value: `${guild.roles.cache.size}`, inline: true },
+        { name: 'Total Channels', value: `${totalChannels}`, inline: true },
+        { name: 'Voice Channels', value: `${voiceChannels}`, inline: true },
+        { name: 'Server Boosts', value: `${guild.premiumSubscriptionCount}`, inline: true }
       )
       .setThumbnail(guild.iconURL ? guild.iconURL({ dynamic: true }) : null);
 
