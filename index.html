@@ -1,42 +1,42 @@
-// commands/server.js
-const { EmbedBuilder } = require('discord.js');
+const { EmbedBuilder, SlashCommandBuilder } = require('discord.js');
 const { getGuildSettings } = require('../utils/settings');
 
 module.exports = {
-  name: 'server',
-  description: 'Show server info',
-  async execute(message) {
-    const guild = message.guild;
-    const settings = getGuildSettings(guild.id, { prefix: '#', embedColor: '#000000' });
-    const embedColor = settings.embedColor
-      ? parseInt(settings.embedColor.replace('#',''), 16)
-      : 0x000000;
+  name: 'help',
+  description: 'Show help',
+  
+  // لتعريف الـ slash command
+  data: new SlashCommandBuilder()
+    .setName('help')
+    .setDescription('Show help'),
 
-    // احصائيات القنوات
-    const totalChannels = guild.channels.cache.size;
-    const voiceChannels = guild.channels.cache.filter(c => c.type === 2).size; // الرومات الصوتية
+  // تنفيذ الأمر بالـ prefix
+  async execute(message, args) {
+    const { embedColor, prefix } = getGuildSettings(message.guild.id, { prefix: '#', embedColor: '#000000' });
+    const helpEmbed = new EmbedBuilder()
+      .setColor(embedColor ? parseInt(embedColor.replace('#',''),16) : 0x000000)
+      .setTitle('Bot Commands')
+      .setDescription([
+        `\`${prefix}help\` - Show this help message`,
+        `\`${prefix}box\` - Claim a giveaway box`,
+        `\`${prefix}server\` - Show server info`,
+        `\`${prefix}gstart\` - Start a giveaway`
+      ].join('\n'));
+    return message.channel.send({ embeds: [helpEmbed] });
+  },
 
-    // احصائيات الأعضاء الأونلاين
-    const onlineMembers = guild.members.cache.filter(
-      member => member.presence && ['online','idle','dnd'].includes(member.presence.status)
-    ).size;
-
-    const serverEmbed = new EmbedBuilder()
-      .setColor(embedColor)
-      .setTitle(guild.name)
-      .addFields(
-        { name: 'Members', value: `${guild.memberCount}`, inline: true },
-        { name: 'Online Members', value: `${onlineMembers}`, inline: true },
-        { name: 'Owner', value: `<@${guild.ownerId}>`, inline: true },
-        { name: 'ID', value: guild.id, inline: false },
-        { name: 'Created At', value: `${guild.createdAt.toDateString()}`, inline: false },
-        { name: 'Roles', value: `${guild.roles.cache.size}`, inline: true },
-        { name: 'Total Channels', value: `${totalChannels}`, inline: true },
-        { name: 'Voice Channels', value: `${voiceChannels}`, inline: true },
-        { name: 'Server Boosts', value: `${guild.premiumSubscriptionCount}`, inline: true }
-      )
-      .setThumbnail(guild.iconURL ? guild.iconURL({ dynamic: true }) : null);
-
-    return message.channel.send({ embeds: [serverEmbed] });
+  // تنفيذ الأمر بالـ slash
+  async executeSlash(interaction) {
+    const { embedColor, prefix } = getGuildSettings(interaction.guild.id, { prefix: '#', embedColor: '#000000' });
+    const helpEmbed = new EmbedBuilder()
+      .setColor(embedColor ? parseInt(embedColor.replace('#',''),16) : 0x000000)
+      .setTitle('Bot Commands')
+      .setDescription([
+        `\`${prefix}help\` - Show this help message`,
+        `\`${prefix}box\` - Claim a giveaway box`,
+        `\`${prefix}server\` - Show server info`,
+        `\`${prefix}gstart\` - Start a giveaway`
+      ].join('\n'));
+    return interaction.reply({ embeds: [helpEmbed], ephemeral: true });
   }
 };
