@@ -1,294 +1,198 @@
-index.js
+box
 
-// index.js
-const fs = require('fs');
-const path = require('path');
-const express = require('express');
-const session = require('express-session');
-const bodyParser = require('body-parser');
-const cookieParser = require('cookie-parser');
-const fetch = require('node-fetch'); 
-const { v4: uuidv4 } = require('uuid');
-const { Client, GatewayIntentBits, Partials, Collection } = require('discord.js');
-
-const config = require('./config.json');
-const { getGuildSettings, setGuildSettings } = require('./utils/settings');
-
-const client = new Client({
-  intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.GuildMessageReactions,
-    GatewayIntentBits.GuildMembers,
-    GatewayIntentBits.MessageContent
-  ],
-  partials: [Partials.Message, Partials.Channel, Partials.Reaction]
-});
-
-client.commands = new Collection();
-client.runningGiveaways = new Map();
-
-const commandsPath = path.join(__dirname, 'commands');
-fs.readdirSync(commandsPath).filter(f => f.endsWith('.js')).forEach(file => {
-  const cmd = require(path.join(commandsPath, file));
-  if (cmd && cmd.name) client.commands.set(cmd.name, cmd);
-});
-
-const eventsPath = path.join(__dirname, 'events');
-fs.readdirSync(eventsPath).filter(f => f.endsWith('.js')).forEach(file => {
-  const evt = require(path.join(eventsPath, file));
-  if (evt.once) client.once(evt.name, (...args) => evt.execute(...args, client));
-  else client.on(evt.name, (...args) => evt.execute(...args, client));
-});
-
-const app = express();
-app.use(cookieParser());
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(session({ secret: config.sessionSecret, resave: false, saveUninitialized: false }));
-
-app.use('/static', express.static(path.join(__dirname, 'public')));
-app.get('/', (req,res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
-
-app.get('/auth/login', (req, res) => {
-  const state = uuidv4();
-  req.session.oauthState = state;
-  const url = new URL('https://discord.com/api/oauth2/authorize');
-  url.searchParams.set('client_id', config.clientId);
-  url.searchParams.set('redirect_uri', config.redirectUri);
-  url.searchParams.set('response_type', 'code');
-  url.searchParams.set('scope', config.scopes.join(' '));
-  url.searchParams.set('prompt', 'consent');
-  url.searchParams.set('state', state);
-  res.redirect(url.toString());
-});
-
-app.get('/auth/callback', async (req, res) => {
-  try {
-    const { code, state } = req.query;
-    if (!code || state !== req.session.oauthState) return res.redirect('/');
-    const tokenRes = await fetch('https://discord.com/api/oauth2/token', {
-      method: 'POST',
-      headers: { 'Content-Type':'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        client_id: config.clientId,
-        client_secret: config.clientSecret,
-        grant_type: 'authorization_code',
-        code: code.toString(),
-        redirect_uri: config.redirectUri
-      })
-    });
-    const tok = await tokenRes.json();
-    if (!tok.access_token) return res.redirect('/');
-    req.session.accessToken = tok.access_token;
-    res.redirect('/dashboard');
-  } catch (e) {
-    console.error(e);
-    res.redirect('/');
-  }
-});
-
-app.get('/logout', (req,res)=>{ req.session.destroy(()=>res.redirect('/')); });
-app.get('/dashboard', (req,res)=> {
-  if (!req.session.accessToken) return res.redirect('/');
-  res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
-});
-
-app.get('/api/me', async (req,res)=>{
-  if (!req.session.accessToken) return res.status(401).json({ error: 'unauth' });
-  const me = await fetch('https://discord.com/api/users/@me', { headers: { Authorization: `Bearer ${req.session.accessToken}` } }).then(r=>r.json());
-  res.json(me);
-});
-
-app.get('/api/guilds', async (req,res)=>{
-  if (!req.session.accessToken) return res.status(401).json({ error: 'unauth' });
-  const guilds = await fetch('https://discord.com/api/users/@me/guilds', { headers: { Authorization: `Bearer ${req.session.accessToken}` } }).then(r=>r.json());
-  const adminGuilds = guilds.filter(g => (BigInt(g.permissions) & BigInt(0x8)) === BigInt(0x8)).map(g => ({ id: g.id, name: g.name, icon: g.icon }));
-  res.json(adminGuilds);
-});
-
-app.get('/api/guild/:id/settings', (req,res) => {
-  const set = getGuildSettings(req.params.id, { prefix: config.defaultPrefix, emoji: config.defaultGiveawayEmoji, embedColor: config.defaultEmbedColor });
-  res.json(set);
-});
-app.get('/api/config', (req, res) => {
-  res.json({ clientId: config.clientId });
-});
-app.post('/api/guild/:id/settings', (req,res) => {
-  const { prefix, emoji, embedColor } = req.body || {};
-  const clean = {};
-  if (typeof prefix === 'string' && prefix.length <= 3) clean.prefix = prefix;
-  if (typeof emoji === 'string' && emoji.trim()) clean.emoji = emoji;
-  if (typeof embedColor === 'string' && /^#?[0-9a-fA-F]{6}$/.test(embedColor)) {
-    clean.embedColor = embedColor.startsWith('#') ? embedColor : ('#' + embedColor);
-  }
-  const saved = setGuildSettings(req.params.id, clean);
-  res.json(saved);
-});
-
-app.listen(config.port, () => console.log(`FrontMax web listening on http://localhost:${config.port}`));
-
-client.login(config.botToken);
-
-
-
-
-dur
-
-function parseDuration(input) {
-  const m = String(input).toLowerCase().match(/^(\d+)(s|m|h|d)$/);
-  if (!m) return null;
-  const n = parseInt(m[1], 10);
-  const unit = m[2];
-  const mult = unit === 's' ? 1000 : unit === 'm' ? 60000 : unit === 'h' ? 3600000 : 86400000;
-  return n * mult;
-}
-
-function msToHuman(ms) {
-  if (ms % 86400000 === 0) return `${ms / 86400000}d`;
-  if (ms % 3600000 === 0) return `${ms / 3600000}h`;
-  if (ms % 60000 === 0) return `${ms / 60000}m`;
-  return `${Math.round(ms / 1000)}s`;
-}
-
-function clampTo24h(ms) {
-  return Math.min(ms, 24 * 60 * 60 * 1000);
-}
-
-module.exports = { parseDuration, msToHuman, clampTo24h };
-
-
-
-
-settings
-
-const path = require('path');
-const fs = require('fs-extra');
-
-const DATA_DIR = path.join(__dirname, '..', 'data');
-const GUILDS_DIR = path.join(DATA_DIR, 'guilds');
-fs.ensureDirSync(GUILDS_DIR);
-
-function getGuildSettings(guildId, defaults = {}) {
-  const file = path.join(GUILDS_DIR, `${guildId}.json`);
-  if (!fs.existsSync(file)) {
-    const merged = { ...defaults };
-    fs.writeJsonSync(file, merged, { spaces: 2 });
-    return merged;
-  }
-  return fs.readJsonSync(file);
-}
-
-function setGuildSettings(guildId, partial) {
-  const file = path.join(GUILDS_DIR, `${guildId}.json`);
-  const current = fs.existsSync(file) ? fs.readJsonSync(file) : {};
-  const next = { ...current, ...partial };
-  fs.writeJsonSync(file, next, { spaces: 2 });
-  return next;
-}
-
-module.exports = { getGuildSettings, setGuildSettings, GUILDS_DIR };
-
-
-guild
-
-const path = require('path');
-const fs = require('fs');
-module.exports = {
-  name: 'guildCreate',
-  async execute(guild) {
-    try {
-      const existing = guild.emojis.cache.find(e => e.name === 'giveaway0011');
-      if (existing) return;
-      const filePath = path.join(__dirname, '..', 'public', 'giveaway.png');
-      if (!fs.existsSync(filePath)) return null;
-      await guild.emojis.create({ attachment: filePath, name: 'giveaway0011' });
-    } catch (e) {
-      console.log(`Cannot create emoji in ${guild.name}:`, e.message);
-    }
-  }
-};
-
-
-
-module.exports = {
-  name: 'interactionCreate',
-  async execute(interaction) {
-    if (!interaction.isButton()) return;
-    if (interaction.customId !== 'claim_box') return;
-    if (interaction.user.bot) return;
-
-    const updatedEmbed = interaction.message.embeds[0]
-      ? require('discord.js').EmbedBuilder.from(interaction.message.embeds[0]).setDescription(`**Done Claim box** <@${interaction.user.id}>`)
-      : { content: `**Done Claim box** <@${interaction.user.id}>` };
-
-    await interaction.update({ embeds: [updatedEmbed], components: [] });
-  }
-};
-
-
-
-int
-module.exports = {
-  name: 'interactionCreate',
-  async execute(interaction) {
-    if (!interaction.isButton()) return;
-    if (interaction.customId !== 'claim_box') return;
-    if (interaction.user.bot) return;
-
-    const updatedEmbed = interaction.message.embeds[0]
-      ? require('discord.js').EmbedBuilder.from(interaction.message.embeds[0]).setDescription(`**Done Claim box** <@${interaction.user.id}>`)
-      : { content: `**Done Claim box** <@${interaction.user.id}>` };
-
-    await interaction.update({ embeds: [updatedEmbed], components: [] });
-  }
-};
-
-
-const { Collection } = require('discord.js');
+// commands/box.js
+const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { getGuildSettings } = require('../utils/settings');
 
 module.exports = {
-  name: 'messageCreate',
-  async execute(message, client) {
-    if (!message.guild || message.author.bot) return;
-    const { prefix } = getGuildSettings(message.guild.id, { prefix: '#' });
-    if (!message.content.startsWith(prefix)) return;
+  name: 'box',
+  description: 'Send a claim box with a button',
+  async execute(message, args) {
+    if (!message.guild) return;
 
-    const argsArr = message.content.slice(prefix.length).trim().split(/\s+/);
-    const cmdName = argsArr.shift()?.toLowerCase();
-    if (!cmdName) return;
+    const settings = getGuildSettings(message.guild.id, { prefix: '#', embedColor: '#000000' });
+    const embedColor = settings.embedColor ? parseInt(settings.embedColor.replace('#',''), 16) : 0x000000;
 
-    const cmd = client.commands.get(cmdName);
-    if (!cmd) return;
+    const boxEmbed = new EmbedBuilder()
+      .setColor(embedColor)
+      .setDescription('**Click Button 🎉**');
 
-    try {
-      await cmd.execute(message, argsArr, client, client.runningGiveaways);
-    } catch (e) {
-      console.error(`Error executing command ${cmdName}:`, e);
-    }
+    const guildEmoji = message.guild.emojis.cache.find(e => e.name === 'giveaway0011');
+    const buttonEmoji = guildEmoji ? { id: guildEmoji.id, name: guildEmoji.name } : '🎉';
+
+    const button = new ButtonBuilder()
+      .setCustomId('claim_box')
+      .setLabel(' ')
+      .setStyle(ButtonStyle.Secondary)
+      .setEmoji(buttonEmoji);
+
+    const row = new ActionRowBuilder().addComponents(button);
+
+    await message.channel.send({ embeds: [boxEmbed], components: [row] });
   }
 };
 
 
-ready
 
-const { ActivityType } = require('discord.js');
+
+gstart
+
+const { EmbedBuilder } = require('discord.js');
+const { parseDuration, msToHuman, clampTo24h } = require('../utils/duration');
+const { getGuildSettings } = require('../utils/settings');
 
 module.exports = {
-  name: 'ready',
-  once: true,
-  execute(client) {
-    console.log(`FrontMax bot logged in as ${client.user.tag}`);
-    client.user.setPresence({
-      status: 'online',
-      activities: [{ name: `/help - serving ${client.guilds.cache.size} servers`, type: ActivityType.Custom }]
-    });
-    setInterval(() => {
-      client.user.setPresence({
-        status: 'online',
-        activities: [{ name: `/help - serving ${client.guilds.cache.size} servers`, type: ActivityType.Custom }]
-      });
-    }, 60_000);
+  name: 'gstart',
+  description: 'Start a giveaway',
+  async execute(message, args, client, runningGiveaways) {
+    if (args.length < 3) {
+      return message.reply(`Usage: ${args.prefix || '#'}gstart <duration e.g. 1h> <winners> <prize name>`);
+    }
+    await message.delete().catch(()=>{});
+    const dur = parseDuration(args[0]);
+    if (!dur) {
+      const embed = new EmbedBuilder().setColor(0x000000).setDescription('Invalid duration. Use s/m/h/d');
+      return message.channel.send({ embeds: [embed] });
+    }
+    const limited = clampTo24h(dur);
+    const winnersCount = Math.max(1, Math.min(25, parseInt(args[1], 10) || 1));
+    const prize = args.slice(2).join(' ').trim();
+    if (!prize) {
+      const embed = new EmbedBuilder().setColor(0x000000).setDescription('Please provide a prize name.');
+      return message.channel.send({ embeds: [embed] });
+    }
+
+    const guildSettings = getGuildSettings(message.guild.id, { prefix: '#', embedColor: '#000000' });
+    const embedColor = guildSettings.embedColor ? parseInt(guildSettings.embedColor.replace('#',''),16) : 0x000000;
+
+    const hostedBy = `<@${message.author.id}>`;
+    const endsIn = msToHuman(limited);
+    const guildEmoji = message.guild.emojis.cache.find(e => e.name === 'giveaway0011');
+    const reactionLabel = guildEmoji ? `<:${guildEmoji.name}:${guildEmoji.id}>` : '🎉';
+
+    const embed = new EmbedBuilder()
+      .setColor(embedColor)
+      .setDescription([
+        `🎉 **Prize :** **${prize}**`,
+        `🎉 **Ends at :** \`in ${endsIn}\``,
+        `🎉 **Hosted By :** ${hostedBy}`,
+        `🎉 **Winners:** **${winnersCount}**`
+      ].join('\n'));
+
+    const giveawayMsg = await message.channel.send({ content: '🎉 GIVEAWAY 🎉', embeds: [embed] });
+    try {
+      if (guildEmoji) await giveawayMsg.react(guildEmoji);
+      else await giveawayMsg.react('🎉');
+    } catch (_) {}
+
+    const timeout = setTimeout(async () => {
+      try {
+        const msg = await message.channel.messages.fetch(giveawayMsg.id);
+        let reaction;
+        if (guildEmoji) {
+          reaction = msg.reactions.cache.find(r => (r.emoji.id && r.emoji.id === guildEmoji.id) || r.emoji.name === guildEmoji.name);
+        } else {
+          reaction = msg.reactions.cache.find(r => r.emoji.name === '🎉');
+        }
+        let users = [];
+        if (reaction) {
+          const fetched = await reaction.users.fetch();
+          users = fetched.filter(u => !u.bot).map(u => `<@${u.id}>`);
+        }
+        if (users.length === 0) {
+          await message.channel.send('No participants.');
+        } else {
+          const shuffled = users.sort(() => Math.random() - 0.5);
+          const selected = shuffled.slice(0, Math.min(winnersCount, users.length));
+          const embed = new EmbedBuilder().setColor(0x000000).setDescription(`**🎉 The winners:**\n${selected.join('  ')}`).setTimestamp();
+          await message.channel.send({ embeds: [embed] });
+        }
+      } catch (e) {
+        console.error('Error finishing giveaway:', e);
+      } finally {
+        runningGiveaways.delete(giveawayMsg.id);
+      }
+    }, limited);
+
+    runningGiveaways.set(giveawayMsg.id, timeout);
+  }
+};
+
+
+help
+
+const { EmbedBuilder, SlashCommandBuilder } = require('discord.js');
+const { getGuildSettings } = require('../utils/settings');
+
+module.exports = {
+  name: 'help',
+  description: 'Show help',
+  
+  // لتعريف الـ slash command
+  data: new SlashCommandBuilder()
+    .setName('help')
+    .setDescription('Show help'),
+
+  // تنفيذ الأمر بالـ prefix
+  async execute(message, args) {
+    const { embedColor, prefix } = getGuildSettings(message.guild.id, { prefix: '#', embedColor: '#000000' });
+    const helpEmbed = new EmbedBuilder()
+      .setColor(embedColor ? parseInt(embedColor.replace('#',''),16) : 0x000000)
+      .setTitle('Bot Commands')
+      .setDescription([
+        `\`${prefix}help\` - Show this help message`,
+        `\`${prefix}box\` - Claim a giveaway box`,
+        `\`${prefix}server\` - Show server info`,
+        `\`${prefix}gstart\` - Start a giveaway`
+      ].join('\n'));
+    return message.channel.send({ embeds: [helpEmbed] });
+  },
+
+  // تنفيذ الأمر بالـ slash
+  async executeSlash(interaction) {
+    const { embedColor, prefix } = getGuildSettings(interaction.guild.id, { prefix: '#', embedColor: '#000000' });
+    const helpEmbed = new EmbedBuilder()
+      .setColor(embedColor ? parseInt(embedColor.replace('#',''),16) : 0x000000)
+      .setTitle('Bot Commands')
+      .setDescription([
+        `\`${prefix}help\` - Show this help message`,
+        `\`${prefix}box\` - Claim a giveaway box`,
+        `\`${prefix}server\` - Show server info`,
+        `\`${prefix}gstart\` - Start a giveaway`
+      ].join('\n'));
+    return interaction.reply({ embeds: [helpEmbed], ephemeral: true });
+  }
+};
+
+
+
+server
+
+// commands/server.js
+const { EmbedBuilder } = require('discord.js');
+const { getGuildSettings } = require('../utils/settings');
+
+module.exports = {
+  name: 'server',
+  description: 'Show server info',
+  async execute(message) {
+    const guild = message.guild;
+    const settings = getGuildSettings(guild.id, { prefix: '#', embedColor: '#000000' });
+    const embedColor = settings.embedColor
+      ? parseInt(settings.embedColor.replace('#',''), 16)
+      : 0x000000;
+
+    const serverEmbed = new EmbedBuilder()
+      .setColor(embedColor)
+      .setTitle(guild.name)
+      .addFields(
+        { name: 'Members', value: `${guild.memberCount}`, inline: true },
+        { name: 'Owner', value: `<@${guild.ownerId}>`, inline: true },
+        { name: 'ID', value: guild.id, inline: false },
+        { name: 'Created At', value: `${guild.createdAt.toDateString()}`, inline: false }
+      )
+      .setThumbnail(guild.iconURL ? guild.iconURL({ dynamic: true }) : null);
+
+    return message.channel.send({ embeds: [serverEmbed] });
   }
 };
