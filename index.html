@@ -1,16 +1,9 @@
-const { EmbedBuilder, SlashCommandBuilder } = require('discord.js');
+const { EmbedBuilder } = require('discord.js');
 const { getGuildSettings } = require('../utils/settings');
 
 module.exports = {
   name: 'help',
   description: 'Show help',
-  
-  // لتعريف الـ slash command
-  data: new SlashCommandBuilder()
-    .setName('help')
-    .setDescription('Show help'),
-
-  // تنفيذ الأمر بالـ prefix
   async execute(message, args) {
     const { embedColor, prefix } = getGuildSettings(message.guild.id, { prefix: '#', embedColor: '#000000' });
     const helpEmbed = new EmbedBuilder()
@@ -23,20 +16,5 @@ module.exports = {
         `\`${prefix}gstart\` - Start a giveaway`
       ].join('\n'));
     return message.channel.send({ embeds: [helpEmbed] });
-  },
-
-  // تنفيذ الأمر بالـ slash
-  async executeSlash(interaction) {
-    const { embedColor, prefix } = getGuildSettings(interaction.guild.id, { prefix: '#', embedColor: '#000000' });
-    const helpEmbed = new EmbedBuilder()
-      .setColor(embedColor ? parseInt(embedColor.replace('#',''),16) : 0x000000)
-      .setTitle('Bot Commands')
-      .setDescription([
-        `\`${prefix}help\` - Show this help message`,
-        `\`${prefix}box\` - Claim a giveaway box`,
-        `\`${prefix}server\` - Show server info`,
-        `\`${prefix}gstart\` - Start a giveaway`
-      ].join('\n'));
-    return interaction.reply({ embeds: [helpEmbed], ephemeral: true });
   }
 };
