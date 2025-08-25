@@ -1,20 +1,41 @@
+// commands/banner.js
 const { EmbedBuilder } = require('discord.js');
 const { getGuildSettings } = require('../utils/settings');
 
 module.exports = {
-  name: 'help',
-  description: 'Show help',
-  async execute(message, args) {
-    const { embedColor, prefix } = getGuildSettings(message.guild.id, { prefix: '#', embedColor: '#000000' });
-    const helpEmbed = new EmbedBuilder()
-      .setColor(embedColor ? parseInt(embedColor.replace('#',''),16) : 0x000000)
-      .setTitle('Bot Commands')
-      .setDescription([
-        `\`${prefix}help\` - Show this help message`,
-        `\`${prefix}box\` - Claim a giveaway box`,
-        `\`${prefix}server\` - Show server info`,
-        `\`${prefix}gstart\` - Start a giveaway`
-      ].join('\n'));
-    return message.channel.send({ embeds: [helpEmbed] });
+  name: 'banner',
+  description: 'Show a user banner in an embed',
+  options: [
+    {
+      name: 'user',
+      type: 6, // USER type
+      description: 'Select a user',
+      required: true,
+    },
+  ],
+
+  async execute(interaction) {
+    const user = interaction.options.getUser('user');
+    const member = await interaction.guild.members.fetch(user.id);
+
+    // جلب إعدادات السيرفر
+    const settings = getGuildSettings(interaction.guild.id, { prefix: '#', embedColor: '#000000' });
+    const embedColor = settings.embedColor
+      ? parseInt(settings.embedColor.replace('#',''), 16)
+      : 0x000000;
+
+    // الحصول على البانر
+    const bannerURL = user.bannerURL({ dynamic: true, size: 1024 });
+
+    const userEmbed = new EmbedBuilder()
+      .setColor(embedColor)
+      .setTitle(`${user.tag}'s Banner`)
+      .setDescription(`**ID:** ${user.id}\n**Username:** ${user.username}`)
+      .setThumbnail(user.displayAvatarURL({ dynamic: true }))
+      .setImage(bannerURL || null)
+      .setFooter({ text: 'Requested by ' + interaction.user.tag, iconURL: interaction.user.displayAvatarURL({ dynamic: true }) })
+      .setTimestamp();
+
+    await interaction.reply({ embeds: [userEmbed] });
   }
 };
