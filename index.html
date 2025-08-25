@@ -5,21 +5,14 @@ const { getGuildSettings } = require('../utils/settings');
 module.exports = {
   name: 'banner',
   description: 'Show a user banner in an embed',
-  options: [
-    {
-      name: 'user',
-      type: 6, // USER type
-      description: 'Select a user',
-      required: true,
-    },
-  ],
 
-  async execute(interaction) {
-    const user = interaction.options.getUser('user');
-    const member = await interaction.guild.members.fetch(user.id);
+  async execute(message, args) {
+    // التحقق من وجود منشن
+    const user = message.mentions.users.first();
+    if (!user) return message.reply('Please mention a user!');
 
     // جلب إعدادات السيرفر
-    const settings = getGuildSettings(interaction.guild.id, { prefix: '#', embedColor: '#000000' });
+    const settings = getGuildSettings(message.guild.id, { prefix: '#', embedColor: '#000000' });
     const embedColor = settings.embedColor
       ? parseInt(settings.embedColor.replace('#',''), 16)
       : 0x000000;
@@ -33,9 +26,9 @@ module.exports = {
       .setDescription(`**ID:** ${user.id}\n**Username:** ${user.username}`)
       .setThumbnail(user.displayAvatarURL({ dynamic: true }))
       .setImage(bannerURL || null)
-      .setFooter({ text: 'Requested by ' + interaction.user.tag, iconURL: interaction.user.displayAvatarURL({ dynamic: true }) })
+      .setFooter({ text: 'Requested by ' + message.author.tag, iconURL: message.author.displayAvatarURL({ dynamic: true }) })
       .setTimestamp();
 
-    await interaction.reply({ embeds: [userEmbed] });
+    message.channel.send({ embeds: [userEmbed] });
   }
 };
