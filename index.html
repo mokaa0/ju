@@ -5,11 +5,9 @@ const express = require('express');
 const session = require('express-session');
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
-const fetch = require('node-fetch');
+const fetch = require('node-fetch'); 
 const { v4: uuidv4 } = require('uuid');
 const { Client, GatewayIntentBits, Partials, Collection } = require('discord.js');
-const mongoose = require('mongoose');
-const User = require('./models/User');
 
 const config = require('./config.json');
 const { getGuildSettings, setGuildSettings } = require('./utils/settings');
@@ -29,14 +27,12 @@ const client = new Client({
 client.commands = new Collection();
 client.runningGiveaways = new Map();
 
-// تحميل الأوامر
 const commandsPath = path.join(__dirname, 'commands');
 fs.readdirSync(commandsPath).filter(f => f.endsWith('.js')).forEach(file => {
   const cmd = require(path.join(commandsPath, file));
   if (cmd && cmd.name) client.commands.set(cmd.name, cmd);
 });
 
-// تحميل الأحداث
 const eventsPath = path.join(__dirname, 'events');
 fs.readdirSync(eventsPath).filter(f => f.endsWith('.js')).forEach(file => {
   const evt = require(path.join(eventsPath, file));
@@ -44,7 +40,6 @@ fs.readdirSync(eventsPath).filter(f => f.endsWith('.js')).forEach(file => {
   else client.on(evt.name, (...args) => evt.execute(...args, client));
 });
 
-// Express setup
 const app = express();
 app.use(cookieParser());
 app.use(bodyParser.json());
@@ -52,9 +47,8 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(session({ secret: config.sessionSecret, resave: false, saveUninitialized: false }));
 
 app.use('/static', express.static(path.join(__dirname, 'public')));
-app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
+app.get('/', (req,res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 
-// ========== OAuth2 Login ==========
 app.get('/auth/login', (req, res) => {
   const state = uuidv4();
   req.session.oauthState = state;
@@ -68,14 +62,13 @@ app.get('/auth/login', (req, res) => {
   res.redirect(url.toString());
 });
 
-// ========== Dashboard ==========
 app.get('/auth/callback', async (req, res) => {
   try {
     const { code, state } = req.query;
     if (!code || state !== req.session.oauthState) return res.redirect('/');
     const tokenRes = await fetch('https://discord.com/api/oauth2/token', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      headers: { 'Content-Type':'application/x-www-form-urlencoded' },
       body: new URLSearchParams({
         client_id: config.clientId,
         client_secret: config.clientSecret,
@@ -94,33 +87,33 @@ app.get('/auth/callback', async (req, res) => {
   }
 });
 
-app.get('/logout', (req, res) => { req.session.destroy(() => res.redirect('/')); });
-app.get('/dashboard', (req, res) => {
+app.get('/logout', (req,res)=>{ req.session.destroy(()=>res.redirect('/')); });
+app.get('/dashboard', (req,res)=> {
   if (!req.session.accessToken) return res.redirect('/');
   res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
 });
 
-app.get('/api/me', async (req, res) => {
+app.get('/api/me', async (req,res)=>{
   if (!req.session.accessToken) return res.status(401).json({ error: 'unauth' });
-  const me = await fetch('https://discord.com/api/users/@me', { headers: { Authorization: `Bearer ${req.session.accessToken}` } }).then(r => r.json());
+  const me = await fetch('https://discord.com/api/users/@me', { headers: { Authorization: `Bearer ${req.session.accessToken}` } }).then(r=>r.json());
   res.json(me);
 });
 
-app.get('/api/guilds', async (req, res) => {
+app.get('/api/guilds', async (req,res)=>{
   if (!req.session.accessToken) return res.status(401).json({ error: 'unauth' });
-  const guilds = await fetch('https://discord.com/api/users/@me/guilds', { headers: { Authorization: `Bearer ${req.session.accessToken}` } }).then(r => r.json());
+  const guilds = await fetch('https://discord.com/api/users/@me/guilds', { headers: { Authorization: `Bearer ${req.session.accessToken}` } }).then(r=>r.json());
   const adminGuilds = guilds.filter(g => (BigInt(g.permissions) & BigInt(0x8)) === BigInt(0x8)).map(g => ({ id: g.id, name: g.name, icon: g.icon }));
   res.json(adminGuilds);
 });
 
-app.get('/api/guild/:id/settings', (req, res) => {
+app.get('/api/guild/:id/settings', (req,res) => {
   const set = getGuildSettings(req.params.id, { prefix: config.defaultPrefix, emoji: config.defaultGiveawayEmoji, embedColor: config.defaultEmbedColor });
   res.json(set);
 });
 app.get('/api/config', (req, res) => {
   res.json({ clientId: config.clientId });
 });
-app.post('/api/guild/:id/settings', (req, res) => {
+app.post('/api/guild/:id/settings', (req,res) => {
   const { prefix, emoji, embedColor } = req.body || {};
   const clean = {};
   if (typeof prefix === 'string' && prefix.length <= 3) clean.prefix = prefix;
@@ -131,103 +124,6 @@ app.post('/api/guild/:id/settings', (req, res) => {
   const saved = setGuildSettings(req.params.id, clean);
   res.json(saved);
 });
-
-// ========== Daily Claim ==========
-app.get('/daily', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'daily.html'));
-});
-
-app.get('/daily/auth', (req, res) => {
-  const state = uuidv4();
-  req.session.oauthState = state;
-  const url = new URL("https://discord.com/api/oauth2/authorize");
-  url.searchParams.set("client_id", config.clientId);
-  url.searchParams.set("redirect_uri", config.redirectUri);
-  url.searchParams.set("response_type", "code");
-  url.searchParams.set("scope", config.scopes.join(" "));
-  url.searchParams.set("state", state);
-  res.redirect(url.toString());
-});
-
-app.get('/daily/callback', async (req, res) => {
-  try {
-    const { code, state } = req.query;
-    if (!code || state !== req.session.oauthState) return res.redirect("/");
-
-    // exchange token
-    const tokenRes = await fetch("https://discord.com/api/oauth2/token", {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({
-        client_id: config.clientId,
-        client_secret: config.clientSecret,
-        grant_type: "authorization_code",
-        code: code.toString(),
-        redirect_uri: config.redirectUri
-      })
-    });
-
-    const tok = await tokenRes.json();
-    if (!tok.access_token) return res.redirect("/");
-
-    // get user
-    const me = await fetch("https://discord.com/api/users/@me", {
-      headers: { Authorization: `Bearer ${tok.access_token}` }
-    }).then(r => r.json());
-
-    if (!me.id) return res.redirect("/");
-
-    let user = await User.findOne({ userId: me.id });
-    if (!user) user = new User({ userId: me.id, balance: 0 });
-
-    const now = Date.now();
-    const cooldown = 12 * 60 * 60 * 1000;
-
-    if (user.lastDaily && now - user.lastDaily < cooldown) {
-      const remaining = cooldown - (now - user.lastDaily);
-      return res.send(`
-        <html><body style="background:linear-gradient(135deg,#000,#4b0082);color:white;text-align:center;font-family:Arial;">
-        <h1>Already Claimed</h1>
-        <p>Come back in: <span id="timer"></span></p>
-        <script>
-          let r=${remaining};
-          function fmt(t){let h=Math.floor(t/3600000),m=Math.floor((t%3600000)/60000),s=Math.floor((t%60000)/1000);return h+"h "+m+"m "+s+"s";}
-          function tick(){document.getElementById("timer").innerText=fmt(r);if(r>0){r-=1000;setTimeout(tick,1000);}}
-          tick();
-        </script>
-        </body></html>
-      `);
-    }
-
-    const reward = Math.floor(Math.random() * (70 - 30 + 1)) + 30;
-    user.balance += reward;
-    user.lastDaily = now;
-    await user.save();
-
-    res.send(`
-      <html><body style="background:linear-gradient(135deg,#000,#4b0082);color:white;text-align:center;font-family:Arial;">
-      <h1>Done Claim Daily</h1>
-      <p>You received <b>${reward}</b> credits!</p>
-      <p>Next claim available in: <span id="timer"></span></p>
-      <script>
-        let r=${cooldown};
-        function fmt(t){let h=Math.floor(t/3600000),m=Math.floor((t%3600000)/60000),s=Math.floor((t%60000)/1000);return h+"h "+m+"m "+s+"s";}
-        function tick(){document.getElementById("timer").innerText=fmt(r);if(r>0){r-=1000;setTimeout(tick,1000);}}
-        tick();
-      </script>
-      </body></html>
-    `);
-
-  } catch (err) {
-    console.error(err);
-    res.redirect("/");
-  }
-});
-
-// ========== Connect DB + Start ==========
-mongoose.connect(config.mongoURI, { useNewUrlParser: true, useUnifiedTopology: true })
-  .then(() => console.log("Mongo Connected"))
-  .catch(err => console.error("Mongo Error:", err));
 
 app.listen(config.port, () => console.log(`FrontMax web listening on http://localhost:${config.port}`));
 
