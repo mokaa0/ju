@@ -1,34 +1,113 @@
-// commands/banner.js
-const { EmbedBuilder } = require('discord.js');
-const { getGuildSettings } = require('../utils/settings');
+const { EmbedBuilder, AttachmentBuilder } = require("discord.js");
+const User = require("../models/User");
+const { createCanvas } = require("canvas");
+const mongoose = require("mongoose");
+const config = require("../config.json");
+
+// Connect to MongoDB once
+if (mongoose.connection.readyState === 0) {
+  mongoose.connect(config.mongoURI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
+    .then(() => console.log("✅ Connected to MongoDB"))
+    .catch(err => console.error(err));
+}
 
 module.exports = {
-  name: 'banner',
-  description: 'Show a user banner in an embed',
-
+  name: "credit",
+  description: "Check or transfer credits",
   async execute(message, args) {
-    // التحقق من وجود منشن
-    const user = message.mentions.users.first();
-    if (!user) return message.reply('Please mention a user!');
+    const mention = message.mentions.users.first();
+    const amount = parseInt(args[1]);
 
-    // جلب إعدادات السيرفر
-    const settings = getGuildSettings(message.guild.id, { prefix: '#', embedColor: '#000000' });
-    const embedColor = settings.embedColor
-      ? parseInt(settings.embedColor.replace('#',''), 16)
-      : 0x000000;
+    // Ensure author has an account
+    let user = await User.findOne({ userId: message.author.id });
+    if (!user) {
+      user = new User({ userId: message.author.id, balance: 0 });
+      await user.save();
+    }
 
-    // الحصول على البانر
-    const bannerURL = user.bannerURL({ dynamic: true, size: 1024 });
+    // Case 1: #credit => show own balance
+    if (!args[0]) {
+      const embed = new EmbedBuilder()
+        .setColor("Black")
+        .setDescription(`<:credit0011:1409831160569397371> Your account balance is \`${user.balance}$\``);
+      return message.reply({ embeds: [embed] });
+    }
 
-    const userEmbed = new EmbedBuilder()
-      .setColor(embedColor)
-      .setTitle(`${user.tag}'s Banner`)
-      .setDescription(`**ID:** ${user.id}\n**Username:** ${user.username}`)
-      .setThumbnail(user.displayAvatarURL({ dynamic: true }))
-      .setImage(bannerURL || null)
-      .setFooter({ text: 'Requested by ' + message.author.tag, iconURL: message.author.displayAvatarURL({ dynamic: true }) })
-      .setTimestamp();
+    // Case 2: #credit @user => show mentioned user's balance
+    if (mention && !amount) {
+      let target = await User.findOne({ userId: mention.id });
+      if (!target) {
+        target = new User({ userId: mention.id, balance: 0 });
+        await target.save();
+      }
+      const embed = new EmbedBuilder()
+        .setColor("Black")
+        .setDescription(`<:credit0011:1409831160569397371> ${mention.username}'s account balance is \`${target.balance}$\``);
+      return message.reply({ embeds: [embed] });
+    }
 
-    message.channel.send({ embeds: [userEmbed] });
-  }
+    // Case 3: #credit @user amount => transfer with captcha
+    if (mention && amount) {
+      if (user.balance < amount) {
+        const embed = new EmbedBuilder()
+          .setColor("Black")
+          .setDescription(`<:credit0011:1409831160569397371> You don't have enough balance.`);
+        return message.reply({ embeds: [embed] });
+      }
+
+      // Generate captcha
+      const captchaText = Math.random().toString(36).substring(2, 7);
+      const canvas = createCanvas(200, 70);
+      const ctx = canvas.getContext("2d");
+      ctx.fillStyle = "black";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.font = "30px Arial";
+      ctx.fillStyle = "white";
+      ctx.fillText(captchaText, 50, 45);
+
+      const attachment = new AttachmentBuilder(canvas.toBuffer(), { name: "captcha.png" });
+      const msg = await message.reply({
+        content: "Type the code in the image to confirm the transfer.",
+        files: [attachment],
+      });
+
+      // Wait for user reply
+      const filter = (m) => m.author.id === message.author.id;
+      const collected = await message.channel.awaitMessages({ filter, max: 1, time: 30000 }).catch(() => null);
+
+      if (!collected || collected.size === 0) {
+        const embed = new EmbedBuilder()
+          .setColor("Black")
+          .setDescription(`<:credit0011:1409831160569397371> Time expired.`);
+        return msg.edit({ embeds: [embed], files: [] });
+      }
+
+      const reply = collected.first();
+      if (reply.content !== captchaText) {
+        const embed = new EmbedBuilder()
+          .setColor("Black")
+          .setDescription(`<:credit0011:1409831160569397371> Wrong code.`);
+        return msg.edit({ embeds: [embed], files: [] });
+      }
+
+      // Transfer
+      user.balance -= amount;
+      await user.save();
+
+      let target = await User.findOne({ userId: mention.id });
+      if (!target) {
+        target = new User({ userId: mention.id, balance: 0 });
+      }
+      target.balance += amount;
+      await target.save();
+
+      const embed = new EmbedBuilder()
+        .setColor("Black")
+        .setDescription(`<:credit0011:1409831160569397371> Successfully transferred \`${amount}$\` to ${mention}`);
+      return message.channel.send({ embeds: [embed] });
+    }
+  },
 };
