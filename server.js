@@ -1,133 +1,157 @@
-const fs = require('fs');
-const path = require('path');
-const express = require('express');
-const session = require('cookie-session');
-const bodyParser = require('body-parser');
-const fetch = require('node-fetch');
-const { Client, GatewayIntentBits, Partials, EmbedBuilder } = require('discord.js');
+const express = require("express");
+const fs = require("fs");
+const path = require("path");
+const { Client, GatewayIntentBits, EmbedBuilder, PermissionsBitField } = require("discord.js");
 
-// =====================
-// المتغيرات مباشرة
-const DISCORD_TOKEN = "ضع_توكن_البوت_هنا";
-const DISCORD_CLIENT_ID = "ضع_كلينت_آيدي_هنا";
-const DISCORD_CLIENT_SECRET = "ضع_كلينت_سكرت_هنا";
-const OAUTH_REDIRECT_URI = "http://localhost:3000/auth/callback";
-const GEMINI_API_KEY = "ضع_مفتاح_Gemini_2_0_Flash_هنا";
-const PORT = 3000;
+// ==== CONFIG ====
+const BOT_TOKEN = "YOUR_DISCORD_BOT_TOKEN";
+const GUILD_ID = "YOUR_GUILD_ID";
+const ALLOWED_ROLE = "1402718537432170526"; // allowed role for /set-price
+const RECEIVER_ID = "1327694394371084339"; // the wallet receiver ID
+const EXTERNAL_BOT_ID = "282859044593598464"; // external bot to confirm transfer
 
-// =====================
-// إعدادات السيرفرات
-const SETTINGS_FILE = path.join(__dirname,'settings.json');
-let SETTINGS = {};
-try { SETTINGS = JSON.parse(fs.readFileSync(SETTINGS_FILE,'utf8')); } catch { SETTINGS={}; }
-function saveSettings(){ fs.writeFileSync(SETTINGS_FILE, JSON.stringify(SETTINGS,null,2)); }
-function defaultGuildSettings(gid){
-  if(!SETTINGS[gid]) SETTINGS[gid] = { embedColor:'#000000', aiChannelId:null };
-  return SETTINGS[gid];
-}
-
-// =====================
-// بوت ديسكورد
-const client = new Client({
-  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent],
-  partials:[Partials.Channel]
-});
-
-async function askGemini(prompt){
-  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({
-      contents:[{role:'user', parts:[{text:prompt}]}],
-      generationConfig:{temperature:0.7, topK:40, topP:0.9, maxOutputTokens:800}
-    })
-  });
-  const data = await res.json();
-  return data?.candidates?.[0]?.content?.parts?.map(p=>p.text).join('\n')||'تعذر توليد رد';
-}
-
-function buildAIEmbed(gid, author, prompt, answer){
-  const { embedColor } = defaultGuildSettings(gid);
-  return new EmbedBuilder()
-    .setColor(parseInt(embedColor.replace('#',''),16))
-    .setAuthor({ name: author })
-    .setDescription(answer.slice(0,4096))
-    .setFooter({ text:'Front AI • Gemini 2.0 Flash' })
-    .setTimestamp();
-}
-
-// الرد على روم AI فقط
-client.on('messageCreate', async msg=>{
-  if(msg.author.bot || !msg.guild) return;
-  const gset = defaultGuildSettings(msg.guild.id);
-  if(!gset.aiChannelId || msg.channel.id!==gset.aiChannelId) return;
-  try{
-    await msg.channel.sendTyping();
-    const reply = await askGemini(msg.content);
-    await msg.reply({ embeds:[buildAIEmbed(msg.guild.id, msg.author.username, msg.content, reply)] });
-  }catch(e){ console.error(e); }
-});
-
-client.once('ready', ()=>console.log(`🤖 البوت جاهز: ${client.user.tag}`));
-client.login(DISCORD_TOKEN);
-
-// =====================
-// خادم ويب
+// ==== EXPRESS APP ====
 const app = express();
-app.use(session({ name:'frontai_sess', keys:['frontai_secret'], maxAge:1000*60*60*24*7 }));
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({extended:true}));
-app.use(express.static(path.join(__dirname,'web')));
+app.use(express.json());
+app.use(express.static("public"));
 
-// OAuth2 callback
-app.get('/auth/callback', async (req,res)=>{
-  const code = req.query.code;
-  if(!code) return res.redirect('/');
-  const params = new URLSearchParams({
-    client_id: DISCORD_CLIENT_ID,
-    client_secret: DISCORD_CLIENT_SECRET,
-    grant_type: 'authorization_code',
-    code,
-    redirect_uri: OAUTH_REDIRECT_URI,
-    scope: 'identify email guilds'
-  });
-  const tokenRes = await fetch('https://discord.com/api/oauth2/token',{
-    method:'POST',
-    body: params,
-    headers:{'Content-Type':'application/x-www-form-urlencoded'}
-  });
-  const data = await tokenRes.json();
-  req.session.token = data.access_token;
-  res.redirect('/dashboard.html');
+const dataDir = path.join(__dirname, "data");
+const walletsFile = path.join(dataDir, "wallets.json");
+const itemsFile = path.join(dataDir, "items.json");
+const priceFile = path.join(dataDir, "price.json");
+
+// Ensure data files exist
+function loadJSON(file, def = {}) {
+  if (!fs.existsSync(file)) fs.writeFileSync(file, JSON.stringify(def, null, 2));
+  return JSON.parse(fs.readFileSync(file));
+}
+function saveJSON(file, data) {
+  fs.writeFileSync(file, JSON.stringify(data, null, 2));
+}
+
+// ==== WALLET API ====
+app.post("/api/wallets/create", (req, res) => {
+  const wallets = loadJSON(walletsFile);
+  const walletId = Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+  const transferNumber = Math.random().toString().slice(2, 14);
+  const newWallet = { id: walletId, password: genPassword(), transferNumber, balance: 0 };
+  wallets[walletId] = newWallet;
+  saveJSON(walletsFile, wallets);
+  res.json({ ok: true, walletId });
 });
 
-// API لجلب السيرفرات التي لديك فيها Admin
-app.get('/api/guilds', async (req,res)=>{
-  if(!req.session.token) return res.status(401).json({error:'Unauthorized'});
-  const guildsRes = await fetch('https://discord.com/api/users/@me/guilds',{
-    headers:{Authorization:`Bearer ${req.session.token}`}
-  });
-  const guilds = await guildsRes.json();
-  const filtered = guilds.filter(g=> (g.permissions & 0x8) !==0 );
-  res.json(filtered);
+app.get("/api/wallets/:id", (req, res) => {
+  const wallets = loadJSON(walletsFile);
+  const wallet = wallets[req.params.id];
+  if (!wallet) return res.json({ ok: false, error: "Wallet not found" });
+  res.json({ ok: true, wallet });
 });
 
-// API لجلب رومات السيرفر
-app.get('/api/channels/:guildId', async (req,res)=>{
-  const gid = req.params.guildId;
-  if(!client.guilds.cache.has(gid)) return res.json([]);
-  const guild = client.guilds.cache.get(gid);
-  const channels = guild.channels.cache.filter(c=>c.type===0); // 0 = Text
-  res.json(channels.map(c=>({id:c.id,name:c.name})));
+// ==== ITEMS API ====
+app.get("/api/items", (req, res) => {
+  const items = loadJSON(itemsFile, {});
+  res.json({ ok: true, items });
 });
 
-// API لحفظ الإعدادات
-app.post('/api/save', async (req,res)=>{
-  const { guildId, aiChannelId, embedColor } = req.body;
-  if(!guildId) return res.status(400).json({error:'Missing guildId'});
-  SETTINGS[guildId] = { aiChannelId, embedColor };
-  saveSettings();
-  res.json({success:true});
+app.post("/api/buy", (req, res) => {
+  const { walletId, productName, quantity } = req.body;
+  const wallets = loadJSON(walletsFile);
+  const items = loadJSON(itemsFile);
+
+  const wallet = wallets[walletId];
+  if (!wallet) return res.json({ ok: false, error: "Wallet not found" });
+
+  const product = items[productName];
+  if (!product) return res.json({ ok: false, error: "Product not found" });
+
+  if (quantity > product.quantity) return res.json({ ok: false, error: "Not enough stock" });
+
+  const totalPrice = product.price * quantity;
+  if (wallet.balance < totalPrice) return res.json({ ok: false, error: "Insufficient balance" });
+
+  // Deduct
+  wallet.balance -= totalPrice;
+  product.quantity -= quantity;
+
+  // If product has codes, deliver first N
+  let delivered = [];
+  if (product.codes && Array.isArray(product.codes)) {
+    delivered = product.codes.splice(0, quantity);
+  }
+
+  saveJSON(walletsFile, wallets);
+  saveJSON(itemsFile, items);
+
+  res.json({ ok: true, delivered });
 });
 
-app.listen(PORT, ()=>console.log(`🌐 موقع Front AI يعمل على http://localhost:${PORT}`));
+// ==== HELPER ====
+function genPassword(len = 16) {
+  const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  return Array.from({ length: len }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
+}
+
+// ==== DISCORD BOT ====
+const client = new Client({ intents: [GatewayIntentBits.Guilds] });
+
+client.once("ready", () => {
+  console.log(`Bot logged in as ${client.user.tag}`);
+});
+
+// Slash commands (manual registration needed or use @discordjs/rest)
+client.on("interactionCreate", async (interaction) => {
+  if (!interaction.isChatInputCommand()) return;
+
+  if (interaction.commandName === "set-price") {
+    if (!interaction.member.roles.cache.has(ALLOWED_ROLE)) {
+      return interaction.reply({ content: "You are not allowed to use this command.", ephemeral: true });
+    }
+    const price = interaction.options.getNumber("price");
+    saveJSON(priceFile, { price });
+    const embed = new EmbedBuilder()
+      .setColor(0x000000)
+      .setTitle("Price Updated")
+      .setDescription(`New price set: **${price}$ per 1 unit**`);
+    await interaction.reply({ embeds: [embed] });
+  }
+
+  if (interaction.commandName === "buy") {
+    const qty = interaction.options.getInteger("amount");
+    const transfer = interaction.options.getString("transfer");
+
+    const priceData = loadJSON(priceFile, { price: 1 });
+    const totalCost = qty * priceData.price;
+
+    const embed = new EmbedBuilder()
+      .setColor(0x000000)
+      .setTitle("Purchase Request")
+      .setDescription(
+        `User <@!${interaction.user.id}> wants to buy **${qty}$**\n` +
+        `Total cost: **${totalCost}**\n` +
+        `Transfer to ID: \`${transfer}\``
+      );
+    await interaction.reply({ embeds: [embed] });
+
+    // Simulate confirmation from external bot
+    const confirmEmbed = new EmbedBuilder()
+      .setColor(0x000000)
+      .setDescription(
+        `:moneybag: | <@!${interaction.user.id}> has transferred \`${totalCost}$\` to <@!${RECEIVER_ID}>`
+      );
+    const guild = client.guilds.cache.get(GUILD_ID);
+    const channel = guild.systemChannel || guild.channels.cache.find(c => c.isTextBased());
+    if (channel) channel.send({ embeds: [confirmEmbed] });
+
+    // Add funds to wallet
+    const wallets = loadJSON(walletsFile);
+    const wallet = Object.values(wallets).find(w => w.transferNumber === transfer);
+    if (wallet) {
+      wallet.balance += qty;
+      saveJSON(walletsFile, wallets);
+    }
+  }
+});
+
+// ==== START ====
+app.listen(3000, () => console.log("Server running on http://localhost:3000"));
+client.login(BOT_TOKEN);
