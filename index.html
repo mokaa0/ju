@@ -1,283 +1,130 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Wallet Required</title>
-  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css" />
-</head>
-<body class="landing">
-  <div class="hero">
-    <img src="data:image/jpeg;base64,...." alt="Wallet Required" class="hero-img"/>
-  </div>
-  <div class="panel">
-    <h1>Wallet Required</h1>
-    <p>You need to create a wallet to continue.</p>
-    <button id="createBtn" class="primary">
-      <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
-        <path d="M2 7a2 2 0 0 1 2-2h16a1 1 0 0 1 1 1v3h-7a3 3 0 0 0 0 6h7v3a1 1 0 0 1-1 1H4a2 2 0 0 1-2-2V7z"/>
-        <path d="M17 12a1 1 0 1 1 2 0 1 1 0 0 1-2 0z"/>
-      </svg>
-      Create Wallet
-    </button>
-    <p class="hint">A password and transfer number will be generated for you.</p>
-  </div>
-  <script src="app.js"></script>
-</body>
-</html>
+// index.js
+const fs = require('fs');
+const path = require('path');
+const express = require('express');
+const session = require('express-session');
+const bodyParser = require('body-parser');
+const cookieParser = require('cookie-parser');
+const fetch = require('node-fetch'); 
+const { v4: uuidv4 } = require('uuid');
+const { Client, GatewayIntentBits, Partials, Collection } = require('discord.js');
 
+const config = require('./config.json');
+const { getGuildSettings, setGuildSettings } = require('./utils/settings');
 
-
--
-
-
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Wallet Dashboard</title>
-  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css" />
-</head>
-<body class="dashboard">
-  <header class="topbar">
-    <div class="brand"><span class="badge">W</span> Wallet</div>
-    <nav class="tabs">
-      <button data-tab="home" class="tab active">Home</button>
-      <button data-tab="products" class="tab">Products</button>
-      <button data-tab="discount" class="tab">Discount</button>
-      <button data-tab="contact" class="tab">Contact</button>
-    </nav>
-  </header>
-
-  <main>
-    <!-- Home -->
-    <section id="home" class="view active">
-      <div class="balance-card">
-        <div class="label">Balance</div>
-        <div class="balance"><span id="balance">0</span>$</div>
-        <div class="transfer-line">Transfer number: <code id="transfer"></code></div>
-        <div class="actions">
-          <button id="sendBtn" class="primary">
-            <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M4 4l16 8-16 8V4z"/>
-            </svg>
-            Send
-          </button>
-        </div>
-      </div>
-    </section>
-
-    <!-- Products -->
-    <section id="products" class="view">
-      <div id="itemsGrid" class="grid"></div>
-      <div id="buyModal" class="modal">
-        <div class="modal-body">
-          <h3>Buy Product</h3>
-          <div class="row">
-            <label>Quantity</label>
-            <input type="number" id="buyQty" min="1" value="1">
-          </div>
-          <div class="row">
-            <button id="confirmBuy" class="primary">Confirm</button>
-            <button id="cancelBuy" class="ghost">Cancel</button>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Discount -->
-    <section id="discount" class="view">
-      <h3>Discount Codes</h3>
-      <p>Coming soon...</p>
-    </section>
-
-    <!-- Contact -->
-    <section id="contact" class="view">
-      <h3>Contact</h3>
-      <p>Email: support@example.com</p>
-    </section>
-  </main>
-
-  <script src="app.js"></script>
-</body>
-</html>
-
-
-
-
-body {
-  font-family: 'Cairo', sans-serif;
-  margin: 0;
-  background: #111;
-  color: #eee;
-}
-
-button {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 10px 16px;
-  border: none;
-  border-radius: 6px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-button.primary {
-  background: #0a84ff;
-  color: white;
-}
-
-button.ghost {
-  background: transparent;
-  color: #aaa;
-  border: 1px solid #444;
-}
-
-.topbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: #1a1a1a;
-  padding: 10px 20px;
-}
-
-.brand {
-  font-weight: 700;
-  font-size: 1.2em;
-}
-
-.tabs .tab {
-  background: none;
-  border: none;
-  color: #eee;
-  margin: 0 6px;
-  cursor: pointer;
-}
-
-.tabs .tab.active {
-  color: #0a84ff;
-}
-
-.view { display: none; padding: 20px; }
-.view.active { display: block; }
-
-.balance-card {
-  background: #222;
-  padding: 20px;
-  border-radius: 10px;
-  text-align: center;
-}
-.balance {
-  font-size: 2em;
-  font-weight: 800;
-  margin: 10px 0;
-}
-.grid {
-  display: grid;
-  gap: 16px;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-}
-.modal {
-  display: none;
-  position: fixed; inset: 0;
-  background: rgba(0,0,0,0.8);
-  justify-content: center; align-items: center;
-}
-.modal-body {
-  background: #1c1c1c;
-  padding: 20px;
-  border-radius: 8px;
-}
-
-
-
-
-// Switch tabs
-document.querySelectorAll(".tabs .tab").forEach(btn => {
-  btn.addEventListener("click", () => {
-    document.querySelectorAll(".tabs .tab").forEach(t=>t.classList.remove("active"));
-    btn.classList.add("active");
-    document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
-    document.getElementById(btn.dataset.tab).classList.add("active");
-  });
+const client = new Client({
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.GuildMessageReactions,
+    GatewayIntentBits.GuildMembers,
+    GatewayIntentBits.GuildPresences,
+    GatewayIntentBits.MessageContent
+  ],
+  partials: [Partials.Message, Partials.Channel, Partials.Reaction]
 });
 
-// Create wallet
-const createBtn = document.getElementById("createBtn");
-if (createBtn) {
-  createBtn.addEventListener("click", async () => {
-    const res = await fetch("/api/wallets/create", {method:"POST"});
-    const data = await res.json();
-    if (data.ok) {
-      localStorage.setItem("walletId", data.walletId);
-      window.location.href = "/dashboard";
-    }
-  });
-}
+client.commands = new Collection();
+client.runningGiveaways = new Map();
 
-// Dashboard logic
-const walletId = localStorage.getItem("walletId");
-async function loadWallet() {
-  if (!walletId) return;
-  const res = await fetch(`/api/wallets/${walletId}`);
-  const data = await res.json();
-  if (data.ok) {
-    document.getElementById("balance").textContent = data.wallet.balance;
-    document.getElementById("transfer").textContent = data.wallet.transferNumber;
+const commandsPath = path.join(__dirname, 'commands');
+fs.readdirSync(commandsPath).filter(f => f.endsWith('.js')).forEach(file => {
+  const cmd = require(path.join(commandsPath, file));
+  if (cmd && cmd.name) client.commands.set(cmd.name, cmd);
+});
+
+const eventsPath = path.join(__dirname, 'events');
+fs.readdirSync(eventsPath).filter(f => f.endsWith('.js')).forEach(file => {
+  const evt = require(path.join(eventsPath, file));
+  if (evt.once) client.once(evt.name, (...args) => evt.execute(...args, client));
+  else client.on(evt.name, (...args) => evt.execute(...args, client));
+});
+
+const app = express();
+app.use(cookieParser());
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(session({ secret: config.sessionSecret, resave: false, saveUninitialized: false }));
+
+app.use('/static', express.static(path.join(__dirname, 'public')));
+app.get('/', (req,res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
+
+app.get('/auth/login', (req, res) => {
+  const state = uuidv4();
+  req.session.oauthState = state;
+  const url = new URL('https://discord.com/api/oauth2/authorize');
+  url.searchParams.set('client_id', config.clientId);
+  url.searchParams.set('redirect_uri', config.redirectUri);
+  url.searchParams.set('response_type', 'code');
+  url.searchParams.set('scope', config.scopes.join(' '));
+  url.searchParams.set('prompt', 'consent');
+  url.searchParams.set('state', state);
+  res.redirect(url.toString());
+});
+
+app.get('/auth/callback', async (req, res) => {
+  try {
+    const { code, state } = req.query;
+    if (!code || state !== req.session.oauthState) return res.redirect('/');
+    const tokenRes = await fetch('https://discord.com/api/oauth2/token', {
+      method: 'POST',
+      headers: { 'Content-Type':'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        client_id: config.clientId,
+        client_secret: config.clientSecret,
+        grant_type: 'authorization_code',
+        code: code.toString(),
+        redirect_uri: config.redirectUri
+      })
+    });
+    const tok = await tokenRes.json();
+    if (!tok.access_token) return res.redirect('/');
+    req.session.accessToken = tok.access_token;
+    res.redirect('/dashboard');
+  } catch (e) {
+    console.error(e);
+    res.redirect('/');
   }
-}
-if (document.body.classList.contains("dashboard")) {
-  loadWallet();
-  loadProducts();
-}
+});
 
-async function loadProducts() {
-  const res = await fetch("/api/items");
-  const data = await res.json();
-  const grid = document.getElementById("itemsGrid");
-  grid.innerHTML = "";
-  Object.entries(data.items).forEach(([name, item]) => {
-    const card = document.createElement("div");
-    card.className = "card";
-    card.innerHTML = `
-      <h4>${name}</h4>
-      <p>Price: ${item.price}$</p>
-      <p>Available: ${item.quantity}</p>
-      <button>Buy</button>
-    `;
-    card.querySelector("button").addEventListener("click", ()=> openBuyModal(name, item.price));
-    grid.appendChild(card);
-  });
-}
+app.get('/logout', (req,res)=>{ req.session.destroy(()=>res.redirect('/')); });
+app.get('/dashboard', (req,res)=> {
+  if (!req.session.accessToken) return res.redirect('/');
+  res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
+});
 
-// Modal
-const modal = document.getElementById("buyModal");
-const qtyInput = document.getElementById("buyQty");
-let currentProduct = null;
+app.get('/api/me', async (req,res)=>{
+  if (!req.session.accessToken) return res.status(401).json({ error: 'unauth' });
+  const me = await fetch('https://discord.com/api/users/@me', { headers: { Authorization: `Bearer ${req.session.accessToken}` } }).then(r=>r.json());
+  res.json(me);
+});
 
-function openBuyModal(product, price) {
-  modal.style.display = "flex";
-  currentProduct = product;
-}
-document.getElementById("cancelBuy").onclick = ()=> modal.style.display = "none";
-document.getElementById("confirmBuy").onclick = async ()=>{
-  const qty = parseInt(qtyInput.value, 10);
-  const res = await fetch("/api/buy", {
-    method:"POST",
-    headers: {"Content-Type":"application/json"},
-    body: JSON.stringify({ walletId, productName: currentProduct, quantity: qty })
-  });
-  const data = await res.json();
-  if (data.ok) {
-    alert("Purchase successful!");
-    modal.style.display = "none";
-    loadWallet();
-    loadProducts();
-  } else {
-    alert("Error: "+data.error);
+app.get('/api/guilds', async (req,res)=>{
+  if (!req.session.accessToken) return res.status(401).json({ error: 'unauth' });
+  const guilds = await fetch('https://discord.com/api/users/@me/guilds', { headers: { Authorization: `Bearer ${req.session.accessToken}` } }).then(r=>r.json());
+  const adminGuilds = guilds.filter(g => (BigInt(g.permissions) & BigInt(0x8)) === BigInt(0x8)).map(g => ({ id: g.id, name: g.name, icon: g.icon }));
+  res.json(adminGuilds);
+});
+
+app.get('/api/guild/:id/settings', (req,res) => {
+  const set = getGuildSettings(req.params.id, { prefix: config.defaultPrefix, emoji: config.defaultGiveawayEmoji, embedColor: config.defaultEmbedColor });
+  res.json(set);
+});
+app.get('/api/config', (req, res) => {
+  res.json({ clientId: config.clientId });
+});
+app.post('/api/guild/:id/settings', (req,res) => {
+  const { prefix, emoji, embedColor } = req.body || {};
+  const clean = {};
+  if (typeof prefix === 'string' && prefix.length <= 3) clean.prefix = prefix;
+  if (typeof emoji === 'string' && emoji.trim()) clean.emoji = emoji;
+  if (typeof embedColor === 'string' && /^#?[0-9a-fA-F]{6}$/.test(embedColor)) {
+    clean.embedColor = embedColor.startsWith('#') ? embedColor : ('#' + embedColor);
   }
-};
+  const saved = setGuildSettings(req.params.id, clean);
+  res.json(saved);
+});
+
+app.listen(config.port, () => console.log(`FrontMax web listening on http://localhost:${config.port}`));
+
+client.login(config.botToken);
