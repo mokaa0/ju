@@ -1,130 +1,263 @@
-// index.js
+// commands/logs.js
 const fs = require('fs');
 const path = require('path');
-const express = require('express');
-const session = require('express-session');
-const bodyParser = require('body-parser');
-const cookieParser = require('cookie-parser');
-const fetch = require('node-fetch'); 
-const { v4: uuidv4 } = require('uuid');
-const { Client, GatewayIntentBits, Partials, Collection } = require('discord.js');
+const { EmbedBuilder, PermissionsBitField } = require('discord.js');
+const { getGuildSettings } = require('../utils/settings');
 
-const config = require('./config.json');
-const { getGuildSettings, setGuildSettings } = require('./utils/settings');
+module.exports = {
+  name: 'logs',
+  description: 'Enable/disable logging for a specific category',
+  async execute(message, args) {
+    if (!message.guild) return;
 
-const client = new Client({
-  intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.GuildMessageReactions,
-    GatewayIntentBits.GuildMembers,
-    GatewayIntentBits.GuildPresences,
-    GatewayIntentBits.MessageContent
-  ],
-  partials: [Partials.Message, Partials.Channel, Partials.Reaction]
-});
+    const settings = getGuildSettings(message.guild.id, { prefix: '#', embedColor: '#000000' });
+    const embedColor = settings.embedColor ? parseInt(settings.embedColor.replace('#',''), 16) : 0x000000;
 
-client.commands = new Collection();
-client.runningGiveaways = new Map();
+    if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
+      const noPerms = new EmbedBuilder()
+        .setColor(embedColor)
+        .setDescription('❌ You need **Administrator** permission to use this command.');
+      return message.channel.send({ embeds: [noPerms] });
+    }
 
-const commandsPath = path.join(__dirname, 'commands');
-fs.readdirSync(commandsPath).filter(f => f.endsWith('.js')).forEach(file => {
-  const cmd = require(path.join(commandsPath, file));
-  if (cmd && cmd.name) client.commands.set(cmd.name, cmd);
-});
+    const action = args[0]; // enable / false
+    const category = args[1]; // ban / kick / rolegive / roleremove / roleupdate / msgdelete / msgupdate / join / leave / channel / voice
+    const channel = message.mentions.channels.first();
 
-const eventsPath = path.join(__dirname, 'events');
-fs.readdirSync(eventsPath).filter(f => f.endsWith('.js')).forEach(file => {
-  const evt = require(path.join(eventsPath, file));
-  if (evt.once) client.once(evt.name, (...args) => evt.execute(...args, client));
-  else client.on(evt.name, (...args) => evt.execute(...args, client));
-});
+    if (!action || !category || !channel) {
+      const usage = new EmbedBuilder()
+        .setColor(embedColor)
+        .setTitle('Command Usage')
+        .setDescription(`\`${settings.prefix}logs [enable/false] [category] [#channel]\``)
+        .setFooter({ text: message.author.username, iconURL: message.author.displayAvatarURL() });
+      return message.channel.send({ embeds: [usage] });
+    }
 
-const app = express();
-app.use(cookieParser());
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(session({ secret: config.sessionSecret, resave: false, saveUninitialized: false }));
+    const guildDir = path.join(__dirname, '..', 'data', 'guilds');
+    if (!fs.existsSync(guildDir)) fs.mkdirSync(guildDir, { recursive: true });
 
-app.use('/static', express.static(path.join(__dirname, 'public')));
-app.get('/', (req,res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
+    const filePath = path.join(guildDir, `${message.guild.id}.json`);
+    let guildConfig = {};
 
-app.get('/auth/login', (req, res) => {
-  const state = uuidv4();
-  req.session.oauthState = state;
-  const url = new URL('https://discord.com/api/oauth2/authorize');
-  url.searchParams.set('client_id', config.clientId);
-  url.searchParams.set('redirect_uri', config.redirectUri);
-  url.searchParams.set('response_type', 'code');
-  url.searchParams.set('scope', config.scopes.join(' '));
-  url.searchParams.set('prompt', 'consent');
-  url.searchParams.set('state', state);
-  res.redirect(url.toString());
-});
+    if (fs.existsSync(filePath)) {
+      guildConfig = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    }
 
-app.get('/auth/callback', async (req, res) => {
-  try {
-    const { code, state } = req.query;
-    if (!code || state !== req.session.oauthState) return res.redirect('/');
-    const tokenRes = await fetch('https://discord.com/api/oauth2/token', {
-      method: 'POST',
-      headers: { 'Content-Type':'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        client_id: config.clientId,
-        client_secret: config.clientSecret,
-        grant_type: 'authorization_code',
-        code: code.toString(),
-        redirect_uri: config.redirectUri
-      })
-    });
-    const tok = await tokenRes.json();
-    if (!tok.access_token) return res.redirect('/');
-    req.session.accessToken = tok.access_token;
-    res.redirect('/dashboard');
-  } catch (e) {
-    console.error(e);
-    res.redirect('/');
+    if (!guildConfig.logs) guildConfig.logs = {};
+
+    if (action === 'false') {
+      delete guildConfig.logs[category];
+    } else if (action === 'enable') {
+      guildConfig.logs[category] = channel.id;
+    }
+
+    fs.writeFileSync(filePath, JSON.stringify(guildConfig, null, 2));
+
+    const done = new EmbedBuilder()
+      .setColor(embedColor)
+      .setDescription(`✅ Logs for **${category}** ${action === 'false' ? 'disabled' : `enabled in ${channel}`}!`);
+    await message.channel.send({ embeds: [done] });
   }
-});
+};
 
-app.get('/logout', (req,res)=>{ req.session.destroy(()=>res.redirect('/')); });
-app.get('/dashboard', (req,res)=> {
-  if (!req.session.accessToken) return res.redirect('/');
-  res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
-});
 
-app.get('/api/me', async (req,res)=>{
-  if (!req.session.accessToken) return res.status(401).json({ error: 'unauth' });
-  const me = await fetch('https://discord.com/api/users/@me', { headers: { Authorization: `Bearer ${req.session.accessToken}` } }).then(r=>r.json());
-  res.json(me);
-});
 
-app.get('/api/guilds', async (req,res)=>{
-  if (!req.session.accessToken) return res.status(401).json({ error: 'unauth' });
-  const guilds = await fetch('https://discord.com/api/users/@me/guilds', { headers: { Authorization: `Bearer ${req.session.accessToken}` } }).then(r=>r.json());
-  const adminGuilds = guilds.filter(g => (BigInt(g.permissions) & BigInt(0x8)) === BigInt(0x8)).map(g => ({ id: g.id, name: g.name, icon: g.icon }));
-  res.json(adminGuilds);
-});
+// events/logs.js
+const fs = require('fs');
+const path = require('path');
+const { EmbedBuilder, AuditLogEvent } = require('discord.js');
 
-app.get('/api/guild/:id/settings', (req,res) => {
-  const set = getGuildSettings(req.params.id, { prefix: config.defaultPrefix, emoji: config.defaultGiveawayEmoji, embedColor: config.defaultEmbedColor });
-  res.json(set);
-});
-app.get('/api/config', (req, res) => {
-  res.json({ clientId: config.clientId });
-});
-app.post('/api/guild/:id/settings', (req,res) => {
-  const { prefix, emoji, embedColor } = req.body || {};
-  const clean = {};
-  if (typeof prefix === 'string' && prefix.length <= 3) clean.prefix = prefix;
-  if (typeof emoji === 'string' && emoji.trim()) clean.emoji = emoji;
-  if (typeof embedColor === 'string' && /^#?[0-9a-fA-F]{6}$/.test(embedColor)) {
-    clean.embedColor = embedColor.startsWith('#') ? embedColor : ('#' + embedColor);
-  }
-  const saved = setGuildSettings(req.params.id, clean);
-  res.json(saved);
-});
+function getGuildConfig(guildId) {
+  const filePath = path.join(__dirname, '..', 'data', 'guilds', `${guildId}.json`);
+  if (!fs.existsSync(filePath)) return null;
+  return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+}
 
-app.listen(config.port, () => console.log(`FrontMax web listening on http://localhost:${config.port}`));
+function sendLog(guild, category, embed) {
+  const config = getGuildConfig(guild.id);
+  if (!config || !config.logs || !config.logs[category]) return;
+  const channel = guild.channels.cache.get(config.logs[category]);
+  if (channel) channel.send({ embeds: [embed] }).catch(() => {});
+}
 
-client.login(config.botToken);
+module.exports = (client) => {
+  // Ban
+  client.on('guildBanAdd', async (ban) => {
+    const fetchedLogs = await ban.guild.fetchAuditLogs({ type: AuditLogEvent.MemberBanAdd, limit: 1 });
+    const log = fetchedLogs.entries.first();
+    const embed = new EmbedBuilder()
+      .setColor(0x000000)
+      .setTitle('🚫 Member Banned')
+      .addFields(
+        { name: 'Banned User', value: `${ban.user} (\`${ban.user.id}\`)` },
+        { name: 'Banned By', value: log?.executor ? `${log.executor} (\`${log.executor.id}\`)` : 'Unknown' },
+        { name: 'Reason', value: log?.reason || 'No reason provided' }
+      )
+      .setTimestamp();
+    sendLog(ban.guild, 'ban', embed);
+  });
+
+  // Kick
+  client.on('guildMemberRemove', async (member) => {
+    const fetchedLogs = await member.guild.fetchAuditLogs({ type: AuditLogEvent.MemberKick, limit: 1 });
+    const log = fetchedLogs.entries.first();
+    if (!log) return;
+    const embed = new EmbedBuilder()
+      .setColor(0x000000)
+      .setTitle('👢 Member Kicked')
+      .addFields(
+        { name: 'Kicked User', value: `${member.user} (\`${member.user.id}\`)` },
+        { name: 'Kicked By', value: log.executor ? `${log.executor} (\`${log.executor.id}\`)` : 'Unknown' },
+        { name: 'Reason', value: log.reason || 'No reason provided' }
+      )
+      .setTimestamp();
+    sendLog(member.guild, 'kick', embed);
+  });
+
+  // Role Add / Remove
+  client.on('guildMemberUpdate', async (oldMember, newMember) => {
+    const addedRoles = newMember.roles.cache.filter(r => !oldMember.roles.cache.has(r.id));
+    const removedRoles = oldMember.roles.cache.filter(r => !newMember.roles.cache.has(r.id));
+
+    if (addedRoles.size > 0) {
+      const embed = new EmbedBuilder()
+        .setColor(0x000000)
+        .setTitle('➕ Role Added')
+        .setDescription(`${newMember} was given role(s): ${addedRoles.map(r => r.name).join(', ')}`)
+        .setTimestamp();
+      sendLog(newMember.guild, 'rolegive', embed);
+    }
+
+    if (removedRoles.size > 0) {
+      const embed = new EmbedBuilder()
+        .setColor(0x000000)
+        .setTitle('➖ Role Removed')
+        .setDescription(`${newMember} lost role(s): ${removedRoles.map(r => r.name).join(', ')}`)
+        .setTimestamp();
+      sendLog(newMember.guild, 'roleremove', embed);
+    }
+  });
+
+  // Role Update
+  client.on('roleUpdate', async (oldRole, newRole) => {
+    const changes = [];
+    if (oldRole.name !== newRole.name) changes.push(`Name: \`${oldRole.name}\` → \`${newRole.name}\``);
+    if (oldRole.permissions.bitfield !== newRole.permissions.bitfield) changes.push('Permissions updated');
+    if (changes.length === 0) return;
+    const embed = new EmbedBuilder()
+      .setColor(0x000000)
+      .setTitle('🛠️ Role Updated')
+      .setDescription(changes.join('\n'))
+      .setTimestamp();
+    sendLog(newRole.guild, 'roleupdate', embed);
+  });
+
+  // Message Delete
+  client.on('messageDelete', (msg) => {
+    if (!msg.guild || msg.author?.bot) return;
+    const embed = new EmbedBuilder()
+      .setColor(0x000000)
+      .setTitle('🗑️ Message Deleted')
+      .addFields(
+        { name: 'Author', value: `${msg.author} (\`${msg.author.id}\`)` },
+        { name: 'Channel', value: `${msg.channel}` },
+        { name: 'Content', value: msg.content || 'No content' }
+      )
+      .setTimestamp();
+    sendLog(msg.guild, 'msgdelete', embed);
+  });
+
+  // Message Update
+  client.on('messageUpdate', (oldMsg, newMsg) => {
+    if (!newMsg.guild || newMsg.author?.bot) return;
+    if (oldMsg.content === newMsg.content) return;
+    const embed = new EmbedBuilder()
+      .setColor(0x000000)
+      .setTitle('✏️ Message Edited')
+      .addFields(
+        { name: 'Author', value: `${newMsg.author} (\`${newMsg.author.id}\`)` },
+        { name: 'Channel', value: `${newMsg.channel}` },
+        { name: 'Before', value: oldMsg.content || 'No content' },
+        { name: 'After', value: newMsg.content || 'No content' }
+      )
+      .setTimestamp();
+    sendLog(newMsg.guild, 'msgupdate', embed);
+  });
+
+  // Member Join
+  client.on('guildMemberAdd', (member) => {
+    const embed = new EmbedBuilder()
+      .setColor(0x000000)
+      .setTitle('👋 Member Joined')
+      .setDescription(`${member} (\`${member.id}\`)`)
+      .setTimestamp();
+    sendLog(member.guild, 'join', embed);
+  });
+
+  // Member Leave
+  client.on('guildMemberRemove', (member) => {
+    const embed = new EmbedBuilder()
+      .setColor(0x000000)
+      .setTitle('👋 Member Left')
+      .setDescription(`${member.user.tag} (\`${member.id}\`)`)
+      .setTimestamp();
+    sendLog(member.guild, 'leave', embed);
+  });
+
+  // Channel Create/Delete/Update
+  client.on('channelCreate', (ch) => {
+    const embed = new EmbedBuilder()
+      .setColor(0x000000)
+      .setTitle('📂 Channel Created')
+      .setDescription(`${ch} (\`${ch.id}\`)`)
+      .setTimestamp();
+    sendLog(ch.guild, 'channel', embed);
+  });
+
+  client.on('channelDelete', (ch) => {
+    const embed = new EmbedBuilder()
+      .setColor(0x000000)
+      .setTitle('📂 Channel Deleted')
+      .setDescription(`${ch.name} (\`${ch.id}\`)`)
+      .setTimestamp();
+    sendLog(ch.guild, 'channel', embed);
+  });
+
+  client.on('channelUpdate', (oldCh, newCh) => {
+    if (oldCh.name === newCh.name) return;
+    const embed = new EmbedBuilder()
+      .setColor(0x000000)
+      .setTitle('📂 Channel Updated')
+      .setDescription(`Name: \`${oldCh.name}\` → \`${newCh.name}\``)
+      .setTimestamp();
+    sendLog(newCh.guild, 'channel', embed);
+  });
+
+  // Voice State Update
+  client.on('voiceStateUpdate', (oldState, newState) => {
+    if (oldState.channelId !== newState.channelId) {
+      if (!oldState.channelId && newState.channelId) {
+        const embed = new EmbedBuilder()
+          .setColor(0x000000)
+          .setTitle('🔊 Voice Join')
+          .setDescription(`${newState.member} joined ${newState.channel}`)
+          .setTimestamp();
+        sendLog(newState.guild, 'voice', embed);
+      } else if (oldState.channelId && !newState.channelId) {
+        const embed = new EmbedBuilder()
+          .setColor(0x000000)
+          .setTitle('🔇 Voice Leave')
+          .setDescription(`${oldState.member} left ${oldState.channel}`)
+          .setTimestamp();
+        sendLog(oldState.guild, 'voice', embed);
+      } else {
+        const embed = new EmbedBuilder()
+          .setColor(0x000000)
+          .setTitle('🔁 Voice Move')
+          .setDescription(`${newState.member} moved from ${oldState.channel} to ${newState.channel}`)
+          .setTimestamp();
+        sendLog(newState.guild, 'voice', embed);
+      }
+    }
+  });
+};
