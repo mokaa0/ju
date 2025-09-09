@@ -1,49 +1,130 @@
-const { Client, GatewayIntentBits, Partials, Collection } = require("discord.js")
-const fs = require("fs")
-require("dotenv").config()
+const logEvent = require("./logger")
 
-const config = require("./config.json")
-
-const client = new Client({
-  intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMembers,
-    GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.GuildBans,
-    GatewayIntentBits.MessageContent
-  ],
-  partials: [Partials.Message, Partials.Channel, Partials.Reaction]
-})
-
-client.commands = new Collection()
-client.config = config
-
-client.saveConfig = () => {
-  fs.writeFileSync("./config.json", JSON.stringify(client.config, null, 2))
+function isWhitelisted(client, member) {
+  if (!member) return false
+  if (client.config.whitelist.users.includes(member.id)) return true
+  if (member.roles.cache.some(r => client.config.whitelist.roles.includes(r.id))) return true
+  return false
 }
 
-const commandFiles = fs.readdirSync("./commands").filter(file => file.endsWith(".js"))
-for (const file of commandFiles) {
-  const command = require(`./commands/${file}`)
-  client.commands.set(command.data.name, command)
+module.exports = client => {
+  client.on("messageCreate", async message => {
+    if (!message.guild || message.author.bot) return
+    const badWord = client.config.automod.badWords.find(w => message.content.toLowerCase().includes(w))
+    if (badWord) {
+      if (client.config.automod.punishment === "delete") {
+        await message.delete().catch(() => {})
+        logEvent(client, message.guild, `Deleted message from ${message.author.tag} for bad word.`)
+      } else if (client.config.automod.punishment === "kick") {
+        await message.member.kick("AutoMod bad word").catch(() => {})
+        logEvent(client, message.guild, `Kicked ${message.author.tag} for bad word.`)
+      } else if (client.config.automod.punishment === "ban") {
+        await message.guild.members.ban(message.author.id, { reason: "AutoMod bad word" }).catch(() => {})
+        logEvent(client, message.guild, `Banned ${message.author.tag} for bad word.`)
+      }
+    }
+    if (client.config.protections.antiMassMention) {
+      if (message.mentions.everyone || message.mentions.roles.size > 5 || message.mentions.users.size > 5) {
+        await message.delete().catch(() => {})
+        logEvent(client, message.guild, `Blocked mass mention from ${message.author.tag}.`)
+      }
+    }
+  })
+
+  const userMessages = new Map()
+  client.on("messageCreate", message => {
+    if (!client.config.protections.antiSpam || !message.guild || message.author.bot) return
+    const now = Date.now()
+    if (!userMessages.has(message.author.id)) {
+      userMessages.set(message.author.id, [])
+    }
+    const timestamps = userMessages.get(message.author.id)
+    timestamps.push(now)
+    userMessages.set(message.author.id, timestamps.filter(t => now - t < 5000))
+    if (timestamps.length > 5) {
+      message.delete().catch(() => {})
+      logEvent(client, message.guild, `Spam detected from ${message.author.tag}.`)
+    }
+  })
+
+  client.on("guildUpdate", async (oldGuild, newGuild) => {
+    if (!client.config.protections.antiServerUpdate) return
+    if (oldGuild.name !== newGuild.name || oldGuild.icon !== newGuild.icon) {
+      logEvent(client, newGuild, "Server update detected.")
+    }
+  })
+
+  client.on("roleCreate", role => {
+    if (client.config.protections.antiRoleCreate) {
+      role.delete("AntiRoleCreate enabled").catch(() => {})
+      logEvent(client, role.guild, "Role creation blocked.")
+    }
+  })
+
+  client.on("roleDelete", role => {
+    if (client.config.protections.antiRoleDelete) {
+      logEvent(client, role.guild, "Role deletion detected.")
+    }
+  })
+
+  client.on("roleUpdate", (oldRole, newRole) => {
+    if (client.config.protections.antiRoleUpdate) {
+      newRole.edit(oldRole.rawPosition).catch(() => {})
+      logEvent(client, newRole.guild, "Role update detected.")
+    }
+  })
+
+  client.on("channelCreate", channel => {
+    if (client.config.protections.antiChannelCreate) {
+      channel.delete("AntiChannelCreate enabled").catch(() => {})
+      logEvent(client, channel.guild, "Channel creation blocked.")
+    }
+  })
+
+  client.on("channelDelete", channel => {
+    if (client.config.protections.antiChannelDelete) {
+      logEvent(client, channel.guild, "Channel deletion detected.")
+    }
+  })
+
+  client.on("channelUpdate", (oldChannel, newChannel) => {
+    if (client.config.protections.antiChannelUpdate) {
+      logEvent(client, newChannel.guild, "Channel update detected.")
+    }
+  })
+
+  client.on("guildMemberAdd", member => {
+    if (client.config.protections.antiBotAdd && member.user.bot) {
+      member.kick("AntiBotAdd enabled").catch(() => {})
+      logEvent(client, member.guild, `Bot ${member.user.tag} was kicked (bot add blocked).`)
+    }
+    if (client.config.protections.antiRaid) {
+      logEvent(client, member.guild, `New member joined: ${member.user.tag} (raid check).`)
+    }
+  })
+
+  client.on("webhookUpdate", channel => {
+    if (client.config.protections.antiWebhook) {
+      logEvent(client, channel.guild, "Webhook updated.")
+    }
+  })
+
+  client.on("inviteCreate", invite => {
+    if (client.config.protections.antiInvite) {
+      invite.delete("AntiInvite enabled").catch(() => {})
+      logEvent(client, invite.guild, "Invite creation blocked.")
+    }
+  })
+
+  client.on("guildBanAdd", ban => {
+    if (client.config.protections.antiBan) {
+      logEvent(client, ban.guild, `Ban detected: ${ban.user.tag}.`)
+    }
+  })
+
+  client.on("guildMemberRemove", member => {
+    if (client.config.protections.antiKick && !member.user.bot) {
+      logEvent(client, member.guild, `Kick detected: ${member.user.tag}.`)
+    }
+  })
 }
-
-client.once("ready", () => {
-  console.log(`${client.user.tag} is online`)
-})
-
-client.on("interactionCreate", async interaction => {
-  if (!interaction.isChatInputCommand()) return
-  const command = client.commands.get(interaction.commandName)
-  if (!command) return
-  try {
-    await command.execute(interaction, client)
-  } catch (err) {
-    console.error(err)
-    await interaction.reply({ content: "An error occurred while executing this command.", ephemeral: true })
-  }
-})
-
-require("./securityHandler")(client)
-
-client.login(process.env.TOKEN)
