@@ -1,224 +1,518 @@
-// commands/security.js
-const fs = require('fs');
-const path = require('path');
-const { EmbedBuilder, PermissionsBitField } = require('discord.js');
-const { getGuildSettings } = require('../utils/settings');
+<!DOCTYPE html>
 
-module.exports = {
-  name: 'security',
-  description: 'Enable/disable security for specific category',
-  async execute(message, args) {
-    if (!message.guild) return;
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>برمجة هندسية لصناعة المواقع</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-    const settings = getGuildSettings(message.guild.id, { prefix: '#', embedColor: '#000000' });
-    const embedColor = settings.embedColor ? parseInt(settings.embedColor.replace('#',''), 16) : 0x000000;
-
-    if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-      const noPerms = new EmbedBuilder()
-        .setColor(embedColor)
-        .setDescription('❌ You need **Administrator** permission to use this command.');
-      return message.channel.send({ embeds: [noPerms] });
+    body {
+        font-family: 'Cairo', sans-serif;
+        background-color: #000000;
+        color: white;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
     }
 
-    const action = args[0]; // enable / false
-    const category = args[1]; // ban/kick/rolegive/roleremove/roleupdate
-    const punishment = args[2]; // ban/kick/unrole
-
-    if (!action || !category || !punishment) {
-      const usage = new EmbedBuilder()
-        .setColor(embedColor)
-        .setTitle('Command Usage')
-        .setDescription(`\`${settings.prefix}security [enable/false] [category] [ban/kick/unrole]\``)
-        .setFooter({ text: message.author.username, iconURL: message.author.displayAvatarURL() });
-      return message.channel.send({ embeds: [usage] });
+    .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+        flex: 1;
     }
 
-    const guildDir = path.join(__dirname, '..', 'data', 'guilds');
-    if (!fs.existsSync(guildDir)) fs.mkdirSync(guildDir, { recursive: true });
-
-    const filePath = path.join(guildDir, `${message.guild.id}.json`);
-    let guildConfig = {};
-
-    if (fs.existsSync(filePath)) {
-      guildConfig = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    .main-title {
+        text-align: center;
+        font-size: 2.5em;
+        font-weight: 700;
+        margin-bottom: 50px;
+        text-shadow: 2px 2px 4px rgba(255, 255, 255, 0.3);
+        transition: all 0.3s ease;
+        cursor: pointer;
     }
 
-    if (!guildConfig.security) guildConfig.security = {};
-
-    if (action === 'false') {
-      delete guildConfig.security[category];
-    } else if (action === 'enable') {
-      guildConfig.security[category] = { punishment, whitelist: [] };
+    .main-title:hover {
+        transform: scale(1.05);
+        text-shadow: 3px 3px 8px rgba(255, 255, 255, 0.5);
     }
 
-    fs.writeFileSync(filePath, JSON.stringify(guildConfig, null, 2));
-
-    const done = new EmbedBuilder()
-      .setColor(embedColor)
-      .setDescription(`✅ Security for **${category}** ${action === 'false' ? 'disabled' : `enabled with punishment **${punishment}**`}`);
-    await message.channel.send({ embeds: [done] });
-  }
-};
-
-
-
-
-// commands/withelist.js
-const fs = require('fs');
-const path = require('path');
-const { EmbedBuilder, PermissionsBitField } = require('discord.js');
-const { getGuildSettings } = require('../utils/settings');
-
-module.exports = {
-  name: 'withelist',
-  description: 'Add a user to whitelist for a security category',
-  async execute(message, args) {
-    if (!message.guild) return;
-
-    const settings = getGuildSettings(message.guild.id, { prefix: '#', embedColor: '#000000' });
-    const embedColor = settings.embedColor ? parseInt(settings.embedColor.replace('#',''), 16) : 0x000000;
-
-    if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-      const noPerms = new EmbedBuilder()
-        .setColor(embedColor)
-        .setDescription('❌ You need **Administrator** permission to use this command.');
-      return message.channel.send({ embeds: [noPerms] });
+    .main-title:active {
+        transform: scale(0.98);
     }
 
-    const user = message.mentions.users.first();
-    const category = args[1];
-
-    if (!user || !category) {
-      const usage = new EmbedBuilder()
-        .setColor(embedColor)
-        .setTitle('Command Usage')
-        .setDescription(`\`${settings.prefix}withelist [@user] [category]\``)
-        .setFooter({ text: message.author.username, iconURL: message.author.displayAvatarURL() });
-      return message.channel.send({ embeds: [usage] });
+    .cards-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 30px;
+        justify-content: center;
+        margin-bottom: 50px;
     }
 
-    const guildDir = path.join(__dirname, '..', 'data', 'guilds');
-    if (!fs.existsSync(guildDir)) fs.mkdirSync(guildDir, { recursive: true });
-
-    const filePath = path.join(guildDir, `${message.guild.id}.json`);
-    let guildConfig = {};
-
-    if (fs.existsSync(filePath)) {
-      guildConfig = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    .card {
+        background: linear-gradient(135deg, #1a1a1a, #2d2d2d);
+        border-radius: 15px;
+        padding: 30px;
+        width: 350px;
+        text-align: center;
+        box-shadow: 0 10px 30px rgba(255, 255, 255, 0.1);
+        border: 1px solid #333;
+        transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
     }
 
-    if (!guildConfig.security || !guildConfig.security[category]) {
-      const error = new EmbedBuilder()
-        .setColor(embedColor)
-        .setDescription(`⚠️ Security for **${category}** is not enabled yet.`);
-      return message.channel.send({ embeds: [error] });
+    .card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+        transition: left 0.5s;
     }
 
-    if (!guildConfig.security[category].whitelist) guildConfig.security[category].whitelist = [];
-
-    if (!guildConfig.security[category].whitelist.includes(user.id)) {
-      guildConfig.security[category].whitelist.push(user.id);
+    .card:hover::before {
+        left: 100%;
     }
 
-    fs.writeFileSync(filePath, JSON.stringify(guildConfig, null, 2));
-
-    const done = new EmbedBuilder()
-      .setColor(embedColor)
-      .setDescription(`✅ Added ${user} to whitelist for **${category}**`);
-    await message.channel.send({ embeds: [done] });
-  }
-};
-
-
-
-
-// events/security.js
-const fs = require('fs');
-const path = require('path');
-const { AuditLogEvent } = require('discord.js');
-
-function getGuildConfig(guildId) {
-  const filePath = path.join(__dirname, '..', 'data', 'guilds', `${guildId}.json`);
-  if (!fs.existsSync(filePath)) return null;
-  return JSON.parse(fs.readFileSync(filePath, 'utf8'));
-}
-
-async function punish(guild, userId, punishment) {
-  const member = await guild.members.fetch(userId).catch(() => null);
-  if (!member) return;
-
-  if (punishment === 'ban') {
-    await member.ban({ reason: 'Security system' }).catch(() => {});
-  } else if (punishment === 'kick') {
-    await member.kick('Security system').catch(() => {});
-  } else if (punishment === 'unrole') {
-    member.roles.set([]).catch(() => {});
-  }
-}
-
-module.exports = (client) => {
-  // Ban
-  client.on('guildBanAdd', async (ban) => {
-    const config = getGuildConfig(ban.guild.id);
-    if (!config || !config.security || !config.security.ban) return;
-
-    const fetchedLogs = await ban.guild.fetchAuditLogs({ type: AuditLogEvent.MemberBanAdd, limit: 1 });
-    const log = fetchedLogs.entries.first();
-    if (!log) return;
-
-    const execId = log.executor.id;
-    if (config.security.ban.whitelist?.includes(execId)) return;
-
-    punish(ban.guild, execId, config.security.ban.punishment);
-  });
-
-  // Kick
-  client.on('guildMemberRemove', async (member) => {
-    const config = getGuildConfig(member.guild.id);
-    if (!config || !config.security || !config.security.kick) return;
-
-    const fetchedLogs = await member.guild.fetchAuditLogs({ type: AuditLogEvent.MemberKick, limit: 1 });
-    const log = fetchedLogs.entries.first();
-    if (!log) return;
-
-    const execId = log.executor.id;
-    if (config.security.kick.whitelist?.includes(execId)) return;
-
-    punish(member.guild, execId, config.security.kick.punishment);
-  });
-
-  // Role give/remove/update handled via audit logs
-  client.on('guildMemberUpdate', async (oldM, newM) => {
-    const config = getGuildConfig(newM.guild.id);
-    if (!config || !config.security) return;
-
-    const fetchedLogs = await newM.guild.fetchAuditLogs({ limit: 1 });
-    const log = fetchedLogs.entries.first();
-    if (!log) return;
-
-    const execId = log.executor.id;
-
-    if (log.action === AuditLogEvent.MemberRoleUpdate) {
-      if (config.security.rolegive && !config.security.rolegive.whitelist?.includes(execId)) {
-        punish(newM.guild, execId, config.security.rolegive.punishment);
-      }
-      if (config.security.roleremove && !config.security.roleremove.whitelist?.includes(execId)) {
-        punish(newM.guild, execId, config.security.roleremove.punishment);
-      }
+    .card:hover {
+        transform: translateY(-10px) scale(1.02);
+        box-shadow: 0 20px 50px rgba(255, 255, 255, 0.2);
+        border-color: #555;
     }
-  });
 
-  client.on('roleUpdate', async (oldR, newR) => {
-    const config = getGuildConfig(newR.guild.id);
-    if (!config || !config.security || !config.security.roleupdate) return;
+    .card:active {
+        transform: translateY(-8px) scale(0.98);
+    }
 
-    const fetchedLogs = await newR.guild.fetchAuditLogs({ type: AuditLogEvent.RoleUpdate, limit: 1 });
-    const log = fetchedLogs.entries.first();
-    if (!log) return;
+    .student-name {
+        font-size: 1.5em;
+        font-weight: 600;
+        margin-bottom: 20px;
+        color: #ffffff;
+        transition: all 0.3s ease;
+    }
 
-    const execId = log.executor.id;
-    if (config.security.roleupdate.whitelist?.includes(execId)) return;
+    .card:hover .student-name {
+        color: #4CAF50;
+        transform: translateY(-2px);
+    }
 
-    punish(newR.guild, execId, config.security.roleupdate.punishment);
-  });
-};
+    .buttons {
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+    }
+
+    .btn {
+        padding: 12px 25px;
+        border: none;
+        border-radius: 25px;
+        cursor: pointer;
+        font-family: 'Cairo', sans-serif;
+        font-weight: 600;
+        font-size: 14px;
+        transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        text-decoration: none;
+        display: inline-block;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 4px 15px rgba(255, 255, 255, 0.1);
+    }
+
+    .btn::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 0;
+        height: 0;
+        background: rgba(255, 255, 255, 0.3);
+        border-radius: 50%;
+        transition: all 0.6s ease;
+        transform: translate(-50%, -50%);
+    }
+
+    .btn:active::before {
+        width: 300px;
+        height: 300px;
+    }
+
+    .btn:active {
+        transform: scale(0.95);
+    }
+
+    .btn-details {
+        background: linear-gradient(45deg, #4CAF50, #45a049, #66BB6A);
+        color: white;
+        background-size: 200% 200%;
+        animation: gradientShift 3s ease infinite;
+    }
+
+    .btn-details:hover {
+        background: linear-gradient(45deg, #45a049, #3d8b40, #4CAF50);
+        transform: scale(1.08) rotateZ(2deg);
+        box-shadow: 0 8px 25px rgba(76, 175, 80, 0.4);
+    }
+
+    .btn-vote {
+        background: linear-gradient(45deg, #2196F3, #1976D2, #42A5F5);
+        color: white;
+        background-size: 200% 200%;
+        animation: gradientShift 3s ease infinite;
+    }
+
+    .btn-vote:hover {
+        background: linear-gradient(45deg, #1976D2, #1565C0, #2196F3);
+        transform: scale(1.08) rotateZ(-2deg);
+        box-shadow: 0 8px 25px rgba(33, 150, 243, 0.4);
+    }
+
+    .btn-vote:disabled {
+        background: linear-gradient(45deg, #666, #555, #777);
+        cursor: not-allowed;
+        transform: none;
+        animation: none;
+    }
+
+    .btn-vote:disabled:hover {
+        transform: none;
+        box-shadow: 0 4px 15px rgba(255, 255, 255, 0.1);
+    }
+
+    @keyframes gradientShift {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+
+    .footer {
+        text-align: center;
+        padding: 20px;
+        border-top: 1px solid #333;
+        margin-top: 50px;
+        font-size: 14px;
+        color: #ccc;
+    }
+
+    .details-page {
+        display: none;
+        text-align: center;
+    }
+
+    .details-title {
+        font-size: 2em;
+        margin-bottom: 40px;
+    }
+
+    .details-info {
+        background: linear-gradient(135deg, #1a1a1a, #2d2d2d);
+        border-radius: 15px;
+        padding: 40px;
+        margin: 0 auto 40px;
+        max-width: 500px;
+        border: 1px solid #333;
+        transition: all 0.4s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .details-info::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.05), transparent);
+        transform: rotate(45deg);
+        transition: all 0.6s ease;
+    }
+
+    .details-info:hover::before {
+        transform: rotate(45deg) translate(100%, 100%);
+    }
+
+    .details-info:hover {
+        transform: scale(1.02);
+        box-shadow: 0 15px 40px rgba(255, 255, 255, 0.15);
+    }
+
+    .info-item {
+        font-size: 1.2em;
+        margin-bottom: 15px;
+        padding: 10px;
+        border-bottom: 1px solid #333;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+
+    .info-item:hover {
+        background: rgba(255, 255, 255, 0.05);
+        transform: translateX(10px);
+        border-radius: 8px;
+    }
+
+    .info-item:last-child {
+        border-bottom: none;
+    }
+
+    .back-btn {
+        background: linear-gradient(45deg, #FF9800, #F57C00, #FFB74D);
+        color: white;
+        padding: 12px 30px;
+        margin-top: 20px;
+        background-size: 200% 200%;
+        animation: gradientShift 3s ease infinite;
+    }
+
+    .back-btn:hover {
+        background: linear-gradient(45deg, #F57C00, #E65100, #FF9800);
+        transform: scale(1.08) rotateZ(1deg);
+        box-shadow: 0 8px 25px rgba(255, 152, 0, 0.4);
+    }
+
+    .votes-count {
+        color: #4CAF50;
+        font-weight: 700;
+    }
+
+    .message {
+        text-align: center;
+        padding: 15px;
+        margin: 20px 0;
+        border-radius: 10px;
+        display: none;
+    }
+
+    .message.success {
+        background: rgba(76, 175, 80, 0.2);
+        border: 1px solid #4CAF50;
+        color: #4CAF50;
+    }
+
+    .message.error {
+        background: rgba(244, 67, 54, 0.2);
+        border: 1px solid #f44336;
+        color: #f44336;
+    }
+
+    @media (max-width: 768px) {
+        .cards-container {
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .card {
+            width: 90%;
+            max-width: 350px;
+        }
+
+        .main-title {
+            font-size: 2em;
+        }
+
+        .buttons {
+            flex-direction: column;
+            gap: 10px;
+        }
+    }
+</style>
+
+</head>
+<body>
+    <div class="container">
+        <!-- الصفحة الرئيسية -->
+        <div id="main-page">
+            <h1 class="main-title">برمجة هندسية لصناعة المواقع</h1>
+
+        <div id="message" class="message"></div>
+        
+        <div class="cards-container">
+            <div class="card">
+                <div class="student-name">Youssef Sabah | يوسف صباح</div>
+                <div class="buttons">
+                    <button class="btn btn-details" onclick="showDetails('youssef')">التفاصيل</button>
+                    <button class="btn btn-vote" onclick="vote('youssef')">التصويت</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="student-name">Shafak Al-Badawi | شفق البدوي</div>
+                <div class="buttons">
+                    <button class="btn btn-details" onclick="showDetails('shafak')">التفاصيل</button>
+                    <button class="btn btn-vote" onclick="vote('shafak')">التصويت</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="student-name">Ali Al-Rimawi | علي الريماوي</div>
+                <div class="buttons">
+                    <button class="btn btn-details" onclick="showDetails('ali')">التفاصيل</button>
+                    <button class="btn btn-vote" onclick="vote('ali')">التصويت</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- صفحة تفاصيل يوسف -->
+    <div id="youssef-details" class="details-page">
+        <h1 class="details-title">تفاصيل المرشح</h1>
+        <div class="details-info">
+            <div class="info-item"><strong>الاسم:</strong> يوسف صباح</div>
+            <div class="info-item"><strong>العمر:</strong> 14 عام</div>
+            <div class="info-item"><strong>البلد:</strong> الأردن</div>
+            <div class="info-item"><strong>طالب في:</strong> مدرسة الرأي</div>
+            <div class="info-item"><strong>عدد الأصوات:</strong> <span class="votes-count" id="youssef-votes">0</span></div>
+        </div>
+        <button class="btn back-btn" onclick="showMain()">رجوع</button>
+    </div>
+
+    <!-- صفحة تفاصيل شفق -->
+    <div id="shafak-details" class="details-page">
+        <h1 class="details-title">تفاصيل المرشح</h1>
+        <div class="details-info">
+            <div class="info-item"><strong>الاسم:</strong> شفق البدوي</div>
+            <div class="info-item"><strong>العمر:</strong> 14 عام</div>
+            <div class="info-item"><strong>البلد:</strong> الأردن</div>
+            <div class="info-item"><strong>طالب في:</strong> مدرسة الرأي</div>
+            <div class="info-item"><strong>عدد الأصوات:</strong> <span class="votes-count" id="shafak-votes">0</span></div>
+        </div>
+        <button class="btn back-btn" onclick="showMain()">العودة للقائمة الرئيسية</button>
+    </div>
+
+    <!-- صفحة تفاصيل علي -->
+    <div id="ali-details" class="details-page">
+        <h1 class="details-title">تفاصيل المرشح</h1>
+        <div class="details-info">
+            <div class="info-item"><strong>الاسم:</strong> علي الريماوي</div>
+            <div class="info-item"><strong>العمر:</strong> 14 عام</div>
+            <div class="info-item"><strong>البلد:</strong> الأردن</div>
+            <div class="info-item"><strong>طالب في:</strong> مدرسة الرأي</div>
+            <div class="info-item"><strong>عدد الأصوات:</strong> <span class="votes-count" id="ali-votes">0</span></div>
+        </div>
+        <button class="btn back-btn" onclick="showMain()">العودة للقائمة الرئيسية</button>
+    </div>
+</div>
+
+<footer class="footer">
+    جميع الحقوق محفوظة للمبرمج: سومر خضر عمر أبو عبد الله<br>
+    مصنوع للطالب: يوسف الصف التاسع د
+</footer>
+
+<script>
+    // تخزين الأصوات والحالة
+    let votes = {
+        youssef: 0,
+        shafak: 0,
+        ali: 0
+    };
+
+    let hasVoted = false;
+
+    // تحميل البيانات المحفوظة من الخادم (محاكاة)
+    function loadData() {
+        // محاولة تحميل البيانات من localStorage كخادم مؤقت
+        const globalVotes = JSON.parse(localStorage.getItem('globalVotes') || '{"youssef": 0, "shafak": 0, "ali": 0}');
+        const userVoted = localStorage.getItem('userHasVoted') === 'true';
+        
+        votes = globalVotes;
+        hasVoted = userVoted;
+        
+        // تحديث عرض الأصوات
+        document.getElementById('youssef-votes').textContent = votes.youssef;
+        document.getElementById('shafak-votes').textContent = votes.shafak;
+        document.getElementById('ali-votes').textContent = votes.ali;
+        
+        // تعطيل أزرار التصويت إذا كان المستخدم قد صوت
+        if (hasVoted) {
+            const voteButtons = document.querySelectorAll('.btn-vote');
+            voteButtons.forEach(btn => {
+                btn.disabled = true;
+                btn.textContent = 'تم التصويت';
+            });
+        }
+    }
+
+    // حفظ البيانات للخادم (محاكاة)
+    function saveData() {
+        // حفظ الأصوات الإجمالية للجميع
+        localStorage.setItem('globalVotes', JSON.stringify(votes));
+        // حفظ حالة تصويت المستخدم الحالي
+        localStorage.setItem('userHasVoted', hasVoted.toString());
+    }
+
+    // عرض الصفحة الرئيسية
+    function showMain() {
+        document.getElementById('main-page').style.display = 'block';
+        document.querySelectorAll('.details-page').forEach(page => {
+            page.style.display = 'none';
+        });
+    }
+
+    // عرض تفاصيل المرشح
+    function showDetails(candidate) {
+        document.getElementById('main-page').style.display = 'none';
+        document.querySelectorAll('.details-page').forEach(page => {
+            page.style.display = 'none';
+        });
+        document.getElementById(candidate + '-details').style.display = 'block';
+    }
+
+    // التصويت
+    function vote(candidate) {
+        if (hasVoted) {
+            showMessage('لقد قمت بالتصويت مسبقاً! لا يمكن التصويت أكثر من مرة.', 'error');
+            return;
+        }
+
+        votes[candidate]++;
+        hasVoted = true;
+        
+        // تحديث العرض
+        document.getElementById(candidate + '-votes').textContent = votes[candidate];
+        
+        // تعطيل جميع أزرار التصويت
+        const voteButtons = document.querySelectorAll('.btn-vote');
+        voteButtons.forEach(btn => {
+            btn.disabled = true;
+            btn.textContent = 'تم التصويت';
+        });
+        
+        // حفظ البيانات
+        saveData();
+        
+        showMessage('تم التصويت بنجاح! شكراً لمشاركتك.', 'success');
+    }
+
+    // عرض الرسائل
+    function showMessage(text, type) {
+        const messageDiv = document.getElementById('message');
+        messageDiv.textContent = text;
+        messageDiv.className = `message ${type}`;
+        messageDiv.style.display = 'block';
+        
+        setTimeout(() => {
+            messageDiv.style.display = 'none';
+        }, 5000);
+    }
+
+    // تحميل البيانات عند بدء التشغيل
+    window.onload = function() {
+        loadData();
+        showMain();
+    };
+</script>
+
+</body>
+</html>
