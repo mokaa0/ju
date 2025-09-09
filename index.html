@@ -411,7 +411,7 @@
 </footer>
 
 <script>
-    // تخزين الأصوات والحالة
+    // تخزين الأصوات والحالة - نفس الملف للجميع
     let votes = {
         youssef: 0,
         shafak: 0,
@@ -421,135 +421,83 @@
     let hasVoted = false;
     let votedFor = null;
 
-    // محاكاة خادم بسيط باستخدام اسم فريد للموقع
-    const GLOBAL_VOTES_KEY = 'programming_website_global_votes_v2';
-    const USER_FINGERPRINT_KEY = 'programming_website_user_fp';
+    // مفتاح واحد مشترك للجميع - نفس الملف
+    const SHARED_DATA_KEY = 'shared_voting_data_file';
 
-    // إنشاء بصمة فريدة للمستخدم (محاكاة IP)
-    function generateUserFingerprint() {
-        let fingerprint = localStorage.getItem(USER_FINGERPRINT_KEY);
-        if (!fingerprint) {
-            // إنشاء بصمة فريدة باستخدام معلومات المتصفح والوقت
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            ctx.textBaseline = 'top';
-            ctx.font = '14px Arial';
-            ctx.fillText('Fingerprint test', 2, 2);
-            
-            fingerprint = btoa(
-                navigator.userAgent + 
-                screen.width + screen.height + 
-                navigator.language + 
-                new Date().getTimezoneOffset() +
-                canvas.toDataURL()
-            ).substr(0, 20) + Date.now();
-            
-            localStorage.setItem(USER_FINGERPRINT_KEY, fingerprint);
+    // إنشاء معرف فريد للمستخدم
+    function getUserId() {
+        let userId = localStorage.getItem('my_user_id');
+        if (!userId) {
+            // إنشاء معرف فريد جديد
+            userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            localStorage.setItem('my_user_id', userId);
         }
-        return fingerprint;
+        return userId;
     }
 
-    // تحميل البيانات المحفوظة من التخزين المشترك
+    // قراءة البيانات من الملف المشترك
+    function loadSharedData() {
+        try {
+            const sharedData = localStorage.getItem(SHARED_DATA_KEY);
+            if (sharedData) {
+                return JSON.parse(sharedData);
+            }
+        } catch (error) {
+            console.log('خطأ في قراءة البيانات');
+        }
+        
+        // إرجاع بيانات افتراضية إذا لم توجد
+        return {
+            votes: { youssef: 0, shafak: 0, ali: 0 },
+            votedUsers: {}
+        };
+    }
+
+    // حفظ البيانات في الملف المشترك
+    function saveSharedData(data) {
+        try {
+            localStorage.setItem(SHARED_DATA_KEY, JSON.stringify(data));
+            return true;
+        } catch (error) {
+            console.log('خطأ في حفظ البيانات');
+            return false;
+        }
+    }
+
+    // تحميل البيانات
     function loadData() {
-        try {
-            // تحميل الأصوات الإجمالية
-            const globalData = JSON.parse(localStorage.getItem(GLOBAL_VOTES_KEY) || '{}');
-            
-            if (globalData.votes) {
-                votes = globalData.votes;
-            } else {
-                votes = { youssef: 0, shafak: 0, ali: 0 };
-            }
-
-            // تحقق من حالة تصويت المستخدم الحالي
-            const userFingerprint = generateUserFingerprint();
-            const votedUsers = globalData.votedUsers || {};
-            
-            if (votedUsers[userFingerprint]) {
-                hasVoted = true;
-                votedFor = votedUsers[userFingerprint];
-            }
-
-            // تحديث عرض الأصوات
-            updateVotesDisplay();
-            
-            // تعطيل أزرار التصويت إذا كان المستخدم قد صوت
-            if (hasVoted) {
-                disableVotingButtons();
-            }
-
-        } catch (error) {
-            console.log('خطأ في تحميل البيانات:', error);
-            votes = { youssef: 0, shafak: 0, ali: 0 };
-            updateVotesDisplay();
+        const data = loadSharedData();
+        const userId = getUserId();
+        
+        // تحديث الأصوات
+        votes = data.votes;
+        
+        // فحص إذا كان المستخدم صوت من قبل
+        if (data.votedUsers && data.votedUsers[userId]) {
+            hasVoted = true;
+            votedFor = data.votedUsers[userId];
         }
+        
+        // تحديث العرض
+        updateDisplay();
     }
 
-    // حفظ البيانات في التخزين المشترك
-    function saveData() {
-        try {
-            const globalData = JSON.parse(localStorage.getItem(GLOBAL_VOTES_KEY) || '{}');
-            
-            // تحديث الأصوات
-            globalData.votes = votes;
-            
-            // تحديث قائمة المستخدمين الذين صوتوا
-            if (!globalData.votedUsers) {
-                globalData.votedUsers = {};
-            }
-            
-            if (hasVoted && votedFor) {
-                const userFingerprint = generateUserFingerprint();
-                globalData.votedUsers[userFingerprint] = votedFor;
-            }
-
-            localStorage.setItem(GLOBAL_VOTES_KEY, JSON.stringify(globalData));
-            
-        } catch (error) {
-            console.log('خطأ في حفظ البيانات:', error);
-        }
-    }
-
-    // تحديث عرض الأصوات
-    function updateVotesDisplay() {
+    // تحديث عرض البيانات
+    function updateDisplay() {
+        // تحديث عرض الأصوات
         document.getElementById('youssef-votes').textContent = votes.youssef;
-        document.getElementById('shafak-votes').textContent = votes.shafak;
+        document.getElementById('shafak-votes').textContent = votes.shafak;  
         document.getElementById('ali-votes').textContent = votes.ali;
-    }
-
-    // تعطيل أزرار التصويت
-    function disableVotingButtons() {
-        const voteButtons = document.querySelectorAll('.btn-vote');
-        voteButtons.forEach(btn => {
-            btn.disabled = true;
-            btn.textContent = 'تم التصويت';
-        });
-    }
-
-    // عرض الصفحة الرئيسية
-    function showMain() {
-        document.getElementById('main-page').style.display = 'block';
-        document.querySelectorAll('.details-page').forEach(page => {
-            page.style.display = 'none';
-            page.classList.remove('show');
-        });
-    }
-
-    // عرض تفاصيل المرشح
-    function showDetails(candidate) {
-        document.getElementById('main-page').style.display = 'none';
-        document.querySelectorAll('.details-page').forEach(page => {
-            page.style.display = 'none';
-            page.classList.remove('show');
-        });
         
-        const detailsPage = document.getElementById(candidate + '-details');
-        detailsPage.style.display = 'block';
-        
-        // تأخير إضافة الكلاس للانيميشن
-        setTimeout(() => {
-            detailsPage.classList.add('show');
-        }, 50);
+        // تعطيل أزرار التصويت إذا كان المستخدم صوت
+        if (hasVoted) {
+            const voteButtons = document.querySelectorAll('.btn-vote');
+            voteButtons.forEach(btn => {
+                btn.disabled = true;
+                btn.textContent = 'تم التصويت';
+                btn.style.opacity = '0.6';
+            });
+        }
     }
 
     // التصويت
@@ -559,28 +507,70 @@
             return;
         }
 
+        const userId = getUserId();
+        const data = loadSharedData();
+        
         // زيادة الصوت
-        votes[candidate]++;
-        hasVoted = true;
-        votedFor = candidate;
+        data.votes[candidate]++;
         
-        // تحديث العرض
-        updateVotesDisplay();
-        
-        // تعطيل جميع أزرار التصويت
-        disableVotingButtons();
-        
-        // حفظ البيانات
-        saveData();
-        
-        let candidateName = '';
-        switch(candidate) {
-            case 'youssef': candidateName = 'يوسف صباح'; break;
-            case 'shafak': candidateName = 'شفق البدوي'; break;
-            case 'ali': candidateName = 'علي الريماوي'; break;
+        // تسجيل أن هذا المستخدم صوت
+        if (!data.votedUsers) {
+            data.votedUsers = {};
         }
+        data.votedUsers[userId] = candidate;
         
-        showMessage(`تم التصويت لـ ${candidateName} بنجاح! شكراً لمشاركتك.`, 'success');
+        // حفظ البيانات الجديدة
+        if (saveSharedData(data)) {
+            // تحديث المتغيرات المحلية
+            votes = data.votes;
+            hasVoted = true;
+            votedFor = candidate;
+            
+            // تحديث العرض
+            updateDisplay();
+            
+            let candidateName = '';
+            switch(candidate) {
+                case 'youssef': candidateName = 'يوسف صباح'; break;
+                case 'shafak': candidateName = 'شفق البدوي'; break;
+                case 'ali': candidateName = 'علي الريماوي'; break;
+            }
+            
+            showMessage(`تم التصويت لـ ${candidateName} بنجاح! شكراً لمشاركتك.`, 'success');
+        } else {
+            showMessage('حدث خطأ في حفظ التصويت، يرجى المحاولة مرة أخرى.', 'error');
+        }
+    }
+
+    // عرض الصفحة الرئيسية
+    function showMain() {
+        // إعادة تحميل البيانات للحصول على آخر التحديثات
+        loadData();
+        
+        document.getElementById('main-page').style.display = 'block';
+        document.querySelectorAll('.details-page').forEach(page => {
+            page.style.display = 'none';
+            page.classList.remove('show');
+        });
+    }
+
+    // عرض تفاصيل المرشح
+    function showDetails(candidate) {
+        // إعادة تحميل البيانات للحصول على آخر التحديثات
+        loadData();
+        
+        document.getElementById('main-page').style.display = 'none';
+        document.querySelectorAll('.details-page').forEach(page => {
+            page.style.display = 'none';
+            page.classList.remove('show');
+        });
+        
+        const detailsPage = document.getElementById(candidate + '-details');
+        detailsPage.style.display = 'block';
+        
+        setTimeout(() => {
+            detailsPage.classList.add('show');
+        }, 50);
     }
 
     // عرض الرسائل
@@ -595,32 +585,33 @@
         }, 5000);
     }
 
-    // تحديث البيانات كل ثانية للحصول على آخر الأصوات
-    function startRealTimeUpdates() {
+    // تحديث تلقائي كل ثانيتين
+    function startAutoUpdate() {
         setInterval(() => {
-            const currentData = JSON.parse(localStorage.getItem(GLOBAL_VOTES_KEY) || '{}');
-            if (currentData.votes) {
-                const newVotes = currentData.votes;
-                
-                // تحقق من وجود تغييرات في الأصوات
-                if (JSON.stringify(newVotes) !== JSON.stringify(votes)) {
-                    votes = newVotes;
-                    updateVotesDisplay();
-                }
+            const currentData = loadSharedData();
+            
+            // فحص إذا تغيرت الأصوات
+            if (JSON.stringify(currentData.votes) !== JSON.stringify(votes)) {
+                votes = currentData.votes;
+                updateDisplay();
             }
-        }, 1000);
+        }, 2000);
     }
+
+    // إعادة تحميل البيانات عند التركيز على النافذة
+    window.addEventListener('focus', function() {
+        loadData();
+    });
 
     // تحميل البيانات عند بدء التشغيل
     window.onload = function() {
         loadData();
         showMain();
-        startRealTimeUpdates();
-    };
-
-    // حفظ البيانات قبل إغلاق الصفحة
-    window.onbeforeunload = function() {
-        saveData();
+        startAutoUpdate();
+        
+        // عرض معلومات للتطوير (يمكن حذفها لاحقاً)
+        console.log('معرف المستخدم:', getUserId());
+        console.log('البيانات المشتركة:', loadSharedData());
     };
 </script>
 
