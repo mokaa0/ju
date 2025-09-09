@@ -2,60 +2,37 @@ const { SlashCommandBuilder, PermissionFlagsBits } = require("discord.js")
 
 module.exports = {
   data: new SlashCommandBuilder()
-    .setName("settings")
-    .setDescription("Manage protection settings")
+    .setName("automod")
+    .setDescription("Manage AutoMod")
     .addSubcommand(cmd =>
-      cmd.setName("toggle")
-        .setDescription("Enable or disable a protection")
+      cmd.setName("addword")
+        .setDescription("Add a banned word")
         .addStringOption(opt =>
-          opt.setName("protection")
-            .setDescription("Protection type")
-            .setRequired(true)
-            .addChoices(
-              { name: "AntiBan", value: "antiBan" },
-              { name: "AntiKick", value: "antiKick" },
-              { name: "AntiRoleCreate", value: "antiRoleCreate" },
-              { name: "AntiRoleDelete", value: "antiRoleDelete" },
-              { name: "AntiRoleUpdate", value: "antiRoleUpdate" },
-              { name: "AntiChannelCreate", value: "antiChannelCreate" },
-              { name: "AntiChannelDelete", value: "antiChannelDelete" },
-              { name: "AntiChannelUpdate", value: "antiChannelUpdate" },
-              { name: "AntiMassMention", value: "antiMassMention" },
-              { name: "AntiSpam", value: "antiSpam" },
-              { name: "AntiRaid", value: "antiRaid" },
-              { name: "AntiBotAdd", value: "antiBotAdd" },
-              { name: "AntiInvite", value: "antiInvite" },
-              { name: "AntiWebhook", value: "antiWebhook" },
-              { name: "AntiServerUpdate", value: "antiServerUpdate" }
-            )
-        )
-        .addBooleanOption(opt =>
-          opt.setName("status")
-            .setDescription("true to enable | false to disable")
+          opt.setName("word")
+            .setDescription("Word to ban")
             .setRequired(true)
         )
     )
     .addSubcommand(cmd =>
-      cmd.setName("log")
-        .setDescription("Set the log channel")
-        .addChannelOption(opt =>
-          opt.setName("channel")
-            .setDescription("Log channel")
+      cmd.setName("removeword")
+        .setDescription("Remove a banned word")
+        .addStringOption(opt =>
+          opt.setName("word")
+            .setDescription("Word to remove")
             .setRequired(true)
         )
     )
     .addSubcommand(cmd =>
-      cmd.setName("whitelist")
-        .setDescription("Add or remove from whitelist")
-        .addUserOption(opt => opt.setName("user").setDescription("User"))
-        .addRoleOption(opt => opt.setName("role").setDescription("Role"))
+      cmd.setName("punishment")
+        .setDescription("Set punishment")
         .addStringOption(opt =>
-          opt.setName("action")
-            .setDescription("Choose action")
+          opt.setName("type")
+            .setDescription("Type of punishment")
             .setRequired(true)
             .addChoices(
-              { name: "Add", value: "add" },
-              { name: "Remove", value: "remove" }
+              { name: "Delete message", value: "delete" },
+              { name: "Kick user", value: "kick" },
+              { name: "Ban user", value: "ban" }
             )
         )
     )
@@ -63,33 +40,23 @@ module.exports = {
 
   async execute(interaction, client) {
     const sub = interaction.options.getSubcommand()
-    if (sub === "toggle") {
-      const prot = interaction.options.getString("protection")
-      const status = interaction.options.getBoolean("status")
-      client.config.protections[prot] = status
+    if (sub === "addword") {
+      const word = interaction.options.getString("word").toLowerCase()
+      client.config.automod.badWords.push(word)
       client.saveConfig()
-      return interaction.reply(`${prot} updated to ${status ? "enabled" : "disabled"}.`)
+      return interaction.reply(`Added "${word}" to banned words.`)
     }
-    if (sub === "log") {
-      const channel = interaction.options.getChannel("channel")
-      client.config.logChannel = channel.id
+    if (sub === "removeword") {
+      const word = interaction.options.getString("word").toLowerCase()
+      client.config.automod.badWords = client.config.automod.badWords.filter(w => w !== word)
       client.saveConfig()
-      return interaction.reply(`Log channel set to ${channel}.`)
+      return interaction.reply(`Removed "${word}" from banned words.`)
     }
-    if (sub === "whitelist") {
-      const user = interaction.options.getUser("user")
-      const role = interaction.options.getRole("role")
-      const action = interaction.options.getString("action")
-      if (user) {
-        if (action === "add") client.config.whitelist.users.push(user.id)
-        else client.config.whitelist.users = client.config.whitelist.users.filter(u => u !== user.id)
-      }
-      if (role) {
-        if (action === "add") client.config.whitelist.roles.push(role.id)
-        else client.config.whitelist.roles = client.config.whitelist.roles.filter(r => r !== role.id)
-      }
+    if (sub === "punishment") {
+      const type = interaction.options.getString("type")
+      client.config.automod.punishment = type
       client.saveConfig()
-      return interaction.reply(`${action === "add" ? "Added" : "Removed"} ${user ? user.tag : role.name} from whitelist.`)
+      return interaction.reply(`AutoMod punishment set to ${type}.`)
     }
   }
 }
