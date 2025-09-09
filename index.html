@@ -1,130 +1,95 @@
-const logEvent = require("./logger")
+const { SlashCommandBuilder, PermissionFlagsBits } = require("discord.js")
 
-function isWhitelisted(client, member) {
-  if (!member) return false
-  if (client.config.whitelist.users.includes(member.id)) return true
-  if (member.roles.cache.some(r => client.config.whitelist.roles.includes(r.id))) return true
-  return false
-}
+module.exports = {
+  data: new SlashCommandBuilder()
+    .setName("settings")
+    .setDescription("Manage protection settings")
+    .addSubcommand(cmd =>
+      cmd.setName("toggle")
+        .setDescription("Enable or disable a protection")
+        .addStringOption(opt =>
+          opt.setName("protection")
+            .setDescription("Protection type")
+            .setRequired(true)
+            .addChoices(
+              { name: "AntiBan", value: "antiBan" },
+              { name: "AntiKick", value: "antiKick" },
+              { name: "AntiRoleCreate", value: "antiRoleCreate" },
+              { name: "AntiRoleDelete", value: "antiRoleDelete" },
+              { name: "AntiRoleUpdate", value: "antiRoleUpdate" },
+              { name: "AntiChannelCreate", value: "antiChannelCreate" },
+              { name: "AntiChannelDelete", value: "antiChannelDelete" },
+              { name: "AntiChannelUpdate", value: "antiChannelUpdate" },
+              { name: "AntiMassMention", value: "antiMassMention" },
+              { name: "AntiSpam", value: "antiSpam" },
+              { name: "AntiRaid", value: "antiRaid" },
+              { name: "AntiBotAdd", value: "antiBotAdd" },
+              { name: "AntiInvite", value: "antiInvite" },
+              { name: "AntiWebhook", value: "antiWebhook" },
+              { name: "AntiServerUpdate", value: "antiServerUpdate" }
+            )
+        )
+        .addBooleanOption(opt =>
+          opt.setName("status")
+            .setDescription("true to enable | false to disable")
+            .setRequired(true)
+        )
+    )
+    .addSubcommand(cmd =>
+      cmd.setName("log")
+        .setDescription("Set the log channel")
+        .addChannelOption(opt =>
+          opt.setName("channel")
+            .setDescription("Log channel")
+            .setRequired(true)
+        )
+    )
+    .addSubcommand(cmd =>
+      cmd.setName("whitelist")
+        .setDescription("Add or remove from whitelist")
+        .addUserOption(opt => opt.setName("user").setDescription("User"))
+        .addRoleOption(opt => opt.setName("role").setDescription("Role"))
+        .addStringOption(opt =>
+          opt.setName("action")
+            .setDescription("Choose action")
+            .setRequired(true)
+            .addChoices(
+              { name: "Add", value: "add" },
+              { name: "Remove", value: "remove" }
+            )
+        )
+    )
+    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
 
-module.exports = client => {
-  client.on("messageCreate", async message => {
-    if (!message.guild || message.author.bot) return
-    const badWord = client.config.automod.badWords.find(w => message.content.toLowerCase().includes(w))
-    if (badWord) {
-      if (client.config.automod.punishment === "delete") {
-        await message.delete().catch(() => {})
-        logEvent(client, message.guild, `Deleted message from ${message.author.tag} for bad word.`)
-      } else if (client.config.automod.punishment === "kick") {
-        await message.member.kick("AutoMod bad word").catch(() => {})
-        logEvent(client, message.guild, `Kicked ${message.author.tag} for bad word.`)
-      } else if (client.config.automod.punishment === "ban") {
-        await message.guild.members.ban(message.author.id, { reason: "AutoMod bad word" }).catch(() => {})
-        logEvent(client, message.guild, `Banned ${message.author.tag} for bad word.`)
+  async execute(interaction, client) {
+    const sub = interaction.options.getSubcommand()
+    if (sub === "toggle") {
+      const prot = interaction.options.getString("protection")
+      const status = interaction.options.getBoolean("status")
+      client.config.protections[prot] = status
+      client.saveConfig()
+      return interaction.reply(`${prot} updated to ${status ? "enabled" : "disabled"}.`)
+    }
+    if (sub === "log") {
+      const channel = interaction.options.getChannel("channel")
+      client.config.logChannel = channel.id
+      client.saveConfig()
+      return interaction.reply(`Log channel set to ${channel}.`)
+    }
+    if (sub === "whitelist") {
+      const user = interaction.options.getUser("user")
+      const role = interaction.options.getRole("role")
+      const action = interaction.options.getString("action")
+      if (user) {
+        if (action === "add") client.config.whitelist.users.push(user.id)
+        else client.config.whitelist.users = client.config.whitelist.users.filter(u => u !== user.id)
       }
-    }
-    if (client.config.protections.antiMassMention) {
-      if (message.mentions.everyone || message.mentions.roles.size > 5 || message.mentions.users.size > 5) {
-        await message.delete().catch(() => {})
-        logEvent(client, message.guild, `Blocked mass mention from ${message.author.tag}.`)
+      if (role) {
+        if (action === "add") client.config.whitelist.roles.push(role.id)
+        else client.config.whitelist.roles = client.config.whitelist.roles.filter(r => r !== role.id)
       }
+      client.saveConfig()
+      return interaction.reply(`${action === "add" ? "Added" : "Removed"} ${user ? user.tag : role.name} from whitelist.`)
     }
-  })
-
-  const userMessages = new Map()
-  client.on("messageCreate", message => {
-    if (!client.config.protections.antiSpam || !message.guild || message.author.bot) return
-    const now = Date.now()
-    if (!userMessages.has(message.author.id)) {
-      userMessages.set(message.author.id, [])
-    }
-    const timestamps = userMessages.get(message.author.id)
-    timestamps.push(now)
-    userMessages.set(message.author.id, timestamps.filter(t => now - t < 5000))
-    if (timestamps.length > 5) {
-      message.delete().catch(() => {})
-      logEvent(client, message.guild, `Spam detected from ${message.author.tag}.`)
-    }
-  })
-
-  client.on("guildUpdate", async (oldGuild, newGuild) => {
-    if (!client.config.protections.antiServerUpdate) return
-    if (oldGuild.name !== newGuild.name || oldGuild.icon !== newGuild.icon) {
-      logEvent(client, newGuild, "Server update detected.")
-    }
-  })
-
-  client.on("roleCreate", role => {
-    if (client.config.protections.antiRoleCreate) {
-      role.delete("AntiRoleCreate enabled").catch(() => {})
-      logEvent(client, role.guild, "Role creation blocked.")
-    }
-  })
-
-  client.on("roleDelete", role => {
-    if (client.config.protections.antiRoleDelete) {
-      logEvent(client, role.guild, "Role deletion detected.")
-    }
-  })
-
-  client.on("roleUpdate", (oldRole, newRole) => {
-    if (client.config.protections.antiRoleUpdate) {
-      newRole.edit(oldRole.rawPosition).catch(() => {})
-      logEvent(client, newRole.guild, "Role update detected.")
-    }
-  })
-
-  client.on("channelCreate", channel => {
-    if (client.config.protections.antiChannelCreate) {
-      channel.delete("AntiChannelCreate enabled").catch(() => {})
-      logEvent(client, channel.guild, "Channel creation blocked.")
-    }
-  })
-
-  client.on("channelDelete", channel => {
-    if (client.config.protections.antiChannelDelete) {
-      logEvent(client, channel.guild, "Channel deletion detected.")
-    }
-  })
-
-  client.on("channelUpdate", (oldChannel, newChannel) => {
-    if (client.config.protections.antiChannelUpdate) {
-      logEvent(client, newChannel.guild, "Channel update detected.")
-    }
-  })
-
-  client.on("guildMemberAdd", member => {
-    if (client.config.protections.antiBotAdd && member.user.bot) {
-      member.kick("AntiBotAdd enabled").catch(() => {})
-      logEvent(client, member.guild, `Bot ${member.user.tag} was kicked (bot add blocked).`)
-    }
-    if (client.config.protections.antiRaid) {
-      logEvent(client, member.guild, `New member joined: ${member.user.tag} (raid check).`)
-    }
-  })
-
-  client.on("webhookUpdate", channel => {
-    if (client.config.protections.antiWebhook) {
-      logEvent(client, channel.guild, "Webhook updated.")
-    }
-  })
-
-  client.on("inviteCreate", invite => {
-    if (client.config.protections.antiInvite) {
-      invite.delete("AntiInvite enabled").catch(() => {})
-      logEvent(client, invite.guild, "Invite creation blocked.")
-    }
-  })
-
-  client.on("guildBanAdd", ban => {
-    if (client.config.protections.antiBan) {
-      logEvent(client, ban.guild, `Ban detected: ${ban.user.tag}.`)
-    }
-  })
-
-  client.on("guildMemberRemove", member => {
-    if (client.config.protections.antiKick && !member.user.bot) {
-      logEvent(client, member.guild, `Kick detected: ${member.user.tag}.`)
-    }
-  })
+  }
 }
