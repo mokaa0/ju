@@ -134,12 +134,24 @@ module.exports = {
         });
       }
 
-
       const newEmbed = new EmbedBuilder()
         .setColor(color)
         .addFields(fields);
 
       return interaction.update({ embeds: [newEmbed] });
+    }
+
+    // ================== My Extra Buttons ==================
+    if (interaction.isButton()) {
+      if (interaction.customId === "join_game") {
+        return interaction.reply({ content: `✅ ${interaction.user} انضم إلى اللعبة!`, ephemeral: true });
+      }
+      if (interaction.customId === "leave_game") {
+        return interaction.reply({ content: `🚪 ${interaction.user} خرج من اللعبة!`, ephemeral: true });
+      }
+      if (interaction.customId === "ready_check") {
+        return interaction.reply({ content: `🔔 ${interaction.user} جاهز!`, ephemeral: true });
+      }
     }
   }
 };
