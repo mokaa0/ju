@@ -1,62 +1,145 @@
-const { SlashCommandBuilder, PermissionFlagsBits } = require("discord.js")
+const fs = require("fs");
+const path = require("path");
+const {
+  EmbedBuilder,
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
+  StringSelectMenuBuilder,
+  PermissionFlagsBits
+} = require("discord.js");
+const { getGuildSettings } = require("../utils/settings");
 
 module.exports = {
-  data: new SlashCommandBuilder()
-    .setName("automod")
-    .setDescription("Manage AutoMod")
-    .addSubcommand(cmd =>
-      cmd.setName("addword")
-        .setDescription("Add a banned word")
-        .addStringOption(opt =>
-          opt.setName("word")
-            .setDescription("Word to ban")
-            .setRequired(true)
-        )
-    )
-    .addSubcommand(cmd =>
-      cmd.setName("removeword")
-        .setDescription("Remove a banned word")
-        .addStringOption(opt =>
-          opt.setName("word")
-            .setDescription("Word to remove")
-            .setRequired(true)
-        )
-    )
-    .addSubcommand(cmd =>
-      cmd.setName("punishment")
-        .setDescription("Set punishment")
-        .addStringOption(opt =>
-          opt.setName("type")
-            .setDescription("Type of punishment")
-            .setRequired(true)
-            .addChoices(
-              { name: "Delete message", value: "delete" },
-              { name: "Kick user", value: "kick" },
-              { name: "Ban user", value: "ban" }
-            )
-        )
-    )
-    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
+  name: "interactionCreate",
+  async execute(interaction) {
+    if (interaction.user.bot) return;
 
-  async execute(interaction, client) {
-    const sub = interaction.options.getSubcommand()
-    if (sub === "addword") {
-      const word = interaction.options.getString("word").toLowerCase()
-      client.config.automod.badWords.push(word)
-      client.saveConfig()
-      return interaction.reply(`Added "${word}" to banned words.`)
+    const { embedColor, prefix } = getGuildSettings(interaction.guild.id, { prefix: "#", embedColor: "#000000" });
+    const color = embedColor ? parseInt(embedColor.replace("#", ""), 16) : 0x000000;
+
+    // ================== Claim Box ==================
+    if (interaction.isButton() && interaction.customId === "claim_box") {
+      const updatedEmbed = interaction.message.embeds[0]
+        ? EmbedBuilder.from(interaction.message.embeds[0]).setDescription(`**Done Claim box** <@${interaction.user.id}>`)
+        : { content: `**Done Claim box** <@${interaction.user.id}>` };
+      return interaction.update({ embeds: [updatedEmbed], components: [] });
     }
-    if (sub === "removeword") {
-      const word = interaction.options.getString("word").toLowerCase()
-      client.config.automod.badWords = client.config.automod.badWords.filter(w => w !== word)
-      client.saveConfig()
-      return interaction.reply(`Removed "${word}" from banned words.`)
+
+    // ================== Ticket Buttons ==================
+    if (interaction.isButton() && interaction.customId.startsWith("ticket")) {
+      const guildFile = path.join(__dirname, "..", "data", "guilds", `${interaction.guild.id}.json`);
+      if (!fs.existsSync(guildFile)) return;
+      const guildConfig = JSON.parse(fs.readFileSync(guildFile, "utf8"));
+      if (!guildConfig.ticket) return;
+
+      if (interaction.customId === "ticket_create") {
+        const ticketChannel = await interaction.guild.channels.create({
+          name: `ticket-${interaction.user.username}`,
+          type: 0,
+          permissionOverwrites: [
+            { id: interaction.guild.roles.everyone.id, deny: [PermissionFlagsBits.ViewChannel] },
+            { id: interaction.user.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages] },
+          ],
+        });
+        const embed = new EmbedBuilder().setColor(color).setDescription(guildConfig.ticket.welcome || "Welcome to your ticket!");
+        const row = new ActionRowBuilder().addComponents(
+          new ButtonBuilder().setCustomId("ticket_close").setLabel("Close Ticket").setStyle(ButtonStyle.Danger)
+        );
+        await ticketChannel.send({ content: `<@${interaction.user.id}>`, embeds: [embed], components: [row] });
+        return interaction.reply({ content: `<:true0011:1409831224142336092> Ticket created: ${ticketChannel}`, ephemeral: true });
+      }
+
+      if (interaction.customId === "ticket_close") {
+        if (!interaction.channel.name.startsWith("ticket-"))
+          return interaction.reply({ content: "<:nah0011:1409831403365077003> This is not a ticket channel.", ephemeral: true });
+        await interaction.reply({ content: "<:time0011:1409831347937218611> Closing ticket...", ephemeral: true });
+        setTimeout(() => { interaction.channel.delete().catch(()=>{}); }, 3000);
+      }
     }
-    if (sub === "punishment") {
-      const type = interaction.options.getString("type")
-      client.config.automod.punishment = type
-      client.saveConfig()
-      return interaction.reply(`AutoMod punishment set to ${type}.`)
+
+    // ================== Color Role Select Menu ==================
+    if (interaction.isStringSelectMenu() && interaction.customId === "select_color_role") {
+      const member = interaction.member;
+      const selectedRoleName = interaction.values[0];
+
+      const colorRoles = [
+        "Red","Orange","Yellow","Green","Blue","Purple","Pink","Brown","Cyan",
+        "Magenta","Lime","Teal","Navy","Maroon","Olive","Silver","Gray","Black",
+        "White","Gold","PinkRed","DarkBlue","DarkGreen","LightBlue","LightGreen"
+      ];
+
+      for (const roleName of colorRoles) {
+        const role = interaction.guild.roles.cache.find(r => r.name === roleName);
+        if (role && member.roles.cache.has(role.id)) await member.roles.remove(role).catch(()=>{});
+      }
+
+      const selectedRole = interaction.guild.roles.cache.find(r => r.name === selectedRoleName);
+      if (selectedRole) await member.roles.add(selectedRole).catch(()=>{});
+
+      const embed = new EmbedBuilder()
+        .setColor(color)
+        .setDescription(`<:true0011:1409831224142336092> Your color role has been updated to **${selectedRoleName}**`);
+
+      return interaction.reply({ embeds: [embed], ephemeral: true });
+    }
+
+    // ================== Help Select Menu ==================
+    if (interaction.isStringSelectMenu() && interaction.customId === "help_select_menu") {
+      let fields = [];
+
+      if (interaction.values[0] === "admins") {
+        fields.push({
+          name: "<:admins1:1413619767646097428> Admin Commands",
+          value: `
+\`${prefix}box\` - Claim a giveaway box
+\`${prefix}gstart\` - Start a giveaway
+\`${prefix}ban\` - Ban a Member
+\`${prefix}kick\` - Kick a Member
+\`${prefix}atlias\` - Set short command
+\`${prefix}greet\` - Enable greet room
+\`${prefix}unban\` - Unban a Member
+\`${prefix}credit\` - Transfer credit
+\`${prefix}lock\` - Lock a channel
+\`${prefix}unlock\` - Unlock a channel
+\`${prefix}show\` - Show a channel
+\`${prefix}hide\` - Hide a channel
+\`${prefix}warn\` - Warn a member
+\`${prefix}warns\` - Show warns member
+\`${prefix}premissions\` - Select permissions command
+          `
+        });
+      } else if (interaction.values[0] === "public") {
+        fields.push({
+          name: "<:public1:1413619815351849050> Public Commands",
+          value: `
+\`${prefix}help\` - Show this help message
+\`${prefix}banner\` - Show a banner
+\`${prefix}avatar\` - Show an avatar
+\`${prefix}daily\` - Claim a daily
+\`${prefix}credit\` - Transfer credit
+          `
+        });
+      }
+      else if (interaction.values[0] === "test") {
+        fields.push({
+          name: "<:public1:1413619815351849050> test Commands",
+          value: `
+\`${prefix}help\` - Show this help message
+\`${prefix}banner\` - Show a banner
+\`${prefix}avatar\` - Show an avatar
+\`${prefix}daily\` - Claim a daily
+\`${prefix}credit\` - Transfer credit
+          `
+        });
+      }
+
+
+      const newEmbed = new EmbedBuilder()
+        .setColor(color)
+        .addFields(fields);
+
+      return interaction.update({ embeds: [newEmbed] });
     }
   }
-}
+};
