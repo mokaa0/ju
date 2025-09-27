@@ -1,157 +1,74 @@
-const fs = require("fs");
-const path = require("path");
-const {
-  EmbedBuilder,
-  ActionRowBuilder,
-  ButtonBuilder,
-  ButtonStyle,
-  StringSelectMenuBuilder,
-  PermissionFlagsBits
-} = require("discord.js");
-const { getGuildSettings } = require("../utils/settings");
+// index.js
+const { Client, GatewayIntentBits } = require("discord.js");
+const { joinVoiceChannel, createAudioPlayer, createAudioResource, AudioPlayerStatus } = require("@discordjs/voice");
+const play = require("play-dl");
 
-module.exports = {
-  name: "interactionCreate",
-  async execute(interaction) {
-    if (interaction.user.bot) return;
+const client = new Client({
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent,
+    GatewayIntentBits.GuildVoiceStates,
+  ],
+});
 
-    const { embedColor, prefix } = getGuildSettings(interaction.guild.id, { prefix: "#", embedColor: "#000000" });
-    const color = embedColor ? parseInt(embedColor.replace("#", ""), 16) : 0x000000;
+const players = new Map(); // لكل سيرفر player خاص
 
-    // ================== Claim Box ==================
-    if (interaction.isButton() && interaction.customId === "claim_box") {
-      const updatedEmbed = interaction.message.embeds[0]
-        ? EmbedBuilder.from(interaction.message.embeds[0]).setDescription(`**Done Claim box** <@${interaction.user.id}>`)
-        : { content: `**Done Claim box** <@${interaction.user.id}>` };
-      return interaction.update({ embeds: [updatedEmbed], components: [] });
+client.on("ready", () => {
+  console.log(`Logged in as ${client.user.tag}`);
+});
+
+client.on("messageCreate", async (message) => {
+  if (message.author.bot) return;
+  const args = message.content.trim().split(/\s+/);
+  const cmd = args.shift().toLowerCase();
+
+  // join voice by ID
+  if (cmd === "voice") {
+    const channelId = args[0];
+    const channel = message.guild.channels.cache.get(channelId);
+    if (!channel || channel.type !== 2) { // 2 = voice
+      return message.reply("Invalid voice channel ID.");
     }
+    const connection = joinVoiceChannel({
+      channelId: channel.id,
+      guildId: channel.guild.id,
+      adapterCreator: channel.guild.voiceAdapterCreator,
+    });
+    players.set(message.guild.id, { connection, player: createAudioPlayer() });
+    message.reply(`Joined <#${channel.id}>`);
+  }
 
-    // ================== Ticket Buttons ==================
-    if (interaction.isButton() && interaction.customId.startsWith("ticket")) {
-      const guildFile = path.join(__dirname, "..", "data", "guilds", `${interaction.guild.id}.json`);
-      if (!fs.existsSync(guildFile)) return;
-      const guildConfig = JSON.parse(fs.readFileSync(guildFile, "utf8"));
-      if (!guildConfig.ticket) return;
+  // play music from youtube
+  if (cmd === "play") {
+    const query = args.join(" ");
+    if (!query) return message.reply("اكتب اسم فيديو او رابط يوتيوب.");
+    const guildData = players.get(message.guild.id);
+    if (!guildData) return message.reply("استخدم أمر voice <id> أولاً.");
 
-      if (interaction.customId === "ticket_create") {
-        const ticketChannel = await interaction.guild.channels.create({
-          name: `ticket-${interaction.user.username}`,
-          type: 0,
-          permissionOverwrites: [
-            { id: interaction.guild.roles.everyone.id, deny: [PermissionFlagsBits.ViewChannel] },
-            { id: interaction.user.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages] },
-          ],
-        });
-        const embed = new EmbedBuilder().setColor(color).setDescription(guildConfig.ticket.welcome || "Welcome to your ticket!");
-        const row = new ActionRowBuilder().addComponents(
-          new ButtonBuilder().setCustomId("ticket_close").setLabel("Close Ticket").setStyle(ButtonStyle.Danger)
-        );
-        await ticketChannel.send({ content: `<@${interaction.user.id}>`, embeds: [embed], components: [row] });
-        return interaction.reply({ content: `<:true0011:1409831224142336092> Ticket created: ${ticketChannel}`, ephemeral: true });
-      }
+    const { connection, player } = guildData;
 
-      if (interaction.customId === "ticket_close") {
-        if (!interaction.channel.name.startsWith("ticket-"))
-          return interaction.reply({ content: "<:nah0011:1409831403365077003> This is not a ticket channel.", ephemeral: true });
-        await interaction.reply({ content: "<:time0011:1409831347937218611> Closing ticket...", ephemeral: true });
-        setTimeout(() => { interaction.channel.delete().catch(()=>{}); }, 3000);
-      }
-    }
+    try {
+      const ytInfo = await play.search(query, { limit: 1 });
+      if (!ytInfo.length) return message.reply("ما لقيت فيديو.");
 
-    // ================== Color Role Select Menu ==================
-    if (interaction.isStringSelectMenu() && interaction.customId === "select_color_role") {
-      const member = interaction.member;
-      const selectedRoleName = interaction.values[0];
+      const stream = await play.stream(ytInfo[0].url);
+      const resource = createAudioResource(stream.stream, { inputType: stream.type });
 
-      const colorRoles = [
-        "Red","Orange","Yellow","Green","Blue","Purple","Pink","Brown","Cyan",
-        "Magenta","Lime","Teal","Navy","Maroon","Olive","Silver","Gray","Black",
-        "White","Gold","PinkRed","DarkBlue","DarkGreen","LightBlue","LightGreen"
-      ];
+      player.play(resource);
+      connection.subscribe(player);
 
-      for (const roleName of colorRoles) {
-        const role = interaction.guild.roles.cache.find(r => r.name === roleName);
-        if (role && member.roles.cache.has(role.id)) await member.roles.remove(role).catch(()=>{});
-      }
-
-      const selectedRole = interaction.guild.roles.cache.find(r => r.name === selectedRoleName);
-      if (selectedRole) await member.roles.add(selectedRole).catch(()=>{});
-
-      const embed = new EmbedBuilder()
-        .setColor(color)
-        .setDescription(`<:true0011:1409831224142336092> Your color role has been updated to **${selectedRoleName}**`);
-
-      return interaction.reply({ embeds: [embed], ephemeral: true });
-    }
-
-    // ================== Help Select Menu ==================
-    if (interaction.isStringSelectMenu() && interaction.customId === "help_select_menu") {
-      let fields = [];
-
-      if (interaction.values[0] === "admins") {
-        fields.push({
-          name: "<:admins1:1413619767646097428> Admin Commands",
-          value: `
-\`${prefix}box\` - Claim a giveaway box
-\`${prefix}gstart\` - Start a giveaway
-\`${prefix}ban\` - Ban a Member
-\`${prefix}kick\` - Kick a Member
-\`${prefix}atlias\` - Set short command
-\`${prefix}greet\` - Enable greet room
-\`${prefix}unban\` - Unban a Member
-\`${prefix}credit\` - Transfer credit
-\`${prefix}lock\` - Lock a channel
-\`${prefix}unlock\` - Unlock a channel
-\`${prefix}show\` - Show a channel
-\`${prefix}hide\` - Hide a channel
-\`${prefix}warn\` - Warn a member
-\`${prefix}warns\` - Show warns member
-\`${prefix}premissions\` - Select permissions command
-          `
-        });
-      } else if (interaction.values[0] === "public") {
-        fields.push({
-          name: "<:public1:1413619815351849050> Public Commands",
-          value: `
-\`${prefix}help\` - Show this help message
-\`${prefix}banner\` - Show a banner
-\`${prefix}avatar\` - Show an avatar
-\`${prefix}daily\` - Claim a daily
-\`${prefix}credit\` - Transfer credit
-          `
-        });
-      }
-      else if (interaction.values[0] === "test") {
-        fields.push({
-          name: "<:public1:1413619815351849050> test Commands",
-          value: `
-\`${prefix}help\` - Show this help message
-\`${prefix}banner\` - Show a banner
-\`${prefix}avatar\` - Show an avatar
-\`${prefix}daily\` - Claim a daily
-\`${prefix}credit\` - Transfer credit
-          `
-        });
-      }
-
-      const newEmbed = new EmbedBuilder()
-        .setColor(color)
-        .addFields(fields);
-
-      return interaction.update({ embeds: [newEmbed] });
-    }
-
-    // ================== My Extra Buttons ==================
-    if (interaction.isButton()) {
-      if (interaction.customId === "join_game") {
-        return interaction.reply({ content: `✅ ${interaction.user} انضم إلى اللعبة!`, ephemeral: true });
-      }
-      if (interaction.customId === "leave_game") {
-        return interaction.reply({ content: `🚪 ${interaction.user} خرج من اللعبة!`, ephemeral: true });
-      }
-      if (interaction.customId === "ready_check") {
-        return interaction.reply({ content: `🔔 ${interaction.user} جاهز!`, ephemeral: true });
-      }
+      player.on(AudioPlayerStatus.Playing, () => {
+        message.channel.send(`Now playing: **${ytInfo[0].title}**`);
+      });
+    } catch (err) {
+      console.error(err);
+      message.reply("Error while trying to play.");
     }
   }
-};
+});
+
+// حط التوكن هنا
+client.login("");
+
+npm install discord.js @discordjs/voice play-dl
