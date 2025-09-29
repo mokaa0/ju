@@ -1,74 +1,171 @@
-// index.js
-const { Client, GatewayIntentBits } = require("discord.js");
-const { joinVoiceChannel, createAudioPlayer, createAudioResource, AudioPlayerStatus } = require("@discordjs/voice");
-const play = require("play-dl");
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>موقع Discord & Projects</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --orange:#FF6A00;
+  --dark:#0b0b0b;
+  --text:#f5f5f5;
+}
+*{box-sizing:border-box;font-family:'Cairo',sans-serif}
+body{margin:0;background:#0b0b0b;color:var(--text);direction:rtl}
 
-const client = new Client({
-  intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent,
-    GatewayIntentBits.GuildVoiceStates,
-  ],
-});
+/* NAV */
+.nav{display:flex;justify-content:space-between;align-items:center;background:#111;padding:15px 25px;position:sticky;top:0;z-index:50}
+.brand{color:var(--orange);font-weight:700}
+.nav-links button{background:none;border:none;color:var(--text);margin:0 8px;cursor:pointer;font-weight:600}
+.nav-links .active{color:var(--orange)}
 
-const players = new Map(); // لكل سيرفر player خاص
+/* content */
+.container{max-width:1100px;margin:25px auto;padding:15px}
+h2{color:var(--orange)}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:15px}
+.card{background:#141414;padding:12px;border-radius:10px;text-align:center;border:1px solid #222}
+.card svg{width:80px;height:80px;margin-bottom:10px;}
 
-client.on("ready", () => {
-  console.log(`Logged in as ${client.user.tag}`);
-});
+/* Buttons */
+.btn{margin-top:10px;padding:10px 14px;background:var(--orange);border:none;border-radius:8px;color:#000;font-weight:700;cursor:pointer}
 
-client.on("messageCreate", async (message) => {
-  if (message.author.bot) return;
-  const args = message.content.trim().split(/\s+/);
-  const cmd = args.shift().toLowerCase();
+/* overlay */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.8);display:flex;align-items:center;justify-content:center;z-index:100}
+.alert{background:#111;padding:20px;border-radius:12px;max-width:600px;width:90%}
+.alert h3{color:var(--orange)}
+.alert ul{padding-right:18px}
+.accept{margin-top:12px;padding:10px 14px;background:var(--orange);border:none;border-radius:8px;font-weight:700;cursor:pointer;color:#000}
 
-  // join voice by ID
-  if (cmd === "voice") {
-    const channelId = args[0];
-    const channel = message.guild.channels.cache.get(channelId);
-    if (!channel || channel.type !== 2) { // 2 = voice
-      return message.reply("Invalid voice channel ID.");
-    }
-    const connection = joinVoiceChannel({
-      channelId: channel.id,
-      guildId: channel.guild.id,
-      adapterCreator: channel.guild.voiceAdapterCreator,
-    });
-    players.set(message.guild.id, { connection, player: createAudioPlayer() });
-    message.reply(`Joined <#${channel.id}>`);
-  }
+</style>
+</head>
+<body>
 
-  // play music from youtube
-  if (cmd === "play") {
-    const query = args.join(" ");
-    if (!query) return message.reply("اكتب اسم فيديو او رابط يوتيوب.");
-    const guildData = players.get(message.guild.id);
-    if (!guildData) return message.reply("استخدم أمر voice <id> أولاً.");
+<!-- NAV -->
+<nav class="nav">
+  <div class="brand">موقعك</div>
+  <div class="nav-links">
+    <button class="nav-btn active" data-page="home">الرئيسية</button>
+    <button class="nav-btn" data-page="servers">سيرفرات</button>
+    <button class="nav-btn" data-page="projects">بروجكتات</button>
+    <button class="nav-btn" data-page="about">حول</button>
+  </div>
+</nav>
 
-    const { connection, player } = guildData;
+<!-- overlay -->
+<div id="overlay" class="overlay">
+  <div class="alert">
+    <h3>نصائح قبل البدء في Discord</h3>
+    <ul>
+      <li>حدد هدف السيرفر الخاص بك</li>
+      <li>رتب القنوات بشكل واضح</li>
+      <li>ضع قواعد للأعضاء</li>
+      <li>استخدم أدوار منظمة</li>
+      <li>أضف البوتات المهمة</li>
+    </ul>
+    <button id="acceptBtn" class="accept">أوافق — ابدأ</button>
+  </div>
+</div>
 
-    try {
-      const ytInfo = await play.search(query, { limit: 1 });
-      if (!ytInfo.length) return message.reply("ما لقيت فيديو.");
+<main class="container">
 
-      const stream = await play.stream(ytInfo[0].url);
-      const resource = createAudioResource(stream.stream, { inputType: stream.type });
+  <!-- الصفحة الرئيسية -->
+  <div id="home" class="page">
+    <h2>أهلاً بك 👋</h2>
+    <p>هذه الصفحة الرئيسية. اختر من القائمة بالأعلى للتنقل.</p>
+  </div>
 
-      player.play(resource);
-      connection.subscribe(player);
+  <!-- السيرفرات -->
+  <div id="servers" class="page" style="display:none">
+    <h2>سيرفرات ديسكورد</h2>
+    <div class="cards">
 
-      player.on(AudioPlayerStatus.Playing, () => {
-        message.channel.send(`Now playing: **${ytInfo[0].title}**`);
-      });
-    } catch (err) {
-      console.error(err);
-      message.reply("Error while trying to play.");
-    }
-  }
-});
+      <!-- كل مربع هنا SVG Discord + زر -->
+      <div class="card">
+        <svg viewBox="0 0 245 240" xmlns="http://www.w3.org/2000/svg"><path fill="#FF6A00" d="M104.4 104.5s-4.7 0-8.6 4.7c-4 4.7-3.5 10.7-3.5 10.7s4.8 0 8.6-4.6c3.8-4.6 3.5-10.8 3.5-10.8zm36.1 0s-4.7 0-8.6 4.7c-4 4.7-3.5 10.7-3.5 10.7s4.8 0 8.6-4.6c3.8-4.6 3.5-10.8 3.5-10.8z"/><path fill="#FF6A00" d="M189.5 20s-13.7-12.2-49.3-12.2c-35.7 0-49.4 12.2-49.4 12.2S78.7 22 78 61.2c0 0 12.3 10 45.3 10 33 0 45.3-10 45.3-10C192 22 189.5 20 189.5 20z"/></svg>
+        <a href="https://discord.gg/xl" target="_blank"><button class="btn">الدخول للخادم</button></a>
+      </div>
 
-// حط التوكن هنا
-client.login("");
+      <div class="card">
+        <svg viewBox="0 0 245 240" xmlns="http://www.w3.org/2000/svg"><path fill="#FF6A00" d="M104.4 104.5s-4.7 0-8.6 4.7c-4 4.7-3.5 10.7-3.5 10.7s4.8 0 8.6-4.6c3.8-4.6 3.5-10.8 3.5-10.8zm36.1 0s-4.7 0-8.6 4.7c-4 4.7-3.5 10.7-3.5 10.7s4.8 0 8.6-4.6c3.8-4.6 3.5-10.8 3.5-10.8z"/><path fill="#FF6A00" d="M189.5 20s-13.7-12.2-49.3-12.2c-35.7 0-49.4 12.2-49.4 12.2S78.7 22 78 61.2c0 0 12.3 10 45.3 10 33 0 45.3-10 45.3-10C192 22 189.5 20 189.5 20z"/></svg>
+        <a href="https://discord.gg/wa" target="_blank"><button class="btn">الدخول للخادم</button></a>
+      </div>
 
-npm install discord.js @discordjs/voice play-dl
+      <!-- الباقي بنفس الطريقة -->
+      <div class="card">
+        <svg viewBox="0 0 245 240" xmlns="http://www.w3.org/2000/svg"><path fill="#FF6A00" d="M104.4 104.5s-4.7 0-8.6 4.7c-4 4.7-3.5 10.7-3.5 10.7s4.8 0 8.6-4.6c3.8-4.6 3.5-10.8 3.5-10.8zm36.1 0s-4.7 0-8.6 4.7c-4 4.7-3.5 10.7-3.5 10.7s4.8 0 8.6-4.6c3.8-4.6 3.5-10.8 3.5-10.8z"/><path fill="#FF6A00" d="M189.5 20s-13.7-12.2-49.3-12.2c-35.7 0-49.4 12.2-49.4 12.2S78.7 22 78 61.2c0 0 12.3 10 45.3 10 33 0 45.3-10 45.3-10C192 22 189.5 20 189.5 20z"/></svg>
+        <a href="https://discord.gg/max" target="_blank"><button class="btn">الدخول للخادم</button></a>
+      </div>
+
+      <div class="card">
+        <svg viewBox="0 0 245 240" xmlns="http://www.w3.org/2000/svg"><path fill="#FF6A00" d="M104.4 104.5s-4.7 0-8.6 4.7c-4 4.7-3.5 10.7-3.5 10.7s4.8 0 8.6-4.6c3.8-4.6 3.5-10.8 3.5-10.8zm36.1 0s-4.7 0-8.6 4.7c-4 4.7-3.5 10.7-3.5 10.7s4.8 0 8.6-4.6c3.8-4.6 3.5-10.8 3.5-10.8z"/><path fill="#FF6A00" d="M189.5 20s-13.7-12.2-49.3-12.2c-35.7 0-49.4 12.2-49.4 12.2S78.7 22 78 61.2c0 0 12.3 10 45.3 10 33 0 45.3-10 45.3-10C192 22 189.5 20 189.5 20z"/></svg>
+        <a href="https://discord.gg/rolexx" target="_blank"><button class="btn">الدخول للخادم</button></a>
+      </div>
+
+      <div class="card">
+        <svg viewBox="0 0 245 240" xmlns="http://www.w3.org/2000/svg"><path fill="#FF6A00" d="M104.4 104.5s-4.7 0-8.6 4.7c-4 4.7-3.5 10.7-3.5 10.7s4.8 0 8.6-4.6c3.8-4.6 3.5-10.8 3.5-10.8zm36.1 0s-4.7 0-8.6 4.7c-4 4.7-3.5 10.7-3.5 10.7s4.8 0 8.6-4.6c3.8-4.6 3.5-10.8 3.5-10.8z"/><path fill="#FF6A00" d="M189.5 20s-13.7-12.2-49.3-12.2c-35.7 0-49.4 12.2-49.4 12.2S78.7 22 78 61.2c0 0 12.3 10 45.3 10 33 0 45.3-10 45.3-10C192 22 189.5 20 189.5 20z"/></svg>
+        <a href="https://discord.gg/wera-s" target="_blank"><button class="btn">الدخول للخادم</button></a>
+      </div>
+
+      <div class="card">
+        <svg viewBox="0 0 245 240" xmlns="http://www.w3.org/2000/svg"><path fill="#FF6A00" d="M104.4 104.5s-4.7 0-8.6 4.7c-4 4.7-3.5 10.7-3.5 10.7s4.8 0 8.6-4.6c3.8-4.6 3.5-10.8 3.5-10.8zm36.1 0s-4.7 0-8.6 4.7c-4 4.7-3.5 10.7-3.5 10.7s4.8 0 8.6-4.6c3.8-4.6 3.5-10.8 3.5-10.8z"/><path fill="#FF6A00" d="M189.5 20s-13.7-12.2-49.3-12.2c-35.7 0-49.4 12.2-49.4 12.2S78.7 22 78 61.2c0 0 12.3 10 45.3 10 33 0 45.3-10 45.3-10C192 22 189.5 20 189.5 20z"/></svg>
+        <a href="https://dis-ar" target="_blank"><button class="btn">الدخول للخادم</button></a>
+      </div>
+
+      <div class="card">
+        <svg viewBox="0 0 245 240" xmlns="http://www.w3.org/2000/svg"><path fill="#FF6A00" d="M104.4 104.5s-4.7 0-8.6 4.7c-4 4.7-3.5 10.7-3.5 10.7s4.8 0 8.6-4.6c3.8-4.6 3.5-10.8 3.5-10.8zm36.1 0s-4.7 0-8.6 4.7c-4 4.7-3.5 10.7-3.5 10.7s4.8 0 8.6-4.6c3.8-4.6 3.5-10.8 3.5-10.8z"/><path fill="#FF6A00" d="M189.5 20s-13.7-12.2-49.3-12.2c-35.7 0-49.4 12.2-49.4 12.2S78.7 22 78 61.2c0 0 12.3 10 45.3 10 33 0 45.3-10 45.3-10C192 22 189.5 20 189.5 20z"/></svg>
+        <a href="https://discord.gg/xmazen" target="_blank"><button class="btn">الدخول للخادم</button></a>
+      </div>
+
+      <div class="card">
+        <svg viewBox="0 0 245 240" xmlns="http://www.w3.org/2000/svg"><path fill="#FF6A00" d="M104.4 104.5s-4.7 0-8.6 4.7c-4 4.7-3.5 10.7-3.5 10.7s4.8 0 8.6-4.6c3.8-4.6 3.5-10.8 3.5-10.8zm36.1 0s-4.7 0-8.6 4.7c-4 4.7-3.5 10.7-3.5 10.7s4.8 0 8.6-4.6c3.8-4.6 3.5-10.8 3.5-10.8z"/><path fill="#FF6A00" d="M189.5 20s-13.7-12.2-49.3-12.2c-35.7 0-49.4 12.2-49.4 12.2S78.7 22 78 61.2c0 0 12.3 10 45.3 10 33 0 45.3-10 45.3-10C192 22 189.5 20 189.5 20z"/></svg>
+        <a href="https://discord.gg/j8" target="_blank"><button class="btn">الدخول للخادم</button></a>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- البروجكتات -->
+  <div id="projects" class="page" style="display:none">
+    <h2>بروجكتات</h2>
+    <div class="cards">
+      <div class="card">
+        <svg viewBox="0 0 24 24" fill="#FF6A00"><path d="M12 2L2 7v6c0 5 5 10 10 10s10-5 10-10V7L12 2z"/></svg>
+        <a href="https://www.mediafire.com/file/mhd8eu21c60swfz/600+امر.zip/file" target="_blank">
+          <button class="btn">تحميل البروجكت</button>
+        </a>
+      </div>
+      <div class="card">
+        <svg viewBox="0 0 24 24" fill="#FF6A00"><path d="M12 2L2 7v6c0 5 5 10 10 10s10-5 10-10V7L12 2z"/></svg>
+        <a href="https://www.mediafire.com/file/xxxxx/file" target="_blank">
+          <button class="btn">تحميل البروجكت</button>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- حول -->
+  <div id="about" class="page" style="display:none">
+    <h2>حول</h2>
+    <p>برنامج يهدف الى تأمين كل ما هو مهم لوجودك بلديسكورد و سيفيدك و نصائح لبدك في عالم Discord ، جاهز للبدئ؟</p>
+  </div>
+
+</main>
+
+<script>
+// nav switching
+const navBtns=document.querySelectorAll('.nav-btn');
+function openPage(id){
+  document.querySelectorAll('.page').forEach(p=>p.style.display='none');
+  document.getElementById(id).style.display='block';
+  navBtns.forEach(b=>b.classList.toggle('active',b.dataset.page===id));
+}
+navBtns.forEach(btn=>btn.addEventListener('click',()=>openPage(btn.dataset.page)));
+
+// overlay
+const overlay=document.getElementById('overlay');
+document.getElementById('acceptBtn').onclick=()=>overlay.style.display='none';
+</script>
+
+</body>
+</html>
