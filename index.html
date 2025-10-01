@@ -1,210 +1,207 @@
 <!DOCTYPE html>
-<html lang="ar">
+
+<html lang="ar" dir="rtl">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>موقع Discord & Projects</title>
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
-<style>
-:root{
-  --orange:#FF6A00;
-  --dark:#0b0b0b;
-  --text:#f5f5f5;
-}
-*{box-sizing:border-box;font-family:'Cairo',sans-serif}
-body{margin:0;background:#0b0b0b;color:var(--text);direction:rtl}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>انطلق لعبة الاستثمار</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-/* NAV */
-.nav{display:flex;justify-content:space-between;align-items:center;background:#111;padding:15px 25px;position:sticky;top:0;z-index:50}
-.brand{color:var(--orange);font-weight:700}
-.nav-links button{background:none;border:none;color:var(--text);margin:0 8px;cursor:pointer;font-weight:600;transition:0.2s}
-.nav-links .active{color:var(--orange)}
-.nav-links button:active{transform:scale(0.95);}
+    body {
+        font-family: 'Cairo', sans-serif;
+        background: linear-gradient(180deg, #000000 0%, #0a1a0a 50%, #000000 100%);
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 20px;
+        position: relative;
+        overflow: hidden;
+    }
 
-/* content */
-.container{max-width:1100px;margin:25px auto;padding:15px}
-h2,h3,h4{margin:8px 0}
-h2,h3{color:var(--orange)}
-.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:15px}
+    .background-icons {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 1;
+        opacity: 0.15;
+    }
 
-/* Cards general */
-.card{background:#141414;padding:12px;border-radius:10px;text-align:center;border:1px solid #222;
-  transition: transform 0.2s, box-shadow 0.2s; cursor:pointer;}
-.card svg{width:80px;height:80px;margin-bottom:10px;}
-.card:active{transform: scale(0.95); box-shadow: 0 4px 15px rgba(255,106,0,0.4);}
+    .bg-icon {
+        position: absolute;
+        filter: drop-shadow(0 0 20px rgba(76, 175, 80, 0.3));
+    }
 
-/* Hover animation for home cards */
-.home-cards .card:hover{
-  transform: scale(1.05);
-  box-shadow:0 6px 20px rgba(255,106,0,0.5);
-}
+    .bg-icon:nth-child(1) {
+        top: 10%;
+        right: 10%;
+        animation: float 6s ease-in-out infinite;
+    }
 
-/* Buttons */
-.btn{margin-top:10px;padding:10px 14px;background:var(--orange);border:none;border-radius:8px;color:#000;font-weight:700;cursor:pointer;transition: transform 0.1s, box-shadow 0.1s;}
-.btn:active{transform: scale(0.95); box-shadow: 0 4px 15px rgba(0,0,0,0.3);}
+    .bg-icon:nth-child(2) {
+        top: 60%;
+        right: 5%;
+        animation: float 5s ease-in-out infinite 1s;
+    }
 
-/* overlay */
-.overlay{position:fixed;inset:0;background:rgba(0,0,0,.8);display:flex;align-items:center;justify-content:center;z-index:100}
-.alert{background:#111;padding:20px;border-radius:12px;max-width:600px;width:90%}
-.alert h3{color:var(--orange)}
-.alert ul{padding-right:18px}
-.accept{margin-top:12px;padding:10px 14px;background:var(--orange);border:none;border-radius:8px;font-weight:700;cursor:pointer;color:#000;transition: transform 0.1s, box-shadow 0.1s;}
-.accept:active{transform: scale(0.95); box-shadow:0 4px 15px rgba(0,0,0,0.3);}
+    .bg-icon:nth-child(3) {
+        top: 20%;
+        left: 8%;
+        animation: float 7s ease-in-out infinite 2s;
+    }
+
+    .bg-icon:nth-child(4) {
+        top: 70%;
+        left: 15%;
+        animation: float 5.5s ease-in-out infinite 0.5s;
+    }
+
+    .bg-icon:nth-child(5) {
+        top: 40%;
+        left: 50%;
+        animation: float 6.5s ease-in-out infinite 1.5s;
+    }
+
+    @keyframes float {
+        0%, 100% {
+            transform: translateY(0px) rotate(0deg);
+        }
+        50% {
+            transform: translateY(-30px) rotate(5deg);
+        }
+    }
+
+    .container {
+        text-align: center;
+        max-width: 600px;
+        width: 100%;
+        position: relative;
+        z-index: 2;
+    }
+
+    h1 {
+        color: #5CB85C;
+        font-size: 4.5em;
+        margin-bottom: 80px;
+        font-weight: 900;
+        line-height: 1.3;
+        text-shadow: 0 0 30px rgba(92, 184, 92, 0.4);
+    }
+
+    .play-button {
+        background: linear-gradient(135deg, #5CB85C 0%, #449944 100%);
+        color: #ffffff;
+        font-size: 2.8em;
+        font-weight: 700;
+        padding: 18px 100px;
+        border: none;
+        border-radius: 20px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-block;
+        box-shadow: 0 8px 25px rgba(92, 184, 92, 0.4);
+    }
+
+    .play-button:hover {
+        background: linear-gradient(135deg, #6CC76C 0%, #55AA55 100%);
+        transform: translateY(-3px);
+        box-shadow: 0 12px 35px rgba(92, 184, 92, 0.6);
+    }
+
+    .play-button:active {
+        transform: translateY(0px);
+    }
+
+    @media (max-width: 768px) {
+        h1 {
+            font-size: 2.8em;
+            margin-bottom: 60px;
+        }
+        
+        .play-button {
+            font-size: 2em;
+            padding: 15px 60px;
+        }
+
+        .bg-icon {
+            opacity: 0.8;
+        }
+    }
+
+    @media (max-width: 480px) {
+        h1 {
+            font-size: 2.2em;
+        }
+        
+        .play-button {
+            font-size: 1.6em;
+            padding: 12px 40px;
+        }
+    }
 </style>
+
 </head>
 <body>
+    <!-- Background Icons -->
+    <div class="background-icons">
+        <!-- Chart Icon 1 -->
+        <svg class="bg-icon" width="180" height="150" viewBox="0 0 180 150" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="10" y="90" width="30" height="50" fill="#5CB85C"/>
+            <rect x="50" y="70" width="30" height="70" fill="#5CB85C"/>
+            <rect x="90" y="40" width="30" height="100" fill="#5CB85C"/>
+            <rect x="130" y="20" width="30" height="120" fill="#5CB85C"/>
+            <path d="M 25 85 L 65 65 L 105 35 L 145 15" stroke="#5CB85C" stroke-width="5" fill="none"/>
+            <polygon points="135,8 155,15 135,22" fill="#5CB85C"/>
+        </svg>
 
-<!-- NAV -->
-<nav class="nav">
-  <div class="brand">موقعك</div>
-  <div class="nav-links">
-    <button class="nav-btn active" data-page="home">الرئيسية</button>
-    <button class="nav-btn" data-page="servers">سيرفرات</button>
-    <button class="nav-btn" data-page="projects">بروجكتات</button>
-    <button class="nav-btn" data-page="about">حول</button>
-  </div>
-</nav>
+    <!-- Dollar Icon 1 -->
+    <svg class="bg-icon" width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="60" cy="60" r="50" stroke="#5CB85C" stroke-width="6" fill="none"/>
+        <text x="60" y="85" font-size="70" fill="#5CB85C" text-anchor="middle" font-weight="bold" font-family="Arial">$</text>
+    </svg>
 
-<!-- overlay -->
-<div id="overlay" class="overlay">
-  <div class="alert">
-    <h3>نصائح قبل البدء في Discord</h3>
-    <ul>
-      <li>حدد هدف السيرفر الخاص بك</li>
-      <li>رتب القنوات بشكل واضح</li>
-      <li>ضع قواعد للأعضاء</li>
-      <li>استخدم أدوار منظمة</li>
-      <li>أضف البوتات المهمة</li>
-    </ul>
-    <button id="acceptBtn" class="accept">أوافق — ابدأ</button>
-  </div>
+    <!-- Small Chart 1 -->
+    <svg class="bg-icon" width="100" height="90" viewBox="0 0 100 90" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="8" y="55" width="18" height="30" fill="#5CB85C"/>
+        <rect x="32" y="45" width="18" height="40" fill="#5CB85C"/>
+        <rect x="56" y="30" width="18" height="55" fill="#5CB85C"/>
+        <rect x="80" y="15" width="18" height="70" fill="#5CB85C"/>
+        <path d="M 17 52 L 41 42 L 65 27 L 89 12" stroke="#5CB85C" stroke-width="3" fill="none"/>
+        <polygon points="82,8 92,12 82,16" fill="#5CB85C"/>
+    </svg>
+
+    <!-- Chart Icon 2 -->
+    <svg class="bg-icon" width="160" height="130" viewBox="0 0 160 130" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="10" y="80" width="25" height="45" fill="#5CB85C"/>
+        <rect x="45" y="60" width="25" height="65" fill="#5CB85C"/>
+        <rect x="80" y="35" width="25" height="90" fill="#5CB85C"/>
+        <rect x="115" y="20" width="25" height="105" fill="#5CB85C"/>
+        <path d="M 22 75 L 57 55 L 92 30 L 127 15" stroke="#5CB85C" stroke-width="4" fill="none"/>
+        <polygon points="118,10 132,15 118,20" fill="#5CB85C"/>
+    </svg>
+
+    <!-- Dollar Icon 2 -->
+    <svg class="bg-icon" width="110" height="110" viewBox="0 0 110 110" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="55" cy="55" r="45" stroke="#5CB85C" stroke-width="5" fill="none"/>
+        <text x="55" y="77" font-size="65" fill="#5CB85C" text-anchor="middle" font-weight="bold" font-family="Arial">$</text>
+    </svg>
 </div>
 
-<main class="container">
-
-  <!-- الصفحة الرئيسية -->
-  <div id="home" class="page">
-    <h2>أهلاً بك 👋</h2>
-    <p>هذه الصفحة الرئيسية. اختر من القائمة بالأعلى للتنقل.</p>
-
-    <h3>كيف نساعدك لتبدأ عالمك بـ Discord</h3>
-    <div class="cards home-cards">
-
-      <div class="card">
-        <svg viewBox="0 0 24 24" fill="#FF6A00" width="60" height="60"><path d="M12 2L2 7v6c0 5 5 10 10 10s10-5 10-10V7L12 2z"/></svg>
-        <h4>تأسيس السيرفر</h4>
-        <p>نساعدك في إنشاء سيرفر منظم وجذاب للأعضاء.</p>
-      </div>
-
-      <div class="card">
-        <svg viewBox="0 0 24 24" fill="#FF6A00" width="60" height="60"><path d="M12 2L2 7v6c0 5 5 10 10 10s10-5 10-10V7L12 2z"/></svg>
-        <h4>إضافة البوتات</h4>
-        <p>نرشح لك أفضل البوتات لتسهيل إدارة السيرفر.</p>
-      </div>
-
-      <div class="card">
-        <svg viewBox="0 0 24 24" fill="#FF6A00" width="60" height="60"><path d="M12 2L2 7v6c0 5 5 10 10 10s10-5 10-10V7L12 2z"/></svg>
-        <h4>توزيع الأدوار</h4>
-        <p>نساعدك في إنشاء أدوار منظمة للأعضاء.</p>
-      </div>
-
-      <div class="card">
-        <svg viewBox="0 0 24 24" fill="#FF6A00" width="60" height="60"><path d="M12 2L2 7v6c0 5 5 10 10 10s10-5 10-10V7L12 2z"/></svg>
-        <h4>إدارة القنوات</h4>
-        <p>نرتب القنوات بشكل يسهل التفاعل بين الأعضاء.</p>
-      </div>
-
-      <div class="card">
-        <svg viewBox="0 0 24 24" fill="#FF6A00" width="60" height="60"><path d="M12 2L2 7v6c0 5 5 10 10 10s10-5 10-10V7L12 2z"/></svg>
-        <h4>إعداد القوانين</h4>
-        <p>نضع لك القوانين الأساسية لحماية سيرفرك.</p>
-      </div>
-
-      <div class="card">
-        <svg viewBox="0 0 24 24" fill="#FF6A00" width="60" height="60"><path d="M12 2L2 7v6c0 5 5 10 10 10s10-5 10-10V7L12 2z"/></svg>
-        <h4>نصائح عامة</h4>
-        <p>نقدم لك أفضل النصائح لتطوير سيرفرك وعالمك على Discord.</p>
-      </div>
-
-    </div>
-  </div>
-
-  <!-- السيرفرات -->
-  <div id="servers" class="page" style="display:none">
-    <h2>سيرفرات ديسكورد</h2>
-    <div class="cards">
-      <div class="card">
-        <svg viewBox="0 0 245 240" xmlns="http://www.w3.org/2000/svg"><path fill="#FF6A00" d="M104.4 104.5s-4.7 0-8.6 4.7c-4 4.7-3.5 10.7-3.5 10.7s4.8 0 8.6-4.6c3.8-4.6 3.5-10.8 3.5-10.8zm36.1 0s-4.7 0-8.6 4.7c-4 4.7-3.5 10.7-3.5 10.7s4.8 0 8.6-4.6c3.8-4.6 3.5-10.8 3.5-10.8z"/><path fill="#FF6A00" d="M189.5 20s-13.7-12.2-49.3-12.2c-35.7 0-49.4 12.2-49.4 12.2S78.7 22 78 61.2c0 0 12.3 10 45.3 10 33 0 45.3-10 45.3-10C192 22 189.5 20 189.5 20z"/></svg>
-        <a href="https://discord.gg/xl" target="_blank"><button class="btn">الدخول للخادم</button></a>
-      </div>
-      <div class="card">
-        <svg viewBox="0 0 245 240" xmlns="http://www.w3.org/2000/svg"><path fill="#FF6A00" d="M104.4 104.5s-4.7 0-8.6 4.7c-4 4.7-3.5 10.7-3.5 10.7s4.8 0 8.6-4.6c3.8-4.6 3.5-10.8 3.5-10.8zm36.1 0s-4.7 0-8.6 4.7c-4 4.7-3.5 10.7-3.5 10.7s4.8 0 8.6-4.6c3.8-4.6 3.5-10.8 3.5-10.8z"/><path fill="#FF6A00" d="M189.5 20s-13.7-12.2-49.3-12.2c-35.7 0-49.4 12.2-49.4 12.2S78.7 22 78 61.2c0 0 12.3 10 45.3 10 33 0 45.3-10 45.3-10C192 22 189.5 20 189.5 20z"/></svg>
-        <a href="https://discord.gg/wa" target="_blank"><button class="btn">الدخول للخادم</button></a>
-      </div>
-      <div class="card">
-        <svg viewBox="0 0 245 240" xmlns="http://www.w3.org/2000/svg"><path fill="#FF6A00" d="M104.4 104.5s-4.7 0-8.6 4.7c-4 4.7-3.5 10.7-3.5 10.7s4.8 0 8.6-4.6c3.8-4.6 3.5-10.8 3.5-10.8zm36.1 0s-4.7 0-8.6 4.7c-4 4.7-3.5 10.7-3.5 10.7s4.8 0 8.6-4.6c3.8-4.6 3.5-10.8 3.5-10.8z"/><path fill="#FF6A00" d="M189.5 20s-13.7-12.2-49.3-12.2c-35.7 0-49.4 12.2-49.4 12.2S78.7 22 78 61.2c0 0 12.3 10 45.3 10 33 0 45.3-10 45.3-10C192 22 189.5 20 189.5 20z"/></svg>
-        <a href="https://discord.gg/max" target="_blank"><button class="btn">الدخول للخادم</button></a>
-      </div>
-      <div class="card">
-        <svg viewBox="0 0 245 240" xmlns="http://www.w3.org/2000/svg"><path fill="#FF6A00" d="M104.4 104.5s-4.7 0-8.6 4.7c-4 4.7-3.5 10.7-3.5 10.7s4.8 0 8.6-4.6c3.8-4.6 3.5-10.8 3.5-10.8zm36.1 0s-4.7 0-8.6 4.7c-4 4.7-3.5 10.7-3.5 10.7s4.8 0 8.6-4.6c3.8-4.6 3.5-10.8 3.5-10.8z"/><path fill="#FF6A00" d="M189.5 20s-13.7-12.2-49.3-12.2c-35.7 0-49.4 12.2-49.4 12.2S78.7 22 78 61.2c0 0 12.3 10 45.3 10 33 0 45.3-10 45.3-10C192 22 189.5 20 189.5 20z"/></svg>
-        <a href="https://discord.gg/rolexx" target="_blank"><button class="btn">الدخول للخادم</button></a>
-      </div>
-      <div class="card">
-        <svg viewBox="0 0 245 240" xmlns="http://www.w3.org/2000/svg"><path fill="#FF6A00" d="M104.4 104.5s-4.7 0-8.6 4.7c-4 4.7-3.5 10.7-3.5 10.7s4.8 0 8.6-4.6c3.8-4.6 3.5-10.8 3.5-10.8zm36.1 0s-4.7 0-8.6 4.7c-4 4.7-3.5 10.7-3.5 10.7s4.8 0 8.6-4.6c3.8-4.6 3.5-10.8 3.5-10.8z"/><path fill="#FF6A00" d="M189.5 20s-13.7-12.2-49.3-12.2c-35.7 0-49.4 12.2-49.4 12.2S78.7 22 78 61.2c0 0 12.3 10 45.3 10 33 0 45.3-10 45.3-10C192 22 189.5 20 189.5 20z"/></svg>
-        <a href="https://discord.gg/wera-s" target="_blank"><button class="btn">الدخول للخادم</button></a>
-      </div>
-      <div class="card">
-        <svg viewBox="0 0 245 240" xmlns="http://www.w3.org/2000/svg"><path fill="#FF6A00" d="M104.4 104.5s-4.7 0-8.6 4.7c-4 4.7-3.5 10.7-3.5 10.7s4.8 0 8.6-4.6c3.8-4.6 3.5-10.8 3.5-10.8zm36.1 0s-4.7 0-8.6 4.7c-4 4.7-3.5 10.7-3.5 10.7s4.8 0 8.6-4.6c3.8-4.6 3.5-10.8 3.5-10.8z"/><path fill="#FF6A00" d="M189.5 20s-13.7-12.2-49.3-12.2c-35.7 0-49.4 12.2-49.4 12.2S78.7 22 78 61.2c0 0 12.3 10 45.3 10 33 0 45.3-10 45.3-10C192 22 189.5 20 189.5 20z"/></svg>
-        <a href="https://discord.gg/dis-ar" target="_blank"><button class="btn">الدخول للخادم</button></a>
-      </div>
-      <div class="card">
-        <svg viewBox="0 0 245 240" xmlns="http://www.w3.org/2000/svg"><path fill="#FF6A00" d="M104.4 104.5s-4.7 0-8.6 4.7c-4 4.7-3.5 10.7-3.5 10.7s4.8 0 8.6-4.6c3.8-4.6 3.5-10.8 3.5-10.8zm36.1 0s-4.7 0-8.6 4.7c-4 4.7-3.5 10.7-3.5 10.7s4.8 0 8.6-4.6c3.8-4.6 3.5-10.8 3.5-10.8z"/><path fill="#FF6A00" d="M189.5 20s-13.7-12.2-49.3-12.2c-35.7 0-49.4 12.2-49.4 12.2S78.7 22 78 61.2c0 0 12.3 10 45.3 10 33 0 45.3-10 45.3-10C192 22 189.5 20 189.5 20z"/></svg>
-        <a href="https://discord.gg/xmazen" target="_blank"><button class="btn">الدخول للخادم</button></a>
-      </div>
-      <div class="card">
-        <svg viewBox="0 0 245 240" xmlns="http://www.w3.org/2000/svg"><path fill="#FF6A00" d="M104.4 104.5s-4.7 0-8.6 4.7c-4 4.7-3.5 10.7-3.5 10.7s4.8 0 8.6-4.6c3.8-4.6 3.5-10.8 3.5-10.8zm36.1 0s-4.7 0-8.6 4.7c-4 4.7-3.5 10.7-3.5 10.7s4.8 0 8.6-4.6c3.8-4.6 3.5-10.8 3.5-10.8z"/><path fill="#FF6A00" d="M189.5 20s-13.7-12.2-49.3-12.2c-35.7 0-49.4 12.2-49.4 12.2S78.7 22 78 61.2c0 0 12.3 10 45.3 10 33 0 45.3-10 45.3-10C192 22 189.5 20 189.5 20z"/></svg>
-        <a href="https://discord.gg/j8" target="_blank"><button class="btn">الدخول للخادم</button></a>
-      </div>
-    </div>
-  </div>
-
-  <!-- البروجكتات -->
-  <div id="projects" class="page" style="display:none">
-    <h2>بروجكتات</h2>
-    <div class="cards">
-      <div class="card">
-        <svg viewBox="0 0 24 24" fill="#FF6A00"><path d="M12 2L2 7v6c0 5 5 10 10 10s10-5 10-10V7L12 2z"/></svg>
-        <a href="https://www.mediafire.com/file/mhd8eu21c60swfz/600+امر.zip/file" target="_blank"><button class="btn">تحميل البروجكت</button></a>
-      </div>
-      <div class="card">
-        <svg viewBox="0 0 24 24" fill="#FF6A00"><path d="M12 2L2 7v6c0 5 5 10 10 10s10-5 10-10V7L12 2z"/></svg>
-        <a href="#" target="_blank"><button class="btn">تحميل البروجكت</button></a>
-      </div>
-    </div>
-  </div>
-
-  <!-- حول -->
-  <div id="about" class="page" style="display:none">
-    <h2>حول</h2>
-    <p>برنامج يهدف الى تأمين كل ما هو مهم لوجودك بلديسكورد و سيفيدك و نصائح لبدك في عالم Discord ، جاهز للبدئ؟</p>
-  </div>
-
-</main>
-
-<script>
-// nav switching
-const navBtns=document.querySelectorAll('.nav-btn');
-function openPage(id){
-  document.querySelectorAll('.page').forEach(p=>p.style.display='none');
-  document.getElementById(id).style.display='block';
-  navBtns.forEach(b=>b.classList.toggle('active',b.dataset.page===id));
-}
-navBtns.forEach(btn=>btn.addEventListener('click',()=>openPage(btn.dataset.page)));
-
-// overlay
-const overlay=document.getElementById('overlay');
-document.getElementById('acceptBtn').onclick=()=>overlay.style.display='none';
-</script>
+<div class="container">
+    <h1>انطلق لعبة<br>الاستثمار؟</h1>
+    <a href="https://radarwallet.lovable.app/" class="play-button">العب الآن</a>
+</div>
 
 </body>
 </html>
