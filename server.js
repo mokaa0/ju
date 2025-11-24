@@ -20,7 +20,7 @@ class DiscordAccountManager {
             const text = await response.text();
             this.accounts = text.split('\n')
                 .map(line => line.trim())
-                .filter(line => line && line.length > 50) // تأكد أن التوكن طويل بما يكفي
+                .filter(line => line && line.length > 50)
                 .map(token => ({
                     token: token,
                     id: Math.random().toString(36).substr(2, 9),
@@ -36,8 +36,9 @@ class DiscordAccountManager {
     }
 
     async validateAllAccounts() {
-        const promises = this.accounts.map(account => this.validateAccount(account));
-        await Promise.all(promises);
+        for (let account of this.accounts) {
+            await this.validateAccount(account);
+        }
         document.getElementById('loading').style.display = 'none';
     }
 
@@ -45,54 +46,26 @@ class DiscordAccountManager {
         try {
             const response = await fetch('https://discord.com/api/v10/users/@me', {
                 headers: {
-                    'Authorization': account.token
+                    'Authorization': account.token,
+                    'Content-Type': 'application/json'
                 }
             });
 
-            if (response.ok) {
+            if (response.status === 200) {
                 const userData = await response.json();
                 account.data = userData;
                 account.isValid = true;
                 account.isLoading = false;
-                
-                // جلب معلومات إضافية
-                await this.fetchAdditionalData(account);
+            } else if (response.status === 401) {
+                throw new Error('توكن غير صالح أو منتهي');
             } else {
-                throw new Error(`خطأ: ${response.status}`);
+                throw new Error(`خطأ في الخادم: ${response.status}`);
             }
         } catch (error) {
             account.error = error.message;
             account.isValid = false;
             account.isLoading = false;
-        }
-    }
-
-    async fetchAdditionalData(account) {
-        try {
-            // جلب معلومات الخادم
-            const guildsResponse = await fetch('https://discord.com/api/v10/users/@me/guilds', {
-                headers: {
-                    'Authorization': account.token
-                }
-            });
-            
-            if (guildsResponse.ok) {
-                account.data.guilds = await guildsResponse.json();
-            }
-
-            // جلب معلومات الأصدقاء
-            const friendsResponse = await fetch('https://discord.com/api/v10/users/@me/relationships', {
-                headers: {
-                    'Authorization': account.token
-                }
-            });
-            
-            if (friendsResponse.ok) {
-                account.data.friends = await friendsResponse.json();
-            }
-
-        } catch (error) {
-            console.log('خطأ في جلب المعلومات الإضافية:', error);
+            console.error('خطأ في التحقق:', error);
         }
     }
 
@@ -100,12 +73,10 @@ class DiscordAccountManager {
         const grid = document.getElementById('accountsGrid');
         const totalEl = document.getElementById('totalAccounts');
         const validEl = document.getElementById('validAccounts');
-        const onlineEl = document.getElementById('onlineAccounts');
         
         totalEl.textContent = `إجمالي الحسابات: ${this.accounts.length}`;
         const validCount = this.accounts.filter(acc => acc.isValid).length;
         validEl.textContent = `الحسابات الصالحة: ${validCount}`;
-        onlineEl.textContent = `الحسابات النشطة: ${validCount}`;
 
         grid.innerHTML = this.accounts.map(account => this.createAccountCard(account)).join('');
     }
@@ -155,8 +126,6 @@ class DiscordAccountManager {
                         <div class="user-details">
                             <strong>ID:</strong> ${user.id}<br>
                             <strong>البريد:</strong> ${user.email || 'غير متوفر'}<br>
-                            <strong>الخوادم:</strong> ${account.data.guilds ? account.data.guilds.length : 'غير معروف'}<br>
-                            <strong>الأصدقاء:</strong> ${account.data.friends ? account.data.friends.length : 'غير معروف'}<br>
                             <strong>أنشئ في:</strong> ${new Date(user.created_at).toLocaleDateString('ar-EG')}
                         </div>
                         <div class="token-preview">${account.token.substring(0, 20)}...</div>
@@ -165,26 +134,23 @@ class DiscordAccountManager {
                 
                 <div class="controls">
                     <div class="control-group">
-                        <label>اسم المستخدم الجديد:</label>
-                        <input type="text" id="username-${account.id}" placeholder="${user.username}">
-                    </div>
-                    
-                    <div class="control-group">
                         <label>البايو (الوصف):</label>
                         <textarea id="bio-${account.id}" placeholder="أدخل البايو الجديد..." rows="2"></textarea>
                     </div>
                     
                     <button class="btn btn-primary" onclick="accountManager.updateProfile('${account.id}')">
-                        ✏️ تحديث الملف الشخصي
+                        ✏️ تحديث البايو
                     </button>
                     
                     <button class="btn btn-success" onclick="accountManager.refreshAccount('${account.id}')">
                         🔄 تحديث المعلومات
                     </button>
                     
-                    <button class="btn btn-danger" onclick="accountManager.logoutAccount('${account.id}')">
-                        🚪 تسجيل الخروج
-                    </button>
+                    <div style="display: flex; gap: 10px; margin-top: 10px;">
+                        <button class="btn" onclick="accountManager.setStatus('${account.id}', 'online')" style="background: #23a55a; color: white; flex: 1;">🟢 Online</button>
+                        <button class="btn" onclick="accountManager.setStatus('${account.id}', 'idle')" style="background: #f0b232; color: white; flex: 1;">🟡 Idle</button>
+                        <button class="btn" onclick="accountManager.setStatus('${account.id}', 'dnd')" style="background: #f23f43; color: white; flex: 1;">🔴 DND</button>
+                    </div>
                 </div>
             </div>
         `;
@@ -192,34 +158,73 @@ class DiscordAccountManager {
 
     async updateProfile(accountId) {
         const account = this.accounts.find(acc => acc.id === accountId);
-        if (!account || !account.isValid) return;
+        if (!account || !account.isValid) {
+            this.showError('الحساب غير صالح');
+            return;
+        }
 
-        const newUsername = document.getElementById(`username-${accountId}`).value;
         const newBio = document.getElementById(`bio-${accountId}`).value;
+        
+        if (!newBio.trim()) {
+            this.showError('يرجى إدخال نص للبايو');
+            return;
+        }
 
         try {
-            const updates = {};
-            if (newUsername) updates.username = newUsername;
-            if (newBio) updates.bio = newBio;
-
+            console.log('جاري تحديث البايو...', newBio);
+            
             const response = await fetch('https://discord.com/api/v10/users/@me', {
                 method: 'PATCH',
                 headers: {
                     'Authorization': account.token,
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(updates)
+                body: JSON.stringify({
+                    bio: newBio
+                })
             });
 
-            if (response.ok) {
-                this.showSuccess('✅ تم تحديث الملف الشخصي بنجاح');
-                await this.validateAccount(account); // إعادة تحميل البيانات
+            console.log('الرد من السيرفر:', response.status);
+
+            if (response.status === 200) {
+                const updatedData = await response.json();
+                account.data = updatedData;
+                this.showSuccess('✅ تم تحديث البايو بنجاح');
                 this.displayAccounts();
             } else {
-                throw new Error(`فشل التحديث: ${response.status}`);
+                const errorText = await response.text();
+                console.error('خطأ من السيرفر:', errorText);
+                throw new Error(`فشل التحديث: ${response.status} - ${errorText}`);
             }
         } catch (error) {
-            this.showError(`خطأ في تحديث الملف: ${error.message}`);
+            console.error('خطأ في التحديث:', error);
+            this.showError(`❌ خطأ في تحديث البايو: ${error.message}`);
+        }
+    }
+
+    async setStatus(accountId, status) {
+        const account = this.accounts.find(acc => acc.id === accountId);
+        if (!account || !account.isValid) return;
+
+        try {
+            const response = await fetch('https://discord.com/api/v10/users/@me/settings', {
+                method: 'PATCH',
+                headers: {
+                    'Authorization': account.token,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    status: status
+                })
+            });
+
+            if (response.status === 200) {
+                this.showSuccess(`✅ تم تغيير الحالة إلى ${status}`);
+            } else {
+                throw new Error(`فشل تغيير الحالة: ${response.status}`);
+            }
+        } catch (error) {
+            this.showError(`❌ خطأ في تغيير الحالة: ${error.message}`);
         }
     }
 
@@ -233,30 +238,6 @@ class DiscordAccountManager {
         await this.validateAccount(account);
         this.displayAccounts();
         this.showSuccess('✅ تم تحديث معلومات الحساب');
-    }
-
-    async logoutAccount(accountId) {
-        const account = this.accounts.find(acc => acc.id === accountId);
-        if (!account || !account.isValid) return;
-
-        try {
-            const response = await fetch('https://discord.com/api/v10/auth/logout', {
-                method: 'POST',
-                headers: {
-                    'Authorization': account.token
-                }
-            });
-
-            if (response.ok) {
-                this.showSuccess('✅ تم تسجيل الخروج بنجاح');
-                account.isValid = false;
-                this.displayAccounts();
-            } else {
-                throw new Error(`فشل تسجيل الخروج: ${response.status}`);
-            }
-        } catch (error) {
-            this.showError(`خطأ في تسجيل الخروج: ${error.message}`);
-        }
     }
 
     showError(message) {
@@ -276,3 +257,13 @@ class DiscordAccountManager {
 
 // بدء التطبيق
 const accountManager = new DiscordAccountManager();
+
+// إضافة event listeners للأزرار بعد تحميل الصفحة
+document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('btn-primary')) {
+        const accountId = e.target.getAttribute('onclick')?.match(/'([^']+)'/)?.[1];
+        if (accountId) {
+            accountManager.updateProfile(accountId);
+        }
+    }
+});
