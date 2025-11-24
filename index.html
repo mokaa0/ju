@@ -13,9 +13,10 @@
         }
 
         body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #1e1e2e 0%, #2d1b69 100%);
             min-height: 100vh;
             padding: 20px;
+            color: white;
         }
 
         .container {
@@ -44,6 +45,7 @@
             justify-content: center;
             gap: 20px;
             margin-top: 15px;
+            flex-wrap: wrap;
         }
 
         .stat-card {
@@ -56,7 +58,7 @@
 
         .accounts-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
             gap: 20px;
             margin-top: 20px;
         }
@@ -67,6 +69,7 @@
             padding: 20px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
             transition: transform 0.3s ease, box-shadow 0.3s ease;
+            color: #333;
         }
 
         .account-card:hover {
@@ -84,31 +87,43 @@
         }
 
         .avatar {
-            width: 60px;
-            height: 60px;
+            width: 80px;
+            height: 80px;
             border-radius: 50%;
-            border: 3px solid #667eea;
+            border: 3px solid #5865f2;
+            object-fit: cover;
         }
 
         .user-info h3 {
             color: #333;
             margin-bottom: 5px;
+            font-size: 1.3em;
+        }
+
+        .user-details {
+            color: #666;
+            font-size: 0.9em;
+            line-height: 1.4;
         }
 
         .token-preview {
-            color: #666;
-            font-size: 0.8em;
+            background: #f8f9fa;
+            padding: 8px;
+            border-radius: 5px;
             font-family: monospace;
+            font-size: 0.8em;
+            margin-top: 5px;
+            border: 1px solid #e9ecef;
         }
 
         .controls {
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 12px;
         }
 
         .control-group {
-            margin-bottom: 10px;
+            margin-bottom: 8px;
         }
 
         .control-group label {
@@ -116,6 +131,7 @@
             margin-bottom: 5px;
             color: #555;
             font-weight: bold;
+            font-size: 0.9em;
         }
 
         .control-group input, .control-group select, .control-group textarea {
@@ -125,11 +141,12 @@
             border-radius: 8px;
             font-size: 14px;
             transition: border-color 0.3s ease;
+            background: white;
         }
 
         .control-group input:focus, .control-group select:focus, .control-group textarea:focus {
             outline: none;
-            border-color: #667eea;
+            border-color: #5865f2;
         }
 
         .btn {
@@ -141,39 +158,49 @@
             cursor: pointer;
             transition: all 0.3s ease;
             text-align: center;
+            margin-top: 5px;
         }
 
         .btn-primary {
-            background: #667eea;
+            background: #5865f2;
             color: white;
         }
 
         .btn-primary:hover {
-            background: #5a6fd8;
+            background: #4752c4;
             transform: translateY(-2px);
         }
 
         .btn-danger {
-            background: #e74c3c;
+            background: #ed4245;
             color: white;
         }
 
         .btn-danger:hover {
-            background: #c0392b;
+            background: #c03537;
+        }
+
+        .btn-success {
+            background: #57f287;
+            color: #333;
+        }
+
+        .btn-success:hover {
+            background: #45d174;
         }
 
         .status-indicator {
             display: inline-block;
-            width: 10px;
-            height: 10px;
+            width: 12px;
+            height: 12px;
             border-radius: 50%;
             margin-left: 8px;
         }
 
-        .status-online { background: #2ecc71; }
-        .status-idle { background: #f39c12; }
-        .status-dnd { background: #e74c3c; }
-        .status-offline { background: #95a5a6; }
+        .status-online { background: #23a55a; }
+        .status-idle { background: #f0b232; }
+        .status-dnd { background: #f23f43; }
+        .status-offline { background: #80848e; }
 
         .loading {
             text-align: center;
@@ -183,13 +210,35 @@
         }
 
         .error {
-            background: #e74c3c;
+            background: #f23f43;
             color: white;
             padding: 15px;
             border-radius: 10px;
             margin: 20px 0;
             text-align: center;
         }
+
+        .success {
+            background: #23a55a;
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.7em;
+            font-weight: bold;
+            margin-left: 5px;
+        }
+
+        .badge-verified { background: #5865f2; color: white; }
+        .badge-bot { background: #57f287; color: #333; }
+        .badge-nitro { background: #ff73fa; color: white; }
 
         @media (max-width: 768px) {
             .accounts-grid {
@@ -200,6 +249,11 @@
                 flex-direction: column;
                 align-items: center;
             }
+            
+            .account-header {
+                flex-direction: column;
+                text-align: center;
+            }
         }
     </style>
 </head>
@@ -209,15 +263,17 @@
             <h1>🎮 إدارة حسابات Discord</h1>
             <div class="stats">
                 <div class="stat-card" id="totalAccounts">إجمالي الحسابات: 0</div>
+                <div class="stat-card" id="validAccounts">الحسابات الصالحة: 0</div>
                 <div class="stat-card" id="onlineAccounts">الحسابات النشطة: 0</div>
             </div>
         </div>
 
         <div id="loading" class="loading">
-            ⏳ جاري تحميل الحسابات...
+            ⏳ جاري تحميل وتحقق من الحسابات...
         </div>
 
         <div id="error" class="error" style="display: none;"></div>
+        <div id="success" class="success" style="display: none;"></div>
 
         <div id="accountsGrid" class="accounts-grid">
             <!-- الحسابات سيتم عرض هنا -->
