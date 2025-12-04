@@ -11,6 +11,11 @@ class DiscordAccountCreator {
     // قراءة أول سطر من الملف
     async readFirstLine(filename) {
         try {
+            if (!fsSync.existsSync(filename)) {
+                console.error(`❌ ملف ${filename} غير موجود!`);
+                return null;
+            }
+            
             const content = await fs.readFile(filename, 'utf8');
             const lines = content.split('\n').filter(line => line.trim() !== '');
             return lines.length > 0 ? lines[0].trim() : null;
@@ -39,7 +44,7 @@ class DiscordAccountCreator {
         }
     }
 
-    // توليد تاريخ عشوائي
+    // توليد تاريخ عشوائي أقل من 2006
     generateRandomDate() {
         const startYear = 1980;
         const endYear = 2005;
@@ -61,33 +66,94 @@ class DiscordAccountCreator {
         await this.page.waitForTimeout(delay);
     }
 
-    // الحصول على التوكن
+    // الحصول على التوكن بطرق مختلفة
     async getDiscordToken() {
         try {
-            return await this.page.evaluate(() => {
-                // البحث في localStorage
+            const token = await this.page.evaluate(() => {
+                // الطريقة 1: من localStorage
                 for (let i = 0; i < localStorage.length; i++) {
                     const key = localStorage.key(i);
-                    if (key.includes('token') || key.includes('Token')) {
-                        return localStorage.getItem(key);
+                    if (key.toLowerCase().includes('token') || 
+                        key.includes('auth') || 
+                        key.includes('access')) {
+                        const value = localStorage.getItem(key);
+                        if (value && value.length > 50) {
+                            return value;
+                        }
                     }
                 }
-                
-                // البحث في cookies
+
+                // الطريقة 2: من sessionStorage
+                for (let i = 0; i < sessionStorage.length; i++) {
+                    const key = sessionStorage.key(i);
+                    if (key.toLowerCase().includes('token')) {
+                        const value = sessionStorage.getItem(key);
+                        if (value && value.length > 50) {
+                            return value;
+                        }
+                    }
+                }
+
+                // الطريقة 3: من cookies
                 const cookies = document.cookie.split(';');
                 for (const cookie of cookies) {
                     const [name, value] = cookie.trim().split('=');
-                    if (name.includes('token') || name.includes('access_token')) {
-                        return value;
+                    if (name.toLowerCase().includes('token') || 
+                        name.includes('access_token') || 
+                        name.includes('auth_token')) {
+                        if (value && value.length > 50) {
+                            return value;
+                        }
                     }
                 }
-                
+
+                // الطريقة 4: من network requests
+                const tokenRegex = /[A-Za-z0-9_-]{24}\.[A-Za-z0-9_-]{6}\.[A-Za-z0-9_-]{27}/;
+                const scripts = document.getElementsByTagName('script');
+                for (const script of scripts) {
+                    if (script.innerText) {
+                        const match = script.innerText.match(tokenRegex);
+                        if (match) return match[0];
+                    }
+                }
+
                 return null;
             });
+
+            return token;
         } catch (error) {
             console.error('❌ خطأ في الحصول على التوكن:', error.message);
             return null;
         }
+    }
+
+    // انتظار حل الكابتشا يدوياً
+    async waitForManualCaptcha() {
+        console.log('\n⚠️  ═══════════════════════════════════════════');
+        console.log('⚠️   يرجى حل الـ Captcha يدوياً في المتصفح!');
+        console.log('⚠️   بعد حل الـ Captcha، سيستمر البرنامج تلقائياً');
+        console.log('⚠️  ═══════════════════════════════════════════\n');
+        
+        // انتظار 10 دقائق كحد أقصى لحل الكابتشا
+        console.log('⏳ الانتظار لحل الـ Captcha... (الحد الأقصى 10 دقائق)');
+        
+        // التحقق كل 30 ثانية إذا تم حل الكابتشا
+        for (let i = 0; i < 20; i++) {
+            await this.page.waitForTimeout(30000);
+            
+            // التحقق إذا تم تحميل الصفحة التالية
+            const currentUrl = await this.page.url();
+            if (!currentUrl.includes('/register') && 
+                currentUrl.includes('discord.com')) {
+                console.log('✅ تم حل الـ Captcha بنجاح!');
+                return true;
+            }
+            
+            console.log(`⏳ لا يزال في انتظار حل الـ Captcha... (${(i+1)*0.5} دقيقة)`);
+        }
+        
+        console.log('❌ انتهى وقت الانتظار للـ Captcha');
+        return false;
     }
 
     // إنشاء حساب واحد
@@ -97,130 +163,209 @@ class DiscordAccountCreator {
 
             // قراءة أول سطر من كل ملف
             const email = await this.readFirstLine('gmails.txt');
-            const name = await this.readFirstLine('names.txt');
+            const displayName = await this.readFirstLine('names.txt');
             const username = await this.readFirstLine('username.txt');
             const password = await this.readFirstLine('password.txt');
 
             // التحقق من وجود بيانات
-            if (!email || !name || !username || !password) {
-                console.error('❌ لا توجد بيانات كافية في الملفات');
+            if (!email || !displayName || !username || !password) {
+                console.error('❌ لا توجد بيانات كافية في الملفات!');
                 return false;
             }
 
             console.log(`
 📧 الإيميل: ${email}
-👤 الاسم: ${name}
+👤 Display Name: ${displayName}
 🔤 اليوزرنيم: ${username}
 🔐 الباسورد: ${password}
             `);
 
-            // فتح صفحة Discord
-            console.log('🌐 الانتقال إلى Discord...');
+            // فتح صفحة Discord للتسجيل
+            console.log('🌐 الانتقال إلى صفحة تسجيل Discord...');
             await this.page.goto('https://discord.com/register', { 
                 waitUntil: 'networkidle2',
-                timeout: 30000
+                timeout: 60000
             });
             
-            await this.randomDelay(2000, 4000);
+            await this.randomDelay(3000, 5000);
 
             // التحقق من أننا في صفحة التسجيل
+            const pageTitle = await this.page.title();
             const pageUrl = await this.page.url();
-            console.log(`📄 الرابط الحالي: ${pageUrl}`);
+            console.log(`📄 العنوان: ${pageTitle}`);
+            console.log(`🔗 الرابط: ${pageUrl}`);
 
-            // ملء البيانات
-            console.log('✏️  بدء تعبئة البيانات...');
+            // ملء حقل الإيميل
+            console.log('✏️  تعبئة حقل الإيميل...');
+            await this.page.type('input[name="email"]', email, { delay: 100 });
+            await this.randomDelay(800, 1500);
+
+            // ملء حقل Display Name
+            console.log('✏️  تعبئة حقل Display Name...');
             
-            // الإيميل
-            await this.page.type('input[name="email"]', email, { delay: 80 });
-            await this.randomDelay(500, 1000);
+            // محاولة إيجاد حقل Display Name بطرق مختلفة
+            const displayNameSelectors = [
+                'input[name="displayName"]',
+                'input[name="displayname"]',
+                'input[placeholder*="Display Name" i]',
+                'input[placeholder*="اسم العرض" i]',
+                'input[aria-label*="Display Name" i]'
+            ];
             
-            // اسم المستخدم
-            await this.page.type('input[name="username"]', username, { delay: 80 });
-            await this.randomDelay(500, 1000);
+            let displayNameFieldFound = false;
+            for (const selector of displayNameSelectors) {
+                try {
+                    const field = await this.page.$(selector);
+                    if (field) {
+                        await field.type(displayName, { delay: 100 });
+                        displayNameFieldFound = true;
+                        console.log(`✅ تم تعبئة Display Name باستخدام: ${selector}`);
+                        break;
+                    }
+                } catch (error) {
+                    continue;
+                }
+            }
             
-            // كلمة المرور
-            await this.page.type('input[name="password"]', password, { delay: 80 });
-            await this.randomDelay(500, 1000);
+            // إذا لم يتم إيجاد حقل Display Name، نستخدم الـ username كـ display name
+            if (!displayNameFieldFound) {
+                console.log('⚠️  لم أجد حقل Display Name، سأستخدم نفس اليوزرنيم');
+            }
             
-            // تاريخ الميلاد
+            await this.randomDelay(800, 1500);
+
+            // ملء حقل اسم المستخدم
+            console.log('✏️  تعبئة حقل اسم المستخدم...');
+            await this.page.type('input[name="username"]', username, { delay: 100 });
+            await this.randomDelay(800, 1500);
+
+            // ملء حقل كلمة المرور
+            console.log('✏️  تعبئة حقل كلمة المرور...');
+            await this.page.type('input[name="password"]', password, { delay: 100 });
+            await this.randomDelay(800, 1500);
+
+            // ملء تاريخ الميلاد
+            console.log('🎂 تعبئة تاريخ الميلاد...');
             const birthDate = this.generateRandomDate();
-            console.log(`🎂 تاريخ الميلاد: ${birthDate.month}/${birthDate.day}/${birthDate.year}`);
+            console.log(`📅 تاريخ الميلاد: ${birthDate.month}/${birthDate.day}/${birthDate.year}`);
             
+            // اختيار الشهر
             await this.page.select('select[aria-label="Month"]', birthDate.month);
-            await this.randomDelay(300, 500);
+            await this.randomDelay(300, 600);
             
+            // اختيار اليوم
             await this.page.select('select[aria-label="Day"]', birthDate.day);
-            await this.randomDelay(300, 500);
+            await this.randomDelay(300, 600);
             
+            // اختيار السنة
             await this.page.select('select[aria-label="Year"]', birthDate.year);
             await this.randomDelay(1000, 2000);
 
-            // التقاط screenshot
+            // التقاط screenshot قبل الكابتشا
             await this.page.screenshot({ path: 'before_captcha.png' });
-            console.log('📸 تم حفظ صفحة قبل الـ Captcha');
+            console.log('📸 تم حفظ صفحة ما قبل الكابتشا');
 
-            // انتظار حل Captcha يدوياً
-            console.log('\n⚠️  يرجى حل الـ Captcha يدوياً في المتصفح');
-            console.log('⏳ انتظر لحل الـ Captcha ثم ارجع هنا...\n');
-            
-            // انتظار لمدة 5 دقائق لحل Captcha
-            await this.page.waitForTimeout(300000);
-            
-            // محاولة النقر على زر الإنشاء
-            console.log('🖱️  محاولة النقر على زر الإنشاء...');
-            
-            try {
-                await this.page.click('button[type="submit"]');
-                console.log('✅ تم النقر على زر الإنشاء');
-            } catch (error) {
-                console.log('⚠️  لم أجد زر الإنشاء بالطريقة العادية، أجرب طريقة أخرى...');
-                
-                // محاولة باستخدام JavaScript
-                await this.page.evaluate(() => {
-                    const buttons = document.getElementsByTagName('button');
-                    for (let btn of buttons) {
-                        if (btn.innerText.includes('Continue') || 
-                            btn.innerText.includes('التالي') ||
-                            btn.type === 'submit') {
-                            btn.click();
-                            break;
-                        }
-                    }
-                });
+            // انتظار حل الكابتشا يدوياً
+            const captchaSolved = await this.waitForManualCaptcha();
+            if (!captchaSolved) {
+                console.log('❌ لم يتم حل الـ Captcha، فشل إنشاء الحساب');
+                return false;
             }
 
-            // انتظار 10 ثوانٍ
+            // بعد حل الكابتشا، انتظار لمدة 10 ثوانٍ للتأكد من التحميل
             await this.page.waitForTimeout(10000);
 
-            // الحصول على التوكن
-            console.log('🔑 محاولة الحصول على التوكن...');
-            const token = await this.getDiscordToken();
+            // محاولة النقر على زر الإنشاء باستخدام عدة طرق
+            console.log('🖱️  محاولة النقر على زر الإنشاء...');
             
-            if (token) {
-                console.log('✅ تم الحصول على التوكن بنجاح');
+            const submitButtons = await this.page.$$('button[type="submit"]');
+            if (submitButtons.length > 0) {
+                await submitButtons[0].click();
+                console.log('✅ تم النقر على زر الإنشاء');
+            } else {
+                // محاولة النقر باستخدام JavaScript
+                await this.page.evaluate(() => {
+                    const buttons = document.querySelectorAll('button');
+                    for (const button of buttons) {
+                        const text = button.textContent || button.innerText || '';
+                        if (text.includes('Continue') || 
+                            text.includes('التالي') || 
+                            text.includes('Create') || 
+                            text.includes('إنشاء') ||
+                            button.type === 'submit') {
+                            button.click();
+                            return true;
+                        }
+                    }
+                    return false;
+                });
+                console.log('⚠️  تم استخدام طريقة JavaScript للنقر');
+            }
+
+            // الانتظار لمدة 15 ثانية حتى يتم إنشاء الحساب
+            console.log('⏳ الانتظار حتى يتم إنشاء الحساب...');
+            await this.page.waitForTimeout(15000);
+
+            // التقاط screenshot بعد الإنشاء
+            await this.page.screenshot({ path: 'after_creation.png' });
+            console.log('📸 تم حفظ صفحة ما بعد الإنشاء');
+
+            // الحصول على التوكن
+            console.log('🔑 جاري الحصول على التوكن...');
+            
+            // محاولة الحصول على التوكن عدة مرات
+            let token = null;
+            for (let attempt = 1; attempt <= 5; attempt++) {
+                console.log(`🔄 المحاولة ${attempt}/5 للحصول على التوكن...`);
+                token = await this.getDiscordToken();
                 
-                // حفظ التوكن
+                if (token) {
+                    console.log(`✅ تم الحصول على التوكن في المحاولة ${attempt}`);
+                    break;
+                }
+                
+                if (attempt < 5) {
+                    await this.page.waitForTimeout(5000);
+                }
+            }
+
+            if (token) {
+                console.log('✅ تم الحصول على التوكن بنجاح!');
+                console.log(`🔐 التوكن: ${token.substring(0, 30)}...`);
+                
+                // حفظ التوكن في ملف
                 await fs.appendFile('tokens.txt', `${token}\n`, 'utf8');
                 console.log('💾 تم حفظ التوكن في tokens.txt');
                 
                 // حفظ معلومات الحساب
-                const accountInfo = `\n${email}:${username}:${password}:${token.substring(0, 30)}...\n`;
-                await fs.appendFile('created_accounts.txt', accountInfo, 'utf8');
+                const accountInfo = `
+================================
+🆔 الحساب الجديد
+📧 الإيميل: ${email}
+👤 Display Name: ${displayName}
+🔤 اليوزرنيم: ${username}
+🔐 التوكن: ${token.substring(0, 30)}...
+📅 التاريخ: ${new Date().toLocaleString()}
+================================
+                `;
                 
-                // حذف الأسطر المستخدمة
+                await fs.appendFile('created_accounts.txt', accountInfo, 'utf8');
+                console.log('📝 تم حفظ معلومات الحساب في created_accounts.txt');
+                
+                // حذف الأسطر المستخدمة من الملفات
                 await this.deleteFirstLine('gmails.txt');
                 await this.deleteFirstLine('names.txt');
                 await this.deleteFirstLine('username.txt');
                 await this.deleteFirstLine('password.txt');
                 
-                console.log('🗑️  تم حذف الأسطر المستخدمة من الملفات');
-                return true;
+                console.log('🗑️  تم حذف البيانات المستخدمة من الملفات');
+                return token;
             } else {
-                console.log('❌ لم يتم الحصول على التوكن، لكن تم حفظ البيانات');
+                console.log('❌ لم يتم الحصول على التوكن!');
                 
-                // حفظ البيانات على أي حال
+                // حفظ محاولة فاشلة
                 await fs.appendFile('failed_attempts.txt', 
-                    `${email}:${username}:${password}:${new Date().toISOString()}\n`, 
+                    `${email}:${username}:${new Date().toISOString()}\n`, 
                     'utf8'
                 );
                 
@@ -235,6 +380,10 @@ class DiscordAccountCreator {
 
         } catch (error) {
             console.error('❌ خطأ في إنشاء الحساب:', error.message);
+            await fs.appendFile('errors.log', 
+                `[${new Date().toISOString()}] ${error.message}\n`, 
+                'utf8'
+            );
             return false;
         }
     }
@@ -242,23 +391,34 @@ class DiscordAccountCreator {
     async run() {
         console.log(`
 ╔══════════════════════════════════════════╗
-║      Discord Account Creator v2.0        ║
-║  (إنشاء حساب واحد فقط ثم الإغلاق)        ║
+║      Discord Account Creator v3.0        ║
+║    (إنشاء حساب واحد مع انتظار الكابتشا)   ║
 ╚══════════════════════════════════════════╝
         `);
         
-        // التحقق من وجود الملفات
+        // التحقق من وجود الملفات المطلوبة
         const requiredFiles = ['gmails.txt', 'names.txt', 'username.txt', 'password.txt'];
+        let filesExist = true;
+        
         for (const file of requiredFiles) {
             if (!fsSync.existsSync(file)) {
                 console.error(`❌ ملف ${file} غير موجود!`);
-                console.log('📝 يرجى إنشاء الملفات التالية:');
-                console.log('   gmails.txt - قائمة بالإيميلات');
-                console.log('   names.txt - قائمة بالأسماء');
-                console.log('   username.txt - قائمة بأسماء المستخدمين');
-                console.log('   password.txt - قائمة بكلمات المرور');
-                process.exit(1);
+                filesExist = false;
             }
+        }
+        
+        if (!filesExist) {
+            console.log('\n📋 يرجى إنشاء الملفات التالية:');
+            console.log('   1. gmails.txt - قائمة بالإيميلات');
+            console.log('   2. names.txt - قائمة بـ Display Names');
+            console.log('   3. username.txt - قائمة بأسماء المستخدمين');
+            console.log('   4. password.txt - قائمة بكلمات المرور');
+            console.log('\n📝 مثال للمحتوى:');
+            console.log('   gmails.txt: test1@gmail.com');
+            console.log('   names.txt: Ahmed Ali');
+            console.log('   username.txt: ahmed123');
+            console.log('   password.txt: Password123!');
+            process.exit(1);
         }
 
         // التحقق من وجود بيانات
@@ -272,52 +432,73 @@ class DiscordAccountCreator {
         try {
             console.log('🚀 بدء تشغيل المتصفح...');
             
-            // تشغيل المتصفح
+            // تشغيل المتصفح Chrome
             this.browser = await puppeteer.launch({ 
-                headless: false,
+                headless: false, // عرض المتصفح
                 defaultViewport: null,
                 args: [
                     '--start-maximized',
                     '--no-sandbox',
                     '--disable-setuid-sandbox',
                     '--disable-dev-shm-usage',
-                    '--disable-blink-features=AutomationControlled'
+                    '--disable-blink-features=AutomationControlled',
+                    '--disable-web-security',
+                    '--disable-features=IsolateOrigins,site-per-process'
                 ],
-                ignoreHTTPSErrors: true
+                ignoreHTTPSErrors: true,
+                executablePath: process.platform === 'win32' 
+                    ? 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'
+                    : process.platform === 'darwin'
+                    ? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
+                    : '/usr/bin/google-chrome'
             });
             
-            // إخفاء أننا نستخدم automation
+            // إنشاء صفحة جديدة
             this.page = await this.browser.newPage();
             
-            // تعيين user-agent عادي
+            // إعداد user-agent واقعي
             await this.page.setUserAgent(
                 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
             );
             
-            // إزالة علامات automation
+            // إخفاء أننا نستخدم automation
             await this.page.evaluateOnNewDocument(() => {
-                Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
-                Object.defineProperty(navigator, 'plugins', { get: () => [1, 2, 3, 4, 5] });
+                // إزالة webdriver property
+                Object.defineProperty(navigator, 'webdriver', {
+                    get: () => undefined
+                });
+                
+                // تغيير languages property
+                Object.defineProperty(navigator, 'languages', {
+                    get: () => ['ar', 'en-US', 'en']
+                });
+                
+                // تغيير plugins property
+                Object.defineProperty(navigator, 'plugins', {
+                    get: () => [1, 2, 3, 4, 5]
+                });
             });
 
             console.log('✅ تم فتح المتصفح بنجاح');
-            console.log('🔄 بدء عملية إنشاء الحساب...\n');
+            console.log('🎯 سيتم إنشاء حساب واحد فقط\n');
 
-            // إنشاء حساب واحد فقط
-            const success = await this.createSingleAccount();
+            // إنشاء حساب واحد
+            const token = await this.createSingleAccount();
             
-            if (success) {
-                console.log('\n🎉 تم إنشاء الحساب بنجاح!');
+            if (token) {
+                console.log('\n🎉🎉🎉 تم إنشاء الحساب بنجاح! 🎉🎉🎉');
+                console.log('✅ تم الحصول على التوكن وحفظه');
             } else {
                 console.log('\n⚠️  تمت العملية مع بعض الأخطاء');
+                console.log('📋 راجع ملفات failed_attempts.txt و errors.log للمزيد من المعلومات');
             }
 
         } catch (error) {
             console.error('❌ خطأ في تشغيل الأداة:', error.message);
         } finally {
-            // إغلاق المتصفح بعد 5 ثوانٍ
-            console.log('\n⏳ إغلاق المتصفح بعد 5 ثوانٍ...');
-            await this.page.waitForTimeout(5000);
+            // إغلاق المتصفح بعد 3 ثوانٍ
+            console.log('\n⏳ جاري إغلاق المتصفح بعد 3 ثوانٍ...');
+            await this.page.waitForTimeout(3000);
             
             if (this.browser) {
                 await this.browser.close();
@@ -325,16 +506,19 @@ class DiscordAccountCreator {
             }
             
             console.log('\n📊 ملخص العملية:');
-            console.log('   1. تم استخدام أول سطر من كل ملف');
-            console.log('   2. تم حذف الأسطر المستخدمة');
-            console.log('   3. تم حفظ التوكن في tokens.txt');
-            console.log('   4. تم إغلاق المتصفح تلقائياً');
-            console.log('\n🔄 لإعادة التشغيل، أعد تشغيل البرنامج مرة أخرى');
+            console.log('   1. تم قراءة أول سطر من كل ملف');
+            console.log('   2. تم تعبئة جميع الحقول بما فيها Display Name والتاريخ');
+            console.log('   3. تم انتظار حل الـ Captcha يدوياً');
+            console.log('   4. تم النقر على زر الإنشاء');
+            console.log('   5. تم الحصول على التوكن وحفظه في tokens.txt');
+            console.log('   6. تم حذف الأسطر المستخدمة من الملفات');
+            console.log('   7. تم إغلاق المتصفح تلقائياً');
+            console.log('\n🔄 للتشغيل مرة أخرى، أعد تشغيل البرنامج');
         }
     }
 }
 
-// تشغيل البرنامج مباشرة دون مدخلات
+// تشغيل البرنامج
 (async () => {
     const creator = new DiscordAccountCreator();
     await creator.run();
