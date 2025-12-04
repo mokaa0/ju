@@ -1,285 +1,269 @@
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>إدارة حسابات Discord</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+const puppeteer = require('puppeteer');
+const fs = require('fs').promises;
+const readline = require('readline');
+
+class DiscordAccountCreator {
+    constructor() {
+        this.browser = null;
+        this.page = null;
+        this.currentLine = 0; // لتتبع السطر الحالي
+    }
+
+    // دالة لقراءة سطر محدد من ملف
+    async readLineFromFile(filename, lineNumber) {
+        try {
+            const content = await fs.readFile(filename, 'utf8');
+            const lines = content.split('\n').filter(line => line.trim() !== '');
+            
+            if (lineNumber >= 0 && lineNumber < lines.length) {
+                return lines[lineNumber].trim();
+            }
+            return null;
+        } catch (error) {
+            console.error(`خطأ في قراءة الملف ${filename}:`, error.message);
+            return null;
         }
+    }
 
-        body {
-            background: linear-gradient(135deg, #1e1e2e 0%, #2d1b69 100%);
-            min-height: 100vh;
-            padding: 20px;
-            color: white;
+    // توليد تاريخ عشوائي أقل من 2006
+    generateRandomDate() {
+        const startYear = 1980;
+        const endYear = 2005;
+        
+        const year = Math.floor(Math.random() * (endYear - startYear + 1)) + startYear;
+        const month = Math.floor(Math.random() * 12) + 1;
+        const day = Math.floor(Math.random() * 28) + 1; // تجنب مشاكل الشهور المختلفة
+        
+        return {
+            month: month.toString().padStart(2, '0'),
+            day: day.toString().padStart(2, '0'),
+            year: year.toString()
+        };
+    }
+
+    // انتظار عشوائي
+    async randomDelay(min = 1000, max = 3000) {
+        const delay = Math.floor(Math.random() * (max - min + 1)) + min;
+        await this.page.waitForTimeout(delay);
+    }
+
+    // الحصول على التوكن من localStorage
+    async getDiscordToken() {
+        try {
+            return await this.page.evaluate(() => {
+                return localStorage.getItem('token') || 
+                       (window.webpackChunkdiscord_app && 
+                        window.webpackChunkdiscord_app.push([
+                            [''], {}, (e) => {
+                                const tokenModule = Object.values(e.c).find(m => m?.exports?.default?.getToken);
+                                return tokenModule?.exports?.default?.getToken();
+                            }
+                        ]));
+            });
+        } catch (error) {
+            console.error('خطأ في الحصول على التوكن:', error.message);
+            return null;
         }
+    }
 
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
+    // إنشاء حساب جديد
+    async createAccount() {
+        try {
+            console.log(`\n📝 معالجة السطر رقم ${this.currentLine + 1}...`);
+
+            // قراءة البيانات من الملفات
+            const email = await this.readLineFromFile('gmails.txt', this.currentLine);
+            const name = await this.readLineFromFile('names.txt', this.currentLine);
+            const username = await this.readLineFromFile('username.txt', this.currentLine);
+            const password = await this.readLineFromFile('password.txt', this.currentLine);
+
+            // التحقق من البيانات
+            if (!email || !name || !username || !password) {
+                console.error('❌ بيانات غير كافية لهذا السطر');
+                return false;
+            }
+
+            console.log(`📧 الإيميل: ${email}`);
+            console.log(`👤 الاسم: ${name}`);
+            console.log(`🔤 اليوزرنيم: ${username}`);
+            console.log(`🔐 الباسورد: ${password}`);
+
+            // الانتقال إلى صفحة إنشاء حساب Discord
+            await this.page.goto('https://discord.com/register', { waitUntil: 'networkidle2' });
+            await this.randomDelay(2000, 4000);
+
+            // ملء حقل الإيميل
+            await this.page.type('input[name="email"]', email);
+            await this.randomDelay(500, 1000);
+
+            // ملء حقل اسم المستخدم
+            await this.page.type('input[name="username"]', username);
+            await this.randomDelay(500, 1000);
+
+            // ملء حقل كلمة المرور
+            await this.page.type('input[name="password"]', password);
+            await this.randomDelay(500, 1000);
+
+            // ملء تاريخ الميلاد
+            const birthDate = this.generateRandomDate();
+            console.log(`🎂 تاريخ الميلاد: ${birthDate.month}/${birthDate.day}/${birthDate.year}`);
+            
+            await this.page.select('select[aria-label="Month"]', birthDate.month);
+            await this.randomDelay(300, 600);
+            
+            await this.page.select('select[aria-label="Day"]', birthDate.day);
+            await this.randomDelay(300, 600);
+            
+            await this.page.select('select[aria-label="Year"]', birthDate.year);
+            await this.randomDelay(1000, 2000);
+
+            // النقر على زر إنشاء الحساب
+            const createButton = await this.page.$('button[type="submit"]');
+            if (createButton) {
+                await createButton.click();
+                console.log('✅ تم النقر على زر إنشاء الحساب');
+            }
+
+            // انتظار تحميل الصفحة التالية
+            await this.randomDelay(5000, 8000);
+
+            // هنا تحتاج إلى حل الـ Captcha يدوياً
+            console.log('⏳ يرجى حل الـ Captcha يدوياً خلال 60 ثانية...');
+            await this.page.waitForTimeout(60000);
+
+            // محاولة الحصول على التوكن بعد إنشاء الحساب
+            const token = await this.getDiscordToken();
+            
+            if (token) {
+                console.log('✅ تم الحصول على التوكن بنجاح');
+                
+                // حفظ التوكن في ملف
+                await fs.appendFile('tokens.txt', `${token}\n`);
+                console.log('💾 تم حفظ التوكن في ملف tokens.txt');
+                
+                // حفظ معلومات الحساب
+                await fs.appendFile('accounts.txt', 
+                    `Email: ${email} | Username: ${username} | Token: ${token.substring(0, 20)}...\n`
+                );
+                
+                return true;
+            } else {
+                console.log('⚠️ لم يتم الحصول على التوكن، قد يحتاج إلى تسجيل الدخول');
+                return false;
+            }
+
+        } catch (error) {
+            console.error('❌ خطأ في إنشاء الحساب:', error.message);
+            return false;
         }
+    }
 
-        .header {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            padding: 20px;
-            border-radius: 15px;
-            margin-bottom: 20px;
-            text-align: center;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
+    // تشغيل الأداة
+    async run(startLine = 0) {
+        try {
+            this.currentLine = startLine;
+            
+            // تشغيل المتصفح
+            console.log('🚀 تشغيل المتصفح...');
+            this.browser = await puppeteer.launch({ 
+                headless: false, // عرض المتصفح
+                defaultViewport: null,
+                args: ['--start-maximized', '--no-sandbox']
+            });
+            
+            this.page = await this.browser.newPage();
+            
+            // تعيين user-agent عشوائي
+            const userAgents = [
+                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+                'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36'
+            ];
+            
+            const randomUserAgent = userAgents[Math.floor(Math.random() * userAgents.length)];
+            await this.page.setUserAgent(randomUserAgent);
 
-        .header h1 {
-            color: white;
-            margin-bottom: 10px;
-            font-size: 2.5em;
-        }
-
-        .stats {
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-            margin-top: 15px;
-            flex-wrap: wrap;
-        }
-
-        .stat-card {
-            background: rgba(255, 255, 255, 0.2);
-            padding: 15px 25px;
-            border-radius: 10px;
-            color: white;
-            font-weight: bold;
-        }
-
-        .accounts-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
-            gap: 20px;
-            margin-top: 20px;
-        }
-
-        .account-card {
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 15px;
-            padding: 20px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            color: #333;
-        }
-
-        .account-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
-        }
-
-        .account-header {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            margin-bottom: 15px;
-            padding-bottom: 15px;
-            border-bottom: 2px solid #f0f0f0;
-        }
-
-        .avatar {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            border: 3px solid #5865f2;
-            object-fit: cover;
-        }
-
-        .user-info h3 {
-            color: #333;
-            margin-bottom: 5px;
-            font-size: 1.3em;
-        }
-
-        .user-details {
-            color: #666;
-            font-size: 0.9em;
-            line-height: 1.4;
-        }
-
-        .token-preview {
-            background: #f8f9fa;
-            padding: 8px;
-            border-radius: 5px;
-            font-family: monospace;
-            font-size: 0.8em;
-            margin-top: 5px;
-            border: 1px solid #e9ecef;
-        }
-
-        .controls {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .control-group {
-            margin-bottom: 8px;
-        }
-
-        .control-group label {
-            display: block;
-            margin-bottom: 5px;
-            color: #555;
-            font-weight: bold;
-            font-size: 0.9em;
-        }
-
-        .control-group input, .control-group select, .control-group textarea {
-            width: 100%;
-            padding: 10px;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            font-size: 14px;
-            transition: border-color 0.3s ease;
-            background: white;
-        }
-
-        .control-group input:focus, .control-group select:focus, .control-group textarea:focus {
-            outline: none;
-            border-color: #5865f2;
-        }
-
-        .btn {
-            padding: 12px 20px;
-            border: none;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-align: center;
-            margin-top: 5px;
-        }
-
-        .btn-primary {
-            background: #5865f2;
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background: #4752c4;
-            transform: translateY(-2px);
-        }
-
-        .btn-danger {
-            background: #ed4245;
-            color: white;
-        }
-
-        .btn-danger:hover {
-            background: #c03537;
-        }
-
-        .btn-success {
-            background: #57f287;
-            color: #333;
-        }
-
-        .btn-success:hover {
-            background: #45d174;
-        }
-
-        .status-indicator {
-            display: inline-block;
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            margin-left: 8px;
-        }
-
-        .status-online { background: #23a55a; }
-        .status-idle { background: #f0b232; }
-        .status-dnd { background: #f23f43; }
-        .status-offline { background: #80848e; }
-
-        .loading {
-            text-align: center;
-            color: white;
-            font-size: 1.2em;
-            margin: 40px 0;
-        }
-
-        .error {
-            background: #f23f43;
-            color: white;
-            padding: 15px;
-            border-radius: 10px;
-            margin: 20px 0;
-            text-align: center;
-        }
-
-        .success {
-            background: #23a55a;
-            color: white;
-            padding: 15px;
-            border-radius: 10px;
-            margin: 20px 0;
-            text-align: center;
-        }
-
-        .badge {
-            display: inline-block;
-            padding: 3px 8px;
-            border-radius: 12px;
-            font-size: 0.7em;
-            font-weight: bold;
-            margin-left: 5px;
-        }
-
-        .badge-verified { background: #5865f2; color: white; }
-        .badge-bot { background: #57f287; color: #333; }
-        .badge-nitro { background: #ff73fa; color: white; }
-
-        @media (max-width: 768px) {
-            .accounts-grid {
-                grid-template-columns: 1fr;
+            // إنشاء حسابات لكل سطر في الملفات
+            while (true) {
+                console.log(`\n🔍 محاولة إنشاء حساب من السطر ${this.currentLine + 1}`);
+                
+                const success = await this.createAccount();
+                
+                if (success) {
+                    console.log(`✅ تم إنشاء حساب من السطر ${this.currentLine + 1} بنجاح`);
+                } else {
+                    console.log(`❌ فشل إنشاء حساب من السطر ${this.currentLine + 1}`);
+                }
+                
+                // الانتقال للسطر التالي
+                this.currentLine++;
+                
+                // سؤال المستخدم إذا كان يريد الاستمرار
+                const rl = readline.createInterface({
+                    input: process.stdin,
+                    output: process.stdout
+                });
+                
+                const answer = await new Promise(resolve => {
+                    rl.question('هل تريد إنشاء حساب من السطر التالي؟ (y/n): ', resolve);
+                });
+                
+                rl.close();
+                
+                if (answer.toLowerCase() !== 'y') {
+                    console.log('🛑 إيقاف الأداة...');
+                    break;
+                }
             }
             
-            .stats {
-                flex-direction: column;
-                align-items: center;
-            }
-            
-            .account-header {
-                flex-direction: column;
-                text-align: center;
+        } catch (error) {
+            console.error('❌ خطأ في تشغيل الأداة:', error.message);
+        } finally {
+            if (this.browser) {
+                await this.browser.close();
             }
         }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>🎮 إدارة حسابات Discord</h1>
-            <div class="stats">
-                <div class="stat-card" id="totalAccounts">إجمالي الحسابات: 0</div>
-                <div class="stat-card" id="validAccounts">الحسابات الصالحة: 0</div>
-                <div class="stat-card" id="onlineAccounts">الحسابات النشطة: 0</div>
-            </div>
-        </div>
+    }
+}
 
-        <div id="loading" class="loading">
-            ⏳ جاري تحميل وتحقق من الحسابات...
-        </div>
+// تشغيل الأداة
+(async () => {
+    console.log('🔒 أداة تحليل إنشاء حسابات Discord - للأغراض البحثية فقط');
+    console.log('===========================================\n');
+    
+    const creator = new DiscordAccountCreator();
+    
+    // سؤال عن السطر الذي يريد البدء منه
+    const rl = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout
+    });
+    
+    rl.question('أدخل رقم السطر للبدء منه (0 للسطر الأول): ', async (answer) => {
+        rl.close();
+        
+        const startLine = parseInt(answer) || 0;
+        await creator.run(startLine);
+    });
+})();
 
-        <div id="error" class="error" style="display: none;"></div>
-        <div id="success" class="success" style="display: none;"></div>
 
-        <div id="accountsGrid" class="accounts-grid">
-            <!-- الحسابات سيتم عرض هنا -->
-        </div>
-    </div>
 
-    <script src="app.js"></script>
-</body>
-</html>
+
+{
+  "name": "discord-account-analyzer",
+  "version": "1.0.0",
+  "description": "أداة تحليل إنشاء حسابات Discord - لأغراض بحثية",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "puppeteer": "^21.0.0"
+  },
+  "keywords": ["security", "research", "discord", "analysis"],
+  "author": "Security Researcher",
+  "license": "MIT"
+}
+
+
