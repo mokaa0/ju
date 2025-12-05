@@ -16,78 +16,43 @@ class DiscordAccountCreator {
         const colors = {
             reset: "\x1b[0m",
             bright: "\x1b[1m",
-            dim: "\x1b[2m",
-            underscore: "\x1b[4m",
-            blink: "\x1b[5m",
-            reverse: "\x1b[7m",
-            hidden: "\x1b[8m",
-            
-            black: "\x1b[30m",
             red: "\x1b[31m",
             green: "\x1b[32m",
             yellow: "\x1b[33m",
             blue: "\x1b[34m",
             magenta: "\x1b[35m",
             cyan: "\x1b[36m",
-            white: "\x1b[37m",
-            
-            bgBlack: "\x1b[40m",
-            bgRed: "\x1b[41m",
-            bgGreen: "\x1b[42m",
-            bgYellow: "\x1b[43m",
-            bgBlue: "\x1b[44m",
-            bgMagenta: "\x1b[45m",
-            bgCyan: "\x1b[46m",
-            bgWhite: "\x1b[47m"
+            bgBlack: "\x1b[40m"
         };
 
-        // تصميم 3D للنص "ORIGINAL"
+        // تصميم 3D للنص
         console.log(`
 ${colors.bgBlack}${colors.bright}${colors.cyan}
 ╔══════════════════════════════════════════════════════════════╗
 ║                                                              ║
-║  ${colors.bright}${colors.magenta}   ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒  ${colors.cyan}║
-║  ${colors.bright}${colors.magenta}   ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒  ${colors.cyan}║
-║  ${colors.bright}${colors.yellow}   ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒  ${colors.cyan}║
-║  ${colors.bright}${colors.yellow}   ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒  ${colors.cyan}║
-║  ${colors.bright}${colors.green}   ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒  ${colors.cyan}║
-║  ${colors.bright}${colors.green}   ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒  ${colors.cyan}║
-║  ${colors.bright}${colors.cyan}   ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒  ${colors.cyan}║
-║  ${colors.bright}${colors.cyan}   ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒  ${colors.cyan}║
-║  ${colors.bright}${colors.blue}   ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒  ${colors.cyan}║
-║  ${colors.bright}${colors.blue}   ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒  ${colors.cyan}║
-║  ${colors.bright}${colors.magenta}   ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒  ${colors.cyan}║
-║  ${colors.bright}${colors.magenta}   ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒  ${colors.cyan}║
-║                                                              ║
-${colors.bright}${colors.red}║  ██████╗ ██████╗ ██╗ ██████╗ ██╗███╗   ██╗ █████╗ ██╗       ║
-║  ██╔═══██╗██╔══██╗██║██╔════╝ ██║████╗  ██║██╔══██╗██║       ║
-║  ██║   ██║██████╔╝██║██║  ███╗██║██╔██╗ ██║███████║██║       ║
-║  ██║   ██║██╔══██╗██║██║   ██║██║██║╚██╗██║██╔══██║██║       ║
-║  ╚██████╔╝██║  ██║██║╚██████╔╝██║██║ ╚████║██║  ██║██║       ║
-║   ╚═════╝ ╚═╝  ╚═╝╚═╝ ╚═════╝ ╚═╝╚═╝  ╚═══╝╚═╝  ╚═╝╚═╝       ║
-║                                                              ║
-${colors.bright}${colors.yellow}║  ███████╗███╗   ███╗ ██████╗ ███████╗██╗   ██╗██████╗     ║
-║  ██╔════╝████╗ ████║██╔═══██╗██╔════╝██║   ██║██╔══██╗    ║
-║  █████╗  ██╔████╔██║██║   ██║███████╗██║   ██║██████╔╝    ║
-║  ██╔══╝  ██║╚██╔╝██║██║   ██║╚════██║██║   ██║██╔══██╗    ║
-║  ███████╗██║ ╚═╝ ██║╚██████╔╝███████║╚██████╔╝██║  ██║    ║
-║  ╚══════╝╚═╝     ╚═╝ ╚═════╝ ╚══════╝ ╚═════╝ ╚═╝  ╚═╝    ║
-║                                                              ║
-${colors.bright}${colors.cyan}║               Discord Account Creator                ║
-║                  Version 3.0 - Ultimate                    ║
-║            For Research & Security Purposes Only           ║
-║                                                              ║
-${colors.bright}${colors.green}║       Date Range: ${colors.yellow}1980-2000${colors.green} | Auto Creation       ║
-║       Token Extraction | One Account Per Run             ║
-║                                                              ║
-${colors.bright}${colors.cyan}╚══════════════════════════════════════════════════════════════╝
+${colors.bright}${colors.magenta}║   ██████╗ ██████╗ ██╗ ██████╗ ██╗███╗   ██╗ █████╗ ██╗      ║
+║   ██╔═══██╗██╔══██╗██║██╔════╝ ██║████╗  ██║██╔══██╗██║      ║
+║   ██║   ██║██████╔╝██║██║  ███╗██║██╔██╗ ██║███████║██║      ║
+║   ██║   ██║██╔══██╗██║██║   ██║██║██║╚██╗██║██╔══██║██║      ║
+║   ╚██████╔╝██║  ██║██║╚██████╔╝██║██║ ╚████║██║  ██║██║      ║
+║    ╚═════╝ ╚═╝  ╚═╝╚═╝ ╚═════╝ ╚═╝╚═╝  ╚═══╝╚═╝  ╚═╝╚═╝      ║
+${colors.cyan}║                                                              ║
+${colors.bright}${colors.green}║           D I S C O R D   C R E A T O R              ║
+${colors.cyan}║                                                              ║
+${colors.bright}${colors.yellow}║          Version: 4.0 | Professional Edition          ║
+${colors.cyan}║                                                              ║
+${colors.bright}${colors.magenta}║         Date Range: 1990-1999 | Auto Account          ║
+${colors.cyan}║                                                              ║
+${colors.bright}${colors.green}║      For Security Research & Testing Only              ║
+${colors.cyan}║                                                              ║
+╚══════════════════════════════════════════════════════════════╝
 ${colors.reset}
 `);
 
         console.log(`${colors.bright}${colors.green}══════════════════════════════════════════════════════════════${colors.reset}`);
         console.log(`${colors.bright}${colors.yellow}🚀 Starting Discord Account Creator...${colors.reset}`);
         console.log(`${colors.bright}${colors.cyan}📅 Current Date: ${new Date().toLocaleString()}${colors.reset}`);
-        console.log(`${colors.bright}${colors.magenta}🎯 Target: One Account Creation Per Execution${colors.reset}`);
+        console.log(`${colors.bright}${colors.magenta}🎯 Year Range: 1990-1999 (Random)${colors.reset}`);
         console.log(`${colors.bright}${colors.green}══════════════════════════════════════════════════════════════${colors.reset}\n`);
     }
 
@@ -127,12 +92,12 @@ ${colors.reset}
         }
     }
 
-    // توليد تاريخ عشوائي بين 1980-2000
+    // توليد تاريخ عشوائي بين 1990-1999
     generateRandomDate() {
-        const startYear = 1980;
-        const endYear = 2000;
+        const startYear = 1990;
+        const endYear = 1999;
         
-        // سنة عشوائية بين 1980 و2000
+        // سنة عشوائية بين 1990 و1999
         const year = Math.floor(Math.random() * (endYear - startYear + 1)) + startYear;
         
         // شهر عشوائي بين 1-12
@@ -162,7 +127,6 @@ ${colors.reset}
             try {
                 const element = await this.page.$(selector);
                 if (element) {
-                    console.log(`✅ وجدت العنصر: ${selector}`);
                     return element;
                 }
             } catch (error) {
@@ -172,7 +136,7 @@ ${colors.reset}
         return null;
     }
 
-    // ملء تاريخ الميلاد (بين 1980-2000)
+    // ملء تاريخ الميلاد (بين 1990-1999)
     async fillBirthDate(birthDate) {
         console.log('🎂 جاري ملء تاريخ الميلاد...');
         
@@ -210,7 +174,7 @@ ${colors.reset}
             console.log('⚠️  لم أجد قائمة اليوم');
         }
         
-        // محاولات ملء السنة (1980-2000)
+        // محاولات ملء السنة (1990-1999)
         const yearSelectors = [
             'select[aria-label="Year"]',
             'select[name="birthday_year"]',
@@ -347,46 +311,92 @@ ${colors.reset}
 🔐 الباسورد: ${password}
             `);
 
-            // الانتقال إلى صفحة التسجيل
-            console.log('🌐 الانتقال إلى Discord...');
+            // الانتقال إلى صفحة تسجيل Discord مباشرة
+            console.log('🌐 الانتقال إلى صفحة تسجيل Discord مباشرة...');
+            
+            // استخدام صفحة Discord مباشرة بدلاً من about:blank
             await this.page.goto('https://discord.com/register', { 
-                waitUntil: 'domcontentloaded'
+                waitUntil: 'networkidle2',
+                timeout: 30000
             });
             
-            await this.randomDelay(2000, 3000);
+            await this.randomDelay(3000, 4000);
+
+            // التحقق من أننا في الصفحة الصحيحة
+            const pageUrl = await this.page.url();
+            const pageTitle = await this.page.title();
+            console.log(`📄 العنوان: ${pageTitle}`);
+            console.log(`🔗 الرابط: ${pageUrl}`);
+
+            if (!pageUrl.includes('discord.com/register')) {
+                console.error('❌ لم نتمكن من الوصول إلى صفحة التسجيل!');
+                console.log('🔄 إعادة المحاولة...');
+                await this.page.goto('https://discord.com/register', { 
+                    waitUntil: 'domcontentloaded',
+                    timeout: 20000 
+                });
+                await this.randomDelay(2000, 3000);
+            }
 
             // ملء حقل الإيميل
             console.log('✏️  تعبئة الإيميل...');
-            await this.page.type('input[name="email"]', email, { delay: 50 });
+            
+            // انتظار ظهور حقل الإيميل
+            try {
+                await this.page.waitForSelector('input[name="email"]', { timeout: 10000 });
+                await this.page.type('input[name="email"]', email, { delay: 50 });
+                console.log('✅ تم ملء الإيميل');
+            } catch (error) {
+                console.error('❌ لم أجد حقل الإيميل!');
+                return false;
+            }
+            
             await this.randomDelay();
 
             // ملء حقل Display Name
             console.log('✏️  تعبئة Display Name...');
-            const displayNameField = await this.findElement(['input[name="displayName"]']);
-            if (displayNameField) {
-                await displayNameField.type(displayName, { delay: 50 });
+            try {
+                await this.page.waitForSelector('input[name="displayName"]', { timeout: 5000 });
+                await this.page.type('input[name="displayName"]', displayName, { delay: 50 });
                 console.log('✅ تم ملء Display Name');
+            } catch (error) {
+                console.log('⚠️  لم أجد حقل Display Name، قد لا يكون موجوداً في هذا الإصدار');
             }
             await this.randomDelay();
 
             // ملء حقل Username
             console.log('✏️  تعبئة Username...');
-            await this.page.type('input[name="username"]', username, { delay: 50 });
+            try {
+                await this.page.waitForSelector('input[name="username"]', { timeout: 5000 });
+                await this.page.type('input[name="username"]', username, { delay: 50 });
+                console.log('✅ تم ملء Username');
+            } catch (error) {
+                console.error('❌ لم أجد حقل Username!');
+                return false;
+            }
             await this.randomDelay();
 
             // ملء حقل Password
             console.log('✏️  تعبئة Password...');
-            await this.page.type('input[name="password"]', password, { delay: 50 });
+            try {
+                await this.page.waitForSelector('input[name="password"]', { timeout: 5000 });
+                await this.page.type('input[name="password"]', password, { delay: 50 });
+                console.log('✅ تم ملء Password');
+            } catch (error) {
+                console.error('❌ لم أجد حقل Password!');
+                return false;
+            }
             await this.randomDelay(1000, 1500);
 
-            // ملء تاريخ الميلاد (بين 1980-2000)
+            // ملء تاريخ الميلاد (بين 1990-1999)
             const birthDate = this.generateRandomDate();
             await this.fillBirthDate(birthDate);
             
             await this.randomDelay(1000, 1500);
 
             // التقاط screenshot
-            await this.page.screenshot({ path: 'before_click.png' });
+            await this.page.screenshot({ path: 'form_filled.png' });
+            console.log('📸 تم حفظ صفحة النموذج المملوء');
 
             console.log('\n✅ جميع الحقول مملوءة!');
             console.log('   ✓ الإيميل');
@@ -426,6 +436,9 @@ ${colors.reset}
             // انتظار إنشاء الحساب
             console.log('⏳ انتظار إنشاء الحساب...');
             await this.page.waitForTimeout(8000);
+
+            // التقاط screenshot بعد الإنشاء
+            await this.page.screenshot({ path: 'account_created.png' });
 
             // الحصول على التوكن
             console.log('🔑 جاري الحصول على التوكن...');
@@ -487,13 +500,28 @@ ${colors.reset}
         try {
             console.log('🚀 بدء تشغيل المتصفح...');
             
+            // فتح المتصفح مع إعدادات محسنة
             this.browser = await puppeteer.launch({ 
                 headless: false,
                 defaultViewport: null,
-                args: ['--start-maximized', '--no-sandbox']
+                args: [
+                    '--start-maximized',
+                    '--no-sandbox',
+                    '--disable-setuid-sandbox',
+                    '--disable-dev-shm-usage',
+                    '--disable-blink-features=AutomationControlled'
+                ],
+                ignoreHTTPSErrors: true
             });
             
             this.page = await this.browser.newPage();
+            
+            // إخفاء أننا نستخدم automation
+            await this.page.evaluateOnNewDocument(() => {
+                Object.defineProperty(navigator, 'webdriver', {
+                    get: () => undefined
+                });
+            });
             
             await this.page.setUserAgent(
                 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
@@ -523,16 +551,17 @@ ${colors.reset}
             
             console.log('\n📋 ملخص العملية:');
             console.log('   1. عرض صفحة افتتاحية بتأثير 3D');
-            console.log('   2. قرأ أول سطر من كل ملف');
-            console.log('   3. ملأ الإيميل ✓');
-            console.log('   4. ملأ Display Name ✓');
-            console.log('   5. ملأ Username ✓');
-            console.log('   6. ملأ Password ✓');
-            console.log('   7. ملأ تاريخ الميلاد (1980-2000 عشوائي) ✓');
-            console.log('   8. ضغط على زر Create Account ✓');
-            console.log('   9. حاول الحصول على التوكن');
-            console.log('   10. حفظ التوكن وحذف البيانات ✓');
-            console.log('   11. أغلق المتصفح ✓');
+            console.log('   2. فتح المتصفح وذهب مباشرة إلى Discord');
+            console.log('   3. قرأ أول سطر من كل ملف');
+            console.log('   4. ملأ الإيميل ✓');
+            console.log('   5. ملأ Display Name ✓');
+            console.log('   6. ملأ Username ✓');
+            console.log('   7. ملأ Password ✓');
+            console.log('   8. ملأ تاريخ الميلاد (1990-1999 عشوائي) ✓');
+            console.log('   9. ضغط على زر Create Account ✓');
+            console.log('   10. حاول الحصول على التوكن');
+            console.log('   11. حفظ التوكن وحذف البيانات ✓');
+            console.log('   12. أغلق المتصفح ✓');
             
             console.log('\n🔄 للتشغيل مرة أخرى، أعد تشغيل البرنامج');
         }
