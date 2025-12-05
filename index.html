@@ -9,7 +9,7 @@ const rl = readline.createInterface({
 });
 
 // Increased delay to avoid detection
-const DELAY = 10000; // 10 seconds between requests
+const DELAY = 10000;
 
 // === Main Menu ===
 function showMainMenu() {
@@ -41,16 +41,27 @@ async function handleChoice(choice) {
 
 // === Option 1: Get HypeSquad Badge ===
 async function getHypeSquad() {
-    console.log(chalk.cyan('Add Tokens (one per line), type "done" when finished:'));
+    console.log(chalk.cyan('Add Tokens - Paste all tokens (one per line):\n'));
+    console.log(chalk.gray('Example:'));
+    console.log(chalk.gray('MTxxxxx.xxxx.xxxx'));
+    console.log(chalk.gray('MTyyyyy.yyyy.yyyy'));
+    console.log(chalk.gray('MTzzzzz.zzzz.zzzz'));
+    console.log(chalk.gray('\nPaste your tokens below:'));
     
-    const tokens = await getTokens();
+    const tokens = await getAllTokens();
+    if (!tokens || tokens.length === 0) {
+        console.log(chalk.red('No tokens provided!'));
+        return setTimeout(showMainMenu, 2000);
+    }
+    
+    console.log(chalk.gray(`\nFound ${tokens.length} tokens. Starting...`));
+    
     let success = 0, failed = 0;
     
     for (let i = 0; i < tokens.length; i++) {
         try {
-            console.log(chalk.gray(`Checking account ${i+1}/${tokens.length}...`));
+            console.log(chalk.gray(`\n[${i+1}/${tokens.length}] Processing token...`));
             
-            // Get user info
             const userResponse = await axios.get('https://discord.com/api/v9/users/@me', {
                 headers: { 
                     Authorization: tokens[i],
@@ -61,13 +72,11 @@ async function getHypeSquad() {
             const userTag = `${userResponse.data.username}#${userResponse.data.discriminator}`;
             const flags = userResponse.data.public_flags || 0;
             
-            // Check if already has HypeSquad badge
             const hasBravery = (flags & 64) !== 0;
             const hasBrilliance = (flags & 128) !== 0;
             const hasBalance = (flags & 256) !== 0;
             
             if (!hasBravery && !hasBrilliance && !hasBalance) {
-                // Get HypeSquad badge
                 const houseId = Math.floor(Math.random() * 3) + 1;
                 const response = await axios.post('https://discord.com/api/v9/hypesquad/online', 
                     { house_id: houseId },
@@ -81,27 +90,29 @@ async function getHypeSquad() {
                 );
                 
                 if (response.status === 204) {
-                    console.log(chalk.green(`${userTag} - HypeSquad badge added (House: ${houseId})`));
+                    console.log(chalk.green(`✓ ${userTag} - HypeSquad added`));
                     success++;
                 } else {
-                    console.log(chalk.red(`${userTag} - Failed with status ${response.status}`));
+                    console.log(chalk.red(`✗ ${userTag} - Failed`));
                     failed++;
                 }
             } else {
-                console.log(chalk.yellow(`${userTag} - Already has HypeSquad badge`));
-                success++; // Count as success since badge exists
+                console.log(chalk.yellow(`⚠ ${userTag} - Already has HypeSquad`));
+                success++;
             }
         } catch (error) {
             if (error.response?.status === 401) {
-                console.log(chalk.red(`Invalid token`));
+                console.log(chalk.red(`✗ Invalid token`));
             } else {
-                console.log(chalk.red(`Error: ${error.response?.data?.message || error.message}`));
+                console.log(chalk.red(`✗ Error: ${error.response?.data?.message || error.message}`));
             }
             failed++;
         }
         
-        // Delay to avoid rate limiting
-        if (i < tokens.length - 1) await delay(DELAY);
+        if (i < tokens.length - 1) {
+            console.log(chalk.gray(`Waiting ${DELAY/1000} seconds...`));
+            await delay(DELAY);
+        }
     }
     
     showResults(success, failed);
@@ -109,9 +120,20 @@ async function getHypeSquad() {
 
 // === Option 2: Set About Me ===
 async function setAboutMe() {
-    console.log(chalk.cyan('Add Tokens (one per line), type "done" when finished:'));
+    console.log(chalk.cyan('Add Tokens - Paste all tokens (one per line):\n'));
+    console.log(chalk.gray('Example:'));
+    console.log(chalk.gray('MTxxxxx.xxxx.xxxx'));
+    console.log(chalk.gray('MTyyyyy.yyyy.yyyy'));
+    console.log(chalk.gray('\nPaste your tokens below:'));
     
-    const tokens = await getTokens();
+    const tokens = await getAllTokens();
+    if (!tokens || tokens.length === 0) {
+        console.log(chalk.red('No tokens provided!'));
+        return setTimeout(showMainMenu, 2000);
+    }
+    
+    console.log(chalk.gray(`\nFound ${tokens.length} tokens. Starting...`));
+    
     const aboutTexts = [
         "Professional gamer and streamer",
         "Software developer exploring new technologies",
@@ -127,9 +149,8 @@ async function setAboutMe() {
     
     for (let i = 0; i < tokens.length; i++) {
         try {
-            console.log(chalk.gray(`Processing account ${i+1}/${tokens.length}...`));
+            console.log(chalk.gray(`\n[${i+1}/${tokens.length}] Processing...`));
             
-            // Set About Me
             const bio = aboutTexts[Math.floor(Math.random() * aboutTexts.length)];
             const response = await axios.patch('https://discord.com/api/v9/users/@me',
                 { bio: bio },
@@ -142,20 +163,23 @@ async function setAboutMe() {
                 }
             );
             
-            console.log(chalk.green(`${response.data.username}#${response.data.discriminator} - About Me updated`));
+            console.log(chalk.green(`✓ ${response.data.username}#${response.data.discriminator} - About Me updated`));
             success++;
         } catch (error) {
             if (error.response?.status === 401) {
-                console.log(chalk.red(`Invalid or expired token`));
+                console.log(chalk.red(`✗ Invalid token`));
             } else if (error.response?.status === 403) {
-                console.log(chalk.red(`Account has restrictions or 2FA enabled`));
+                console.log(chalk.red(`✗ Account has restrictions`));
             } else {
-                console.log(chalk.red(`Error: ${error.response?.data?.message || error.message}`));
+                console.log(chalk.red(`✗ Error: ${error.response?.data?.message || error.message}`));
             }
             failed++;
         }
         
-        if (i < tokens.length - 1) await delay(DELAY);
+        if (i < tokens.length - 1) {
+            console.log(chalk.gray(`Waiting ${DELAY/1000} seconds...`));
+            await delay(DELAY);
+        }
     }
     
     showResults(success, failed);
@@ -163,28 +187,35 @@ async function setAboutMe() {
 
 // === Option 3: Join Server ===
 async function joinServer() {
-    console.log(chalk.cyan('Add Tokens (one per line), type "done" when finished:'));
-    const tokens = await getTokens();
+    console.log(chalk.cyan('Add Tokens - Paste all tokens (one per line):\n'));
+    console.log(chalk.gray('Example:'));
+    console.log(chalk.gray('MTxxxxx.xxxx.xxxx'));
+    console.log(chalk.gray('MTyyyyy.yyyy.yyyy'));
+    console.log(chalk.gray('\nPaste your tokens below:'));
     
-    if (tokens.length === 0) {
-        console.log(chalk.red('No tokens provided'));
+    const tokens = await getAllTokens();
+    if (!tokens || tokens.length === 0) {
+        console.log(chalk.red('No tokens provided!'));
         return setTimeout(showMainMenu, 2000);
     }
+    
+    console.log(chalk.gray(`\nFound ${tokens.length} tokens. Now enter server link:`));
     
     rl.question(chalk.yellow('Enter server invite link (discord.gg/XXXX): '), async (inviteLink) => {
         const inviteCode = extractInviteCode(inviteLink);
         if (!inviteCode) {
-            console.log(chalk.red('Invalid invite link. Format should be discord.gg/CODE'));
+            console.log(chalk.red('Invalid invite link!'));
             return setTimeout(showMainMenu, 2000);
         }
+        
+        console.log(chalk.gray(`\nStarting to join server with ${tokens.length} tokens...`));
         
         let success = 0, failed = 0;
         
         for (let i = 0; i < tokens.length; i++) {
             try {
-                console.log(chalk.gray(`Account ${i+1}/${tokens.length} joining server...`));
+                console.log(chalk.gray(`\n[${i+1}/${tokens.length}] Joining server...`));
                 
-                // Join server using invite API
                 const response = await axios.post(`https://discord.com/api/v9/invites/${inviteCode}`,
                     {},
                     { 
@@ -196,23 +227,28 @@ async function joinServer() {
                     }
                 );
                 
-                console.log(chalk.green(`Successfully joined server`));
+                console.log(chalk.green(`✓ Successfully joined server`));
                 success++;
             } catch (error) {
                 if (error.response?.status === 401) {
-                    console.log(chalk.red(`Invalid token`));
+                    console.log(chalk.red(`✗ Invalid token`));
                 } else if (error.response?.status === 403) {
-                    console.log(chalk.red(`Cannot join server - may be banned or require permissions`));
+                    console.log(chalk.red(`✗ Cannot join server`));
                 } else if (error.response?.status === 429) {
-                    console.log(chalk.red(`Rate limited - waiting before next attempt`));
-                    await delay(DELAY * 2);
+                    console.log(chalk.red(`✗ Rate limited, waiting longer...`));
+                    await delay(DELAY * 3);
+                    i--; // Try same token again
+                    continue;
                 } else {
-                    console.log(chalk.red(`Error: ${error.response?.data?.message || error.message}`));
+                    console.log(chalk.red(`✗ Error: ${error.response?.data?.message || error.message}`));
                 }
                 failed++;
             }
             
-            if (i < tokens.length - 1) await delay(DELAY);
+            if (i < tokens.length - 1) {
+                console.log(chalk.gray(`Waiting ${DELAY/1000} seconds...`));
+                await delay(DELAY);
+            }
         }
         
         showResults(success, failed);
@@ -221,14 +257,26 @@ async function joinServer() {
 
 // === Option 4: Check Tokens ===
 async function checkTokens() {
-    console.log(chalk.cyan('Add Tokens (one per line), type "done" when finished:'));
+    console.log(chalk.cyan('Add Tokens - Paste all tokens (one per line):\n'));
+    console.log(chalk.gray('Example:'));
+    console.log(chalk.gray('MTxxxxx.xxxx.xxxx'));
+    console.log(chalk.gray('MTyyyyy.yyyy.yyyy'));
+    console.log(chalk.gray('MTzzzzz.zzzz.zzzz'));
+    console.log(chalk.gray('\nPaste your tokens below:'));
     
-    const tokens = await getTokens();
+    const tokens = await getAllTokens();
+    if (!tokens || tokens.length === 0) {
+        console.log(chalk.red('No tokens provided!'));
+        return setTimeout(showMainMenu, 2000);
+    }
+    
+    console.log(chalk.gray(`\nFound ${tokens.length} tokens. Checking...`));
+    
     let valid = 0, invalid = 0;
     
     for (let i = 0; i < tokens.length; i++) {
         try {
-            console.log(chalk.gray(`Checking token ${i+1}/${tokens.length}...`));
+            console.log(chalk.gray(`\n[${i+1}/${tokens.length}] Checking...`));
             
             const response = await axios.get('https://discord.com/api/v9/users/@me', {
                 headers: { 
@@ -238,59 +286,75 @@ async function checkTokens() {
             });
             
             const userTag = `${response.data.username}#${response.data.discriminator}`;
-            const emailVerified = response.data.verified ? 'Verified' : 'Not verified';
+            const verified = response.data.verified ? '✓ Verified' : '✗ Not verified';
             
-            console.log(chalk.green(`${userTag} - Valid (${emailVerified})`));
+            console.log(chalk.green(`✓ ${userTag} - Valid (${verified})`));
             valid++;
         } catch (error) {
-            if (error.response?.status === 401) {
-                console.log(chalk.red(`Invalid/expired token`));
-            } else {
-                console.log(chalk.red(`Error: ${error.message}`));
-            }
+            console.log(chalk.red(`✗ Invalid/expired token`));
             invalid++;
         }
         
-        if (i < tokens.length - 1) await delay(2000);
+        if (i < tokens.length - 1) {
+            await delay(2000);
+        }
     }
     
-    console.log(chalk.cyan('\n=== Token Check Results ==='));
+    console.log(chalk.cyan('\n' + '='.repeat(40)));
+    console.log(chalk.white.bold('TOKEN CHECK RESULTS:'));
     console.log(chalk.green(`Valid tokens: ${valid}`));
     console.log(chalk.red(`Invalid tokens: ${invalid}`));
-    console.log(chalk.yellow('\nPress Enter to continue...'));
+    console.log(chalk.cyan('='.repeat(40)));
     
+    console.log(chalk.gray('\nPress Enter to continue...'));
     rl.question('', () => {
         showMainMenu();
     });
 }
 
-// === Helper Functions ===
-async function getTokens() {
+// === NEW FUNCTION: Get all tokens at once ===
+async function getAllTokens() {
     return new Promise((resolve) => {
-        const tokens = [];
+        console.log(chalk.gray('(Paste all tokens, then press Enter twice to finish)'));
+        console.log(chalk.gray('-' .repeat(40)));
         
-        function askToken() {
-            rl.question(chalk.cyan('Enter token: '), (token) => {
-                if (token.toLowerCase() === 'done') {
-                    if (tokens.length === 0) {
-                        console.log(chalk.yellow('No tokens entered.'));
-                    }
-                    resolve(tokens);
-                } else if (token.trim()) {
-                    tokens.push(token.trim());
-                    askToken();
-                } else {
-                    askToken();
-                }
-            });
-        }
+        const lines = [];
         
-        askToken();
+        rl.on('line', (line) => {
+            if (line.trim() === '' && lines.length > 0) {
+                // Empty line after tokens means finished
+                rl.removeAllListeners('line');
+                const tokens = lines
+                    .filter(l => l.trim() !== '')
+                    .map(l => l.trim())
+                    .filter(token => token.length > 10); // Basic validation
+                
+                console.log(chalk.gray(`\nCollected ${tokens.length} tokens`));
+                resolve(tokens);
+            } else if (line.trim() !== '') {
+                lines.push(line.trim());
+            }
+        });
+        
+        // Timeout after 30 seconds
+        setTimeout(() => {
+            if (lines.length > 0) {
+                rl.removeAllListeners('line');
+                const tokens = lines
+                    .filter(l => l.trim() !== '')
+                    .map(l => l.trim())
+                    .filter(token => token.length > 10);
+                
+                console.log(chalk.gray(`\nCollected ${tokens.length} tokens (timeout)`));
+                resolve(tokens);
+            } else {
+                resolve([]);
+            }
+        }, 30000);
     });
 }
 
 function extractInviteCode(link) {
-    // Extract code from various invite formats
     const patterns = [
         /discord\.gg\/([a-zA-Z0-9\-_]+)/,
         /discordapp\.com\/invite\/([a-zA-Z0-9\-_]+)/,
@@ -304,7 +368,6 @@ function extractInviteCode(link) {
         }
     }
     
-    // If no pattern matches, assume it's just the code
     return link.trim();
 }
 
@@ -313,24 +376,25 @@ function delay(ms) {
 }
 
 function showResults(success, failed) {
-    console.log(chalk.cyan('\n=== Operation Results ==='));
-    console.log(chalk.green(`Successful: ${success}`));
+    console.log(chalk.cyan('\n' + '='.repeat(40)));
+    console.log(chalk.white.bold('OPERATION COMPLETED:'));
+    console.log(chalk.green(`Success: ${success}`));
     console.log(chalk.red(`Failed: ${failed}`));
-    console.log(chalk.yellow(`\nWarning: Using this tool violates Discord ToS`));
-    console.log(chalk.yellow(`Accounts may be banned. Use at your own risk.\n`));
+    console.log(chalk.yellow(`Total: ${success + failed}`));
+    console.log(chalk.cyan('='.repeat(40)));
     
     setTimeout(() => {
-        console.log(chalk.gray('Returning to main menu in 5 seconds...'));
-        setTimeout(showMainMenu, 5000);
+        console.log(chalk.gray('\nReturning to main menu in 3 seconds...'));
+        setTimeout(showMainMenu, 3000);
     }, 1000);
 }
 
 // === Start Program ===
-console.log(chalk.red.bold('\n=== WARNING ==='));
-console.log(chalk.red.bold('This tool is for educational purposes only'));
-console.log(chalk.red.bold('Using user tokens violates Discord Terms of Service'));
-console.log(chalk.red.bold('You may lose access to your accounts\n'));
+console.log(chalk.red.bold('\n' + '='.repeat(50)));
+console.log(chalk.red.bold('WARNING: This tool violates Discord ToS'));
+console.log(chalk.red.bold('Accounts may be permanently banned'));
+console.log(chalk.red.bold('='.repeat(50) + '\n'));
 
 setTimeout(() => {
     showMainMenu();
-}, 3000);
+}, 2000);
