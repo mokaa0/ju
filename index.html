@@ -9,24 +9,24 @@ const rl = readline.createInterface({
     output: process.stdout
 });
 
-// تأخير بين العمليات لتجنب الحظر
+// Delay between operations to avoid bans
 const DELAY = 3000;
 
-// === القائمة الرئيسية ===
+// === Main Menu ===
 function showMainMenu() {
     console.clear();
     console.log(chalk.red(figlet.textSync('Original', { font: '3D-ASCII' })));
     console.log(chalk.red('='.repeat(50)));
-    console.log(chalk.red.bold('\n[1] HypeSquad'));
-    console.log(chalk.red.bold('[2] About Me'));
-    console.log(chalk.red.bold('[3] Join Server'));
-    console.log(chalk.red.bold('[4] Check Tokens'));
+    console.log(chalk.red.bold('\n[1] HypeSquad For Tokens'));
+    console.log(chalk.red.bold('[2] About Me For Tokens'));
+    console.log(chalk.red.bold('[3] Add Tokens To Server'));
+    console.log(chalk.red.bold('[4] Token Check'));
     console.log(chalk.red('='.repeat(50)));
     
-    rl.question(chalk.yellow('\nاختر (1-4): '), handleChoice);
+    rl.question(chalk.yellow('\nSelect option (1-4): '), handleChoice);
 }
 
-// === معالجة الاختيار ===
+// === Handle Choice ===
 async function handleChoice(choice) {
     console.clear();
     switch(choice) {
@@ -35,91 +35,91 @@ async function handleChoice(choice) {
         case '3': await joinServer(); break;
         case '4': await checkTokens(); break;
         default: 
-            console.log(chalk.red('❌ اختيار خاطئ'));
+            console.log(chalk.red('Invalid choice'));
             setTimeout(showMainMenu, 2000);
     }
 }
 
-// === الخيار 1: الحصول على شارة HypeSquad ===
+// === Option 1: Get HypeSquad Badge ===
 async function getHypeSquad() {
-    console.log(chalk.cyan('➕ أدخل التوكنات (كل توكن بسطر), اكتب "done" عند الانتهاء:'));
+    console.log(chalk.cyan('Add Tokens (one per line), type "done" when finished:'));
     
     const tokens = await getTokens();
     let success = 0, failed = 0;
     
     for (let i = 0; i < tokens.length; i++) {
         try {
-            console.log(chalk.gray(`\n🔍 فحص الحساب ${i+1}/${tokens.length}...`));
+            console.log(chalk.gray(`Checking account ${i+1}/${tokens.length}...`));
             
             const client = new Client();
             await client.login(tokens[i]);
             
-            // فحص إذا فيه شارة HypeSquad
+            // Check if already has HypeSquad badge
             const user = client.user;
             const flags = user.flags.toArray();
             
             if (!flags.includes('HOUSE_BRAVERY') && !flags.includes('HOUSE_BRILLIANCE') && !flags.includes('HOUSE_BALANCE')) {
-                // محاولة الحصول على الشارة
+                // Try to get HypeSquad badge
                 const response = await axios.post('https://discord.com/api/v9/hypesquad/online', 
                     { house_id: Math.floor(Math.random() * 3) + 1 },
                     { headers: { Authorization: tokens[i] } }
                 );
                 
                 if (response.status === 204) {
-                    console.log(chalk.green(`✅ ${user.tag} - حصل على الشارة`));
+                    console.log(chalk.green(`${user.tag} - Got HypeSquad badge`));
                     success++;
                 } else {
-                    console.log(chalk.red(`❌ ${user.tag} - فشل`));
+                    console.log(chalk.red(`${user.tag} - Failed`));
                     failed++;
                 }
             } else {
-                console.log(chalk.yellow(`⚠️ ${user.tag} - عنده شارة بالفعل`));
+                console.log(chalk.yellow(`${user.tag} - Already has HypeSquad badge`));
             }
             
             await client.destroy();
         } catch (error) {
-            console.log(chalk.red(`❌ خطأ: ${error.message}`));
+            console.log(chalk.red(`Error: ${error.message}`));
             failed++;
         }
         
-        // تأخير لتجنب الحظر
+        // Delay to avoid rate limiting
         if (i < tokens.length - 1) await delay(DELAY);
     }
     
     showResults(success, failed);
 }
 
-// === الخيار 2: تعيين About Me ===
+// === Option 2: Set About Me ===
 async function setAboutMe() {
-    console.log(chalk.cyan('➕ أدخل التوكنات (كل توكن بسطر), اكتب "done" عند الانتهاء:'));
+    console.log(chalk.cyan('Add Tokens (one per line), type "done" when finished:'));
     
     const tokens = await getTokens();
     const aboutTexts = [
-        "🎮 Gamer | 🚀 Tech Enthusiast",
-        "💻 Developer | 🎵 Music Lover",
-        "📚 Reader | 🌍 Traveler",
-        "🎨 Artist | 🏀 Sports Fan",
-        "🔬 Scientist | 🎬 Movie Buff"
+        "Gamer | Tech Enthusiast",
+        "Developer | Music Lover",
+        "Reader | Traveler",
+        "Artist | Sports Fan",
+        "Scientist | Movie Buff"
     ];
     
     let success = 0, failed = 0;
     
     for (let i = 0; i < tokens.length; i++) {
         try {
-            console.log(chalk.gray(`\n🔍 معالجة الحساب ${i+1}/${tokens.length}...`));
+            console.log(chalk.gray(`Processing account ${i+1}/${tokens.length}...`));
             
             const client = new Client();
             await client.login(tokens[i]);
             
-            // تعيين About Me
+            // Set About Me
             await client.user.setAboutMe(aboutTexts[Math.floor(Math.random() * aboutTexts.length)]);
             
-            console.log(chalk.green(`✅ ${client.user.tag} - تم تعيين About Me`));
+            console.log(chalk.green(`${client.user.tag} - About Me set successfully`));
             success++;
             
             await client.destroy();
         } catch (error) {
-            console.log(chalk.red(`❌ خطأ: ${error.message}`));
+            console.log(chalk.red(`Error: ${error.message}`));
             failed++;
         }
         
@@ -129,15 +129,15 @@ async function setAboutMe() {
     showResults(success, failed);
 }
 
-// === الخيار 3: الانضمام إلى سيرفر ===
+// === Option 3: Join Server ===
 async function joinServer() {
-    console.log(chalk.cyan('➕ أدخل التوكنات (كل توكن بسطر), اكتب "done" عند الانتهاء:'));
+    console.log(chalk.cyan('Add Tokens (one per line), type "done" when finished:'));
     const tokens = await getTokens();
     
-    rl.question(chalk.yellow('🔗 أدخل رابط السيرفر: '), async (inviteLink) => {
+    rl.question(chalk.yellow('Add Server Link: '), async (inviteLink) => {
         const inviteCode = extractInviteCode(inviteLink);
         if (!inviteCode) {
-            console.log(chalk.red('❌ رابط غير صالح'));
+            console.log(chalk.red('Invalid invite link'));
             return setTimeout(showMainMenu, 2000);
         }
         
@@ -145,20 +145,20 @@ async function joinServer() {
         
         for (let i = 0; i < tokens.length; i++) {
             try {
-                console.log(chalk.gray(`\n🔍 انضمام الحساب ${i+1}/${tokens.length}...`));
+                console.log(chalk.gray(`Joining account ${i+1}/${tokens.length}...`));
                 
                 const client = new Client();
                 await client.login(tokens[i]);
                 
-                // الانضمام للسيرفر
+                // Join server
                 await client.acceptInvite(inviteCode);
                 
-                console.log(chalk.green(`✅ ${client.user.tag} - انضم للسيرفر`));
+                console.log(chalk.green(`${client.user.tag} - Joined server successfully`));
                 success++;
                 
                 await client.destroy();
             } catch (error) {
-                console.log(chalk.red(`❌ خطأ: ${error.message}`));
+                console.log(chalk.red(`Error: ${error.message}`));
                 failed++;
             }
             
@@ -169,47 +169,47 @@ async function joinServer() {
     });
 }
 
-// === الخيار 4: فحص التوكنات ===
+// === Option 4: Check Tokens ===
 async function checkTokens() {
-    console.log(chalk.cyan('➕ أدخل التوكنات (كل توكن بسطر), اكتب "done" عند الانتهاء:'));
+    console.log(chalk.cyan('Add Tokens (one per line), type "done" when finished:'));
     
     const tokens = await getTokens();
     let valid = 0, invalid = 0;
     
     for (let i = 0; i < tokens.length; i++) {
         try {
-            console.log(chalk.gray(`\n🔍 فحص التوكن ${i+1}/${tokens.length}...`));
+            console.log(chalk.gray(`Checking token ${i+1}/${tokens.length}...`));
             
             const client = new Client();
             await client.login(tokens[i]);
             
-            console.log(chalk.green(`✅ ${client.user.tag} - توكن صالح`));
+            console.log(chalk.green(`${client.user.tag} - Valid token`));
             valid++;
             
             await client.destroy();
         } catch (error) {
-            console.log(chalk.red(`❌ توكن غير صالح`));
+            console.log(chalk.red(`Invalid token`));
             invalid++;
         }
         
         if (i < tokens.length - 1) await delay(1000);
     }
     
-    console.log(chalk.cyan('\n📊 النتائج:'));
-    console.log(chalk.green(`✅ ${valid} - توكنات صالحة`));
-    console.log(chalk.red(`❌ ${invalid} - توكنات غير صالحة`));
+    console.log(chalk.cyan('\nResults:'));
+    console.log(chalk.green(`Valid: ${valid}`));
+    console.log(chalk.red(`Invalid: ${invalid}`));
     
     setTimeout(showMainMenu, 5000);
 }
 
-// === دوال مساعدة ===
+// === Helper Functions ===
 async function getTokens() {
     return new Promise((resolve) => {
         const tokens = [];
-        console.log(chalk.gray('(اكتب "done" للإنهاء)'));
+        console.log(chalk.gray('(Type "done" to finish)'));
         
         function askToken() {
-            rl.question(chalk.cyan('التوكن: '), (token) => {
+            rl.question(chalk.cyan('Token: '), (token) => {
                 if (token.toLowerCase() === 'done') {
                     resolve(tokens);
                 } else {
@@ -232,33 +232,14 @@ function delay(ms) {
 }
 
 function showResults(success, failed) {
-    console.log(chalk.cyan('\n📊 النتائج:'));
-    console.log(chalk.green(`✅ ${success} - نجاح`));
-    console.log(chalk.red(`❌ ${failed} - فشل`));
-    console.log(chalk.yellow('\n⚠️  قد يتم حظر الحسابات خلال 24-48 ساعة'));
+    console.log(chalk.cyan('\nResults:'));
+    console.log(chalk.green(`Success: ${success}`));
+    console.log(chalk.red(`Failed: ${failed}`));
+    console.log(chalk.yellow('\nWarning: Accounts may be banned within 24-48 hours'));
     setTimeout(showMainMenu, 5000);
 }
 
-// === بدء البرنامج ===
-console.log(chalk.red.bold('\n⚠️  تحذير: استخدام هذا الكود قد يؤدي إلى حظر حساباتك!'));
-console.log(chalk.red.bold('⚠️  أنت المسؤول الوحيد عن العواقب\n'));
+// === Start Program ===
+console.log(chalk.red.bold('\nWARNING: Using this code may lead to account bans!'));
+console.log(chalk.red.bold('You are solely responsible for any consequences\n'));
 setTimeout(showMainMenu, 3000);
-
-// === package.json ===
-/*
-{
-  "name": "discord-selfbot-tool",
-  "version": "1.0.0",
-  "description": "Educational purposes only",
-  "main": "index.js",
-  "scripts": {
-    "start": "node index.js"
-  },
-  "dependencies": {
-    "discord.js-selfbot-v13": "^13.0.0",
-    "chalk": "^4.1.2",
-    "figlet": "^1.6.0",
-    "axios": "^1.6.0"
-  }
-}
-*/
