@@ -49,12 +49,12 @@ class DiscordAccountCreator {
         const baseDay = 23;
         const baseMonth = 9; // سبتمبر
         
-        // سنة عشوائية بين 1990 و2000 (تم التغيير من 2002 إلى 1990-2000)
+        // سنة عشوائية بين 1990 و2000
         const startYear = 1990;
         const endYear = 2000;
         const baseYear = Math.floor(Math.random() * (endYear - startYear + 1)) + startYear;
         
-        // تغيير اليوم بشكل عشوائي بين 1-28 (متفاديًا نهاية الشهر)
+        // تغيير اليوم بشكل عشوائي بين 1-28
         const dayVariations = [21, 22, 23, 24, 25, 26, 27, 28, 15, 16, 17, 18, 19, 20];
         const randomDay = dayVariations[Math.floor(Math.random() * dayVariations.length)];
         
@@ -71,219 +71,135 @@ class DiscordAccountCreator {
         await this.page.waitForTimeout(delay);
     }
 
-    // ملء تاريخ الميلاد (بين 1990-2000) بطريقة محسنة
+    // ملء حقل Display Name بطريقة بسيطة
+    async fillDisplayName(displayName) {
+        console.log('✏️  جاري ملء حقل Display Name...');
+        
+        try {
+            // محاولة الحقل الرئيسي
+            await this.page.type('input[name="displayName"]', displayName, { delay: 50 });
+            console.log('✅ تم ملء حقل Display Name');
+            return true;
+        } catch (error) {
+            console.log('⚠️  لم أجد حقل Display Name الرئيسي');
+            
+            // محاولة الحقول البديلة
+            const alternativeSelectors = [
+                'input[placeholder*="Display Name" i]',
+                'input[placeholder*="اسم العرض" i]',
+                'input[aria-label*="Display Name" i]'
+            ];
+            
+            for (const selector of alternativeSelectors) {
+                try {
+                    await this.page.type(selector, displayName, { delay: 50 });
+                    console.log(`✅ تم ملء Display Name باستخدام: ${selector}`);
+                    return true;
+                } catch (err) {
+                    // تجاهل الخطأ
+                }
+            }
+            
+            console.log('❌ لم أستطع ملء حقل Display Name');
+            return false;
+        }
+    }
+
+    // ملء تاريخ الميلاد بطريقة بسيطة ومباشرة
     async fillBirthDate(birthDate) {
         console.log('🎂 جاري ملء تاريخ الميلاد...');
         
         try {
             // 1. اختيار الشهر أولاً
             console.log('🔄 اختيار الشهر...');
+            await this.page.waitForSelector('select[aria-label="Month"]', { timeout: 5000 });
             await this.page.select('select[aria-label="Month"]', birthDate.month);
-            console.log(`✅ تم اختيار الشهر: سبتمبر (${birthDate.month})`);
-            await this.randomDelay(500, 800);
+            console.log(`✅ تم اختيار الشهر: ${birthDate.month}`);
+            await this.randomDelay(300, 500);
             
             // 2. اختيار اليوم
             console.log('🔄 اختيار اليوم...');
+            await this.page.waitForSelector('select[aria-label="Day"]', { timeout: 5000 });
             await this.page.select('select[aria-label="Day"]', birthDate.day);
             console.log(`✅ تم اختيار اليوم: ${birthDate.day}`);
-            await this.randomDelay(500, 800);
+            await this.randomDelay(300, 500);
             
-            // 3. اختيار السنة (1990-2000) - بطريقة خاصة لمنع التغيير
-            console.log('🔄 اختيار السنة (1990-2000)...');
-            
-            // الطريقة المباشرة
+            // 3. اختيار السنة
+            console.log('🔄 اختيار السنة...');
+            await this.page.waitForSelector('select[aria-label="Year"]', { timeout: 5000 });
             await this.page.select('select[aria-label="Year"]', birthDate.year);
             console.log(`✅ تم اختيار السنة: ${birthDate.year}`);
-            await this.randomDelay(800, 1200);
+            await this.randomDelay(300, 500);
             
-            // 4. التحقق من أن السنة لم تتغير إلى 2022
-            console.log('🔍 التحقق من أن السنة لم تتغير...');
-            
-            // انتظار لحظة ثم التحقق
-            await this.page.waitForTimeout(1000);
-            
-            const currentYear = await this.page.evaluate(() => {
-                const yearSelect = document.querySelector('select[aria-label="Year"]');
-                return yearSelect ? yearSelect.value : null;
-            });
-            
-            if (currentYear !== birthDate.year) {
-                console.log(`⚠️  السنة تغيرت من ${birthDate.year} إلى ${currentYear}!`);
-                console.log('🔄 إعادة تعيين السنة...');
-                
-                // إعادة تعيين السنة
-                await this.page.select('select[aria-label="Year"]', birthDate.year);
-                await this.page.waitForTimeout(500);
-                
-                // استخدام JavaScript للتأكد من التغيير
-                await this.page.evaluate((year) => {
-                    const yearSelect = document.querySelector('select[aria-label="Year"]');
-                    if (yearSelect) {
-                        yearSelect.value = year;
-                        // تشغيل أحداث للتأكد من التغيير
-                        yearSelect.dispatchEvent(new Event('change', { bubbles: true }));
-                        yearSelect.dispatchEvent(new Event('input', { bubbles: true }));
-                    }
-                }, birthDate.year);
-                
-                await this.page.waitForTimeout(500);
-                
-                // التحقق مرة أخرى
-                const finalYear = await this.page.evaluate(() => {
-                    return document.querySelector('select[aria-label="Year"]').value;
-                });
-                
-                if (finalYear === birthDate.year) {
-                    console.log(`✅ تم تصحيح السنة إلى: ${birthDate.year}`);
-                } else {
-                    console.log(`❌ لا يزال هناك مشكلة: ${finalYear}`);
-                }
-            } else {
-                console.log('✅ السنة صحيحة ولم تتغير');
-            }
-            
-            // 5. التقاط screenshot للتأكد
-            await this.page.screenshot({ path: 'birthdate_check.png' });
-            console.log(`📅 تاريخ الميلاد النهائي: سبتمبر/${birthDate.day}/${birthDate.year}`);
+            console.log(`📅 تاريخ الميلاد النهائي: ${birthDate.day}/${birthDate.month}/${birthDate.year}`);
+            return true;
             
         } catch (error) {
             console.error('❌ خطأ في ملء تاريخ الميلاد:', error.message);
             
-            // محاولة البديل
+            // المحاولة الثانية باستخدام selectors بديلة
             try {
-                console.log('🔄 جرب طريقة بديلة...');
+                console.log('🔄 المحاولة الثانية...');
                 
-                // استخدام selectors بديلة
-                const monthSelectors = ['select[name="birthday_month"]', 'select.monthSelect-2k6U8R'];
-                const daySelectors = ['select[name="birthday_day"]', 'select.daySelect-3mOPM3'];
-                const yearSelectors = ['select[name="birthday_year"]', 'select.yearSelect-2MGqHb'];
-                
-                for (const selector of monthSelectors) {
-                    try {
-                        await this.page.select(selector, birthDate.month);
-                        break;
-                    } catch (e) {}
-                }
-                
-                for (const selector of daySelectors) {
-                    try {
-                        await this.page.select(selector, birthDate.day);
-                        break;
-                    } catch (e) {}
-                }
-                
-                for (const selector of yearSelectors) {
-                    try {
-                        await this.page.select(selector, birthDate.year);
-                        break;
-                    } catch (e) {}
-                }
+                // محاولة selectors مختلفة
+                await this.page.select('select[name="birthday_month"]', birthDate.month);
+                await this.page.select('select[name="birthday_day"]', birthDate.day);
+                await this.page.select('select[name="birthday_year"]', birthDate.year);
                 
                 console.log(`✅ تم ملء التاريخ بالطريقة البديلة: ${birthDate.day}/${birthDate.month}/${birthDate.year}`);
+                return true;
                 
             } catch (error2) {
-                console.log('❌ فشلت جميع الطرق');
-                console.log('⚠️  يرجى ملء تاريخ الميلاد يدوياً');
-                console.log(`📝 استخدم: سبتمبر/${birthDate.day}/${birthDate.year}`);
+                console.error('❌ فشلت جميع المحاولات:', error2.message);
+                
+                // عرض المساعدة للمستخدم
+                console.log('\n⚠️  لم أستطع ملء تاريخ الميلاد تلقائياً');
+                console.log('⏳ يرجى ملء تاريخ الميلاد يدوياً في المتصفح');
+                console.log(`📝 استخدم التاريخ: ${birthDate.day}/${birthDate.month}/${birthDate.year}`);
+                console.log('⏱️  لديك 30 ثانية...');
+                
+                // انتظار المستخدم
                 await this.page.waitForTimeout(30000);
+                return false;
             }
         }
     }
 
-    // الضغط على زر Create Account مباشرة
+    // الضغط على زر Create Account
     async clickCreateAccountButton() {
-        console.log('🖱️  جاري النقر على زر Create Account...');
+        console.log('🖱️  جاري البحث عن زر Create Account...');
         
-        // قائمة بجميع الأزرار المحتملة لزر الإنشاء
+        try {
+            // الطريقة المباشرة أولاً
+            await this.page.click('button[type="submit"]');
+            console.log('✅ تم النقر على زر Create Account');
+            return true;
+        } catch (error) {
+            console.log('⚠️  لم أجد زر Submit مباشر');
+        }
+        
+        // محاولة أزرار أخرى
         const buttonSelectors = [
             'button[type="submit"]',
             'button:has-text("Create Account")',
             'button:has-text("إنشاء حساب")',
-            'button[data-testid="create-account-button"]',
-            'button[aria-label="Create Account"]',
-            'div[class*="submit"] button',
-            'button[class*="submit"]',
-            'button[class*="createAccount"]',
-            'div[role="button"]:has-text("Create Account")',
-            'button:has(> div:has-text("Create Account"))'
+            'button[aria-label*="Create Account"]'
         ];
         
-        // محاولة كل selector
         for (const selector of buttonSelectors) {
             try {
                 const button = await this.page.$(selector);
                 if (button) {
-                    // التحقق من أن الزر مرئي ومفعل
-                    const isDisabled = await button.evaluate(el => el.disabled);
-                    const isVisible = await button.evaluate(el => {
-                        const style = window.getComputedStyle(el);
-                        return style.display !== 'none' && style.visibility !== 'hidden';
-                    });
-                    
-                    if (!isDisabled && isVisible) {
-                        await button.click();
-                        console.log(`✅ تم النقر على زر Create Account`);
-                        return true;
-                    }
+                    await button.click();
+                    console.log(`✅ تم النقر باستخدام: ${selector}`);
+                    return true;
                 }
             } catch (error) {
-                // تجاهل الخطأ وجرب selector التالي
+                // تجاهل الخطأ
             }
         }
         
-        // محاولة باستخدام JavaScript للبحث والنقر
-        console.log('⚠️  أجرب البحث عن الزر باستخدام JavaScript...');
-        try {
-            const clicked = await this.page.evaluate(() => {
-                // البحث عن جميع الأزرار
-                const buttons = document.querySelectorAll('button, div[role="button"], [onclick]');
-                
-                for (const element of buttons) {
-                    const text = element.textContent || element.innerText || element.getAttribute('aria-label') || '';
-                    const lowerText = text.toLowerCase();
-                    
-                    // التحقق من وجود كلمات مفتاحية لزر الإنشاء
-                    if (lowerText.includes('create account') || 
-                        lowerText.includes('إنشاء حساب') ||
-                        lowerText.includes('continue') ||
-                        lowerText.includes('التالي') ||
-                        lowerText.includes('sign up') ||
-                        lowerText.includes('سجل')) {
-                        
-                        // التحقق من أن العنصر مرئي وغير معطل
-                        const style = window.getComputedStyle(element);
-                        if (style.display !== 'none' && 
-                            style.visibility !== 'hidden' &&
-                            !element.disabled) {
-                            
-                            element.click();
-                            console.log('تم النقر على:', text);
-                            return true;
-                        }
-                    }
-                }
-                
-                // إذا لم تجد زر مناسب، حاول العثور على زر Submit
-                const submitButtons = document.querySelectorAll('[type="submit"]');
-                for (const button of submitButtons) {
-                    if (!button.disabled) {
-                        button.click();
-                        return true;
-                    }
-                }
-                
-                return false;
-            });
-            
-            if (clicked) {
-                console.log('✅ تم النقر على الزر باستخدام JavaScript');
-                return true;
-            }
-        } catch (error) {
-            console.log('❌ فشل النقر باستخدام JavaScript:', error.message);
-        }
-        
-        console.log('❌ لم أستطع النقر على زر Create Account!');
+        console.log('❌ لم أستطع النقر على زر Create Account');
         return false;
     }
 
@@ -328,7 +244,6 @@ class DiscordAccountCreator {
             const username = await this.readFirstLine('username.txt');
             const password = await this.readFirstLine('password.txt');
 
-            // التحقق من وجود بيانات
             if (!email || !displayName || !username || !password) {
                 console.error('❌ لا توجد بيانات كافية في الملفات!');
                 return false;
@@ -341,8 +256,8 @@ class DiscordAccountCreator {
 🔐 الباسورد: ${password}
             `);
 
-            // فتح صفحة Discord للتسجيل
-            console.log('🌐 الانتقال إلى صفحة تسجيل Discord...');
+            // الانتقال إلى صفحة التسجيل
+            console.log('🌐 الانتقال إلى Discord...');
             await this.page.goto('https://discord.com/register', { 
                 waitUntil: 'networkidle2',
                 timeout: 30000
@@ -350,246 +265,171 @@ class DiscordAccountCreator {
             
             await this.randomDelay(2000, 3000);
 
-            // التحقق من أننا في الصفحة الصحيحة
+            // التحقق من الصفحة
             const pageUrl = await this.page.url();
             console.log(`🔗 الرابط الحالي: ${pageUrl}`);
 
             // ملء حقل الإيميل
-            console.log('✏️  تعبئة حقل الإيميل...');
-            await this.page.type('input[name="email"]', email, { delay: 30 });
+            console.log('✏️  تعبئة الإيميل...');
+            await this.page.waitForSelector('input[name="email"]', { timeout: 10000 });
+            await this.page.type('input[name="email"]', email, { delay: 50 });
+            console.log('✅ تم ملء الإيميل');
             await this.randomDelay();
 
             // ملء حقل Display Name
-            console.log('✏️  تعبئة حقل Display Name...');
-            
-            // محاولة إيجاد حقل Display Name
-            try {
-                await this.page.type('input[name="displayName"]', displayName, { delay: 30 });
-                console.log('✅ تم ملء حقل Display Name');
-            } catch (error) {
-                console.log('⚠️  لم أجد حقل Display Name');
-            }
+            await this.fillDisplayName(displayName);
             await this.randomDelay();
 
             // ملء حقل Username
-            console.log('✏️  تعبئة حقل Username...');
-            await this.page.type('input[name="username"]', username, { delay: 30 });
+            console.log('✏️  تعبئة Username...');
+            await this.page.waitForSelector('input[name="username"]', { timeout: 5000 });
+            await this.page.type('input[name="username"]', username, { delay: 50 });
+            console.log('✅ تم ملء Username');
             await this.randomDelay();
 
             // ملء حقل Password
-            console.log('✏️  تعبئة حقل Password...');
-            await this.page.type('input[name="password"]', password, { delay: 30 });
+            console.log('✏️  تعبئة Password...');
+            await this.page.waitForSelector('input[name="password"]', { timeout: 5000 });
+            await this.page.type('input[name="password"]', password, { delay: 50 });
+            console.log('✅ تم ملء Password');
             await this.randomDelay(1000, 1500);
 
-            // ملء تاريخ الميلاد (بين 1990-2000) مع التحقق
+            // ملء تاريخ الميلاد
             const birthDate = this.generateDate();
-            console.log(`🎲 التاريخ المُولد: سبتمبر/${birthDate.day}/${birthDate.year}`);
+            console.log(`🎲 التاريخ المُولد: ${birthDate.day}/${birthDate.month}/${birthDate.year}`);
             await this.fillBirthDate(birthDate);
             
             await this.randomDelay(1000, 1500);
 
-            // التقاط screenshot للتأكد من التاريخ
-            await this.page.screenshot({ path: 'before_creation.png' });
-            console.log('📸 تم حفظ صفحة قبل إنشاء الحساب');
+            // التقاط screenshot
+            await this.page.screenshot({ path: 'form_filled.png' });
+            console.log('📸 تم حفظ صفحة النموذج المملوء');
 
-            console.log('\n✅✅✅ جميع الحقول مملوءة بنجاح! ✅✅✅');
+            console.log('\n✅ جميع الحقول مملوءة!');
             console.log('   ✓ الإيميل');
             console.log('   ✓ Display Name');
             console.log('   ✓ Username');
             console.log('   ✓ Password');
-            console.log(`   ✓ تاريخ الميلاد: سبتمبر/${birthDate.day}/${birthDate.year}`);
+            console.log(`   ✓ تاريخ الميلاد: ${birthDate.day}/${birthDate.month}/${birthDate.year}`);
 
-            // الضغط مباشرة على زر Create Account
+            // الضغط على زر Create Account
             console.log('\n🎯 جاري النقر على زر Create Account...');
-            const buttonClicked = await this.clickCreateAccountButton();
+            const clicked = await this.clickCreateAccountButton();
             
-            if (buttonClicked) {
-                console.log('✅ تم النقر على زر Create Account بنجاح!');
-                
-                // انتظار 3 ثوانٍ ثم التحقق من وجود كابتشا
-                await this.page.waitForTimeout(3000);
-                
-                // التحقق من وجود كابتشا
-                const hasCaptcha = await this.page.evaluate(() => {
-                    return document.querySelector('iframe[src*="captcha"]') !== null ||
-                           document.querySelector('div[class*="captcha"]') !== null ||
-                           document.querySelector('[data-testid="captcha"]') !== null;
-                });
-                
-                if (hasCaptcha) {
-                    console.log('\n⚠️  ════════════════════════════════════════════');
-                    console.log('⚠️   يوجد Captcha! يرجى حله يدوياً في المتصفح');
-                    console.log('⚠️   بعد حل الـ Captcha، سيستمر البرنامج تلقائياً');
-                    console.log('⚠️  ════════════════════════════════════════════\n');
-                    
-                    // انتظار حل الكابتشا (5 دقائق كحد أقصى)
-                    for (let i = 0; i < 60; i++) {
-                        await this.page.waitForTimeout(5000);
-                        
-                        // التحقق إذا تم حل الكابتشا
-                        const currentUrl = await this.page.url();
-                        if (!currentUrl.includes('/register')) {
-                            console.log('✅ تم حل الـ Captcha بنجاح!');
-                            break;
-                        }
-                        
-                        if (i % 6 === 0) { // كل 30 ثانية
-                            console.log(`⏳ لا يزال في انتظار حل الـ Captcha... (${(i+1)*5} ثانية)`);
-                        }
-                    }
-                }
-                
-                // انتظار إنشاء الحساب
-                console.log('⏳ انتظار إنشاء الحساب... (10 ثوانٍ)');
+            if (!clicked) {
+                console.log('⚠️  يرجى النقر على زر Create Account يدوياً');
                 await this.page.waitForTimeout(10000);
+            }
 
-                // التقاط screenshot بعد الإنشاء
-                await this.page.screenshot({ path: 'after_creation.png' });
-                console.log('📸 تم حفظ صفحة بعد إنشاء الحساب');
+            // انتظار
+            console.log('⏳ انتظار 5 ثوانٍ...');
+            await this.page.waitForTimeout(5000);
 
-                // محاولة الحصول على التوكن
-                console.log('🔑 جاري الحصول على التوكن...');
+            // التحقق من وجود كابتشا
+            const hasCaptcha = await this.page.evaluate(() => {
+                return document.querySelector('iframe[src*="captcha"]') !== null ||
+                       document.querySelector('div[class*="captcha"]') !== null;
+            });
+
+            if (hasCaptcha) {
+                console.log('\n⚠️  يوجد Captcha!');
+                console.log('⏳ يرجى حله يدوياً خلال 60 ثانية...');
+                await this.page.waitForTimeout(60000);
+            }
+
+            // انتظار إنشاء الحساب
+            console.log('⏳ انتظار إنشاء الحساب...');
+            await this.page.waitForTimeout(8000);
+
+            // الحصول على التوكن
+            console.log('🔑 جاري الحصول على التوكن...');
+            const token = await this.getDiscordToken();
+            
+            if (token) {
+                console.log('✅ تم الحصول على التوكن!');
+                console.log(`🔐 التوكن: ${token.substring(0, 30)}...`);
                 
-                let token = null;
-                for (let attempt = 1; attempt <= 3; attempt++) {
-                    console.log(`🔄 المحاولة ${attempt}/3 للحصول على التوكن...`);
-                    token = await this.getDiscordToken();
-                    
-                    if (token) {
-                        console.log(`✅ تم الحصول على التوكن في المحاولة ${attempt}`);
-                        break;
-                    }
-                    
-                    if (attempt < 3) {
-                        await this.page.waitForTimeout(3000);
-                    }
-                }
-
-                if (token) {
-                    console.log('🎉 تم الحصول على التوكن بنجاح!');
-                    console.log(`🔐 التوكن: ${token.substring(0, 30)}...`);
-                    
-                    // حفظ التوكن
-                    await fs.appendFile('tokens.txt', `${token}\n`, 'utf8');
-                    console.log('💾 تم حفظ التوكن في tokens.txt');
-                    
-                    // حفظ معلومات الحساب
-                    const accountInfo = `
-[${new Date().toLocaleString()}]
-📧 الإيميل: ${email}
-👤 Display Name: ${displayName}
-🔤 اليوزرنيم: ${username}
-🔐 الباسورد: ${password}
-📅 تاريخ الميلاد: سبتمبر/${birthDate.day}/${birthDate.year}
-🔑 التوكن: ${token.substring(0, 30)}...
-═══════════════════════════════════════════
-                    `;
-                    
-                    await fs.appendFile('accounts.txt', accountInfo, 'utf8);
-                    console.log('📝 تم حفظ معلومات الحساب في accounts.txt');
-                    
-                    // حذف الأسطر المستخدمة
-                    await this.deleteFirstLine('gmails.txt');
-                    await this.deleteFirstLine('names.txt');
-                    await this.deleteFirstLine('username.txt');
-                    await this.deleteFirstLine('password.txt');
-                    
-                    console.log('🗑️  تم حذف البيانات المستخدمة من الملفات');
-                    return token;
-                } else {
-                    console.log('❌ لم يتم الحصول على التوكن!');
-                    
-                    // حفظ المعلومات رغم عدم وجود توكن
-                    await fs.appendFile('no_token.txt', 
-                        `${email}:${username}:${password}:${new Date().toISOString()}\n`, 
-                        'utf8'
-                    );
-                    
-                    // حذف الأسطر المستخدمة
-                    await this.deleteFirstLine('gmails.txt');
-                    await this.deleteFirstLine('names.txt');
-                    await this.deleteFirstLine('username.txt');
-                    await this.deleteFirstLine('password.txt');
-                    
-                    console.log('⚠️  تم حفظ الحساب بدون توكن');
-                    return false;
-                }
+                // حفظ التوكن
+                await fs.appendFile('tokens.txt', `${token}\n`);
+                console.log('💾 تم حفظ التوكن في tokens.txt');
+                
+                // حفظ معلومات الحساب
+                const accountInfo = `[${new Date().toLocaleString()}] ${email} | ${username} | ${token.substring(0, 30)}...\n`;
+                await fs.appendFile('accounts.txt', accountInfo);
+                console.log('📝 تم حفظ معلومات الحساب');
+                
+                // حذف الأسطر المستخدمة
+                await this.deleteFirstLine('gmails.txt');
+                await this.deleteFirstLine('names.txt');
+                await this.deleteFirstLine('username.txt');
+                await this.deleteFirstLine('password.txt');
+                
+                console.log('🗑️  تم حذف البيانات المستخدمة');
+                return token;
             } else {
-                console.log('❌ لم أستطع النقر على زر Create Account!');
+                console.log('❌ لم يتم الحصول على التوكن');
+                
+                // حذف الأسطر المستخدمة
+                await this.deleteFirstLine('gmails.txt');
+                await this.deleteFirstLine('names.txt');
+                await this.deleteFirstLine('username.txt');
+                await this.deleteFirstLine('password.txt');
+                
+                console.log('🗑️  تم حذف البيانات المستخدمة');
                 return false;
             }
 
         } catch (error) {
             console.error('❌ خطأ في إنشاء الحساب:', error.message);
-            
-            // حفظ الخطأ في ملف
-            const errorLog = `[${new Date().toISOString()}] ${error.message}\n`;
-            await fs.appendFile('errors.log', errorLog, 'utf8');
-            
             return false;
         }
     }
 
     async run() {
         console.log(`
-╔══════════════════════════════════════════╗
-║  Discord Account Creator - 1990-2000     ║
-║    (تم إصلاح مشكلة السنة)               ║
-║                                          ║
-║  ✓ تاريخ الميلاد: 1990-2000 عشوائي      ║
-║  ✓ يضغط زر Create Account مباشرة        ║
-╚══════════════════════════════════════════╝
+==========================================
+ Discord Account Creator - 1990-2000 Edition
+==========================================
         `);
         
-        // التحقق من وجود الملفات
+        // التحقق من الملفات
         const requiredFiles = ['gmails.txt', 'names.txt', 'username.txt', 'password.txt'];
         for (const file of requiredFiles) {
             if (!fsSync.existsSync(file)) {
                 console.error(`❌ ملف ${file} غير موجود!`);
-                console.log('📝 يرجى إنشاء الملفات مع البيانات أولاً');
-                process.exit(1);
+                return;
             }
         }
 
         try {
             console.log('🚀 بدء تشغيل المتصفح...');
             
-            // تشغيل المتصفح
             this.browser = await puppeteer.launch({ 
                 headless: false,
                 defaultViewport: null,
-                args: [
-                    '--start-maximized',
-                    '--no-sandbox',
-                    '--disable-setuid-sandbox',
-                    '--disable-dev-shm-usage'
-                ]
+                args: ['--start-maximized', '--no-sandbox']
             });
             
-            // إنشاء صفحة
             this.page = await this.browser.newPage();
             
-            // إعدادات للمتصفح
             await this.page.setUserAgent(
                 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
             );
 
             console.log('✅ تم فتح المتصفح');
-            console.log('🎯 جاري إنشاء حساب واحد...\n');
+            console.log('🎯 جاري إنشاء حساب...\n');
 
-            // إنشاء حساب
-            const result = await this.createSingleAccount();
+            const token = await this.createSingleAccount();
             
-            if (result) {
-                console.log('\n✨✨✨ تم إنشاء الحساب بنجاح! ✨✨✨');
+            if (token) {
+                console.log('\n✨ تم إنشاء الحساب بنجاح! ✨');
             } else {
-                console.log('\n⚠️  هناك مشاكل في إنشاء الحساب');
+                console.log('\n⚠️  العملية اكتملت مع بعض المشاكل');
             }
 
         } catch (error) {
             console.error('❌ خطأ غير متوقع:', error.message);
         } finally {
-            // إغلاق المتصفح بعد 3 ثوانٍ
             console.log('\n⏳ إغلاق المتصفح بعد 3 ثوانٍ...');
             await this.page.waitForTimeout(3000);
             
@@ -603,12 +443,11 @@ class DiscordAccountCreator {
             console.log('   2. ملأ Display Name');
             console.log('   3. ملأ Username');
             console.log('   4. ملأ Password');
-            console.log('   5. ملأ تاريخ الميلاد (سبتمبر/23/1990-2000 عشوائي)');
-            console.log('   6. تحقق من أن السنة لم تتغير إلى 2022');
-            console.log('   7. ضغط زر Create Account مباشرة');
-            console.log('   8. حاول الحصول على التوكن');
-            console.log('   9. حفظ التوكن وحذف البيانات المستخدمة');
-            console.log('   10. أغلق المتصفح');
+            console.log('   5. ملأ تاريخ الميلاد (1990-2000 عشوائي)');
+            console.log('   6. ضغط على زر Create Account');
+            console.log('   7. حاول الحصول على التوكن');
+            console.log('   8. حفظ التوكن وحذف البيانات');
+            console.log('   9. أغلق المتصفح');
             
             console.log('\n🔄 للتشغيل مرة أخرى، أعد تشغيل البرنامج');
         }
