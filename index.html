@@ -46,22 +46,22 @@ class DiscordAccountCreator {
 
     // توليد تاريخ عشوائي من 1990 إلى 2000
     generateDate() {
+        const baseDay = 23;
+        const baseMonth = 9; // سبتمبر
+        
+        // سنة عشوائية بين 1990 و2000 (تم التغيير من 2002 إلى 1990-2000)
         const startYear = 1990;
         const endYear = 2000;
+        const baseYear = Math.floor(Math.random() * (endYear - startYear + 1)) + startYear;
         
-        // سنة عشوائية بين 1990 و2000
-        const year = Math.floor(Math.random() * (endYear - startYear + 1)) + startYear;
-        
-        // شهر عشوائي بين 1-12
-        const month = Math.floor(Math.random() * 12) + 1;
-        
-        // يوم عشوائي بين 1-28 (لتجنب مشاكل نهاية الشهر)
-        const day = Math.floor(Math.random() * 28) + 1;
+        // تغيير اليوم بشكل عشوائي بين 1-28 (متفاديًا نهاية الشهر)
+        const dayVariations = [21, 22, 23, 24, 25, 26, 27, 28, 15, 16, 17, 18, 19, 20];
+        const randomDay = dayVariations[Math.floor(Math.random() * dayVariations.length)];
         
         return {
-            month: month.toString(),
-            day: day.toString(),
-            year: year.toString()
+            month: baseMonth.toString(),
+            day: randomDay.toString(),
+            year: baseYear.toString()
         };
     }
 
@@ -106,10 +106,24 @@ class DiscordAccountCreator {
         const monthSelect = await this.findElement(monthSelectors);
         if (monthSelect) {
             await monthSelect.select(birthDate.month);
-            console.log(`✅ تم اختيار الشهر: ${birthDate.month}`);
+            console.log(`✅ تم اختيار الشهر: سبتمبر (${birthDate.month})`);
             await this.randomDelay(300, 500);
         } else {
             console.log('⚠️  لم أجد قائمة اختيار الشهر، أجرب طرقاً أخرى...');
+            
+            // محاولة النقر على القائمة أولاً ثم الاختيار
+            try {
+                await this.page.click('div[aria-label="Month"]');
+                await this.randomDelay(300, 500);
+                
+                // محاولة اختيار سبتمبر
+                await this.page.keyboard.type('September');
+                await this.randomDelay(300, 500);
+                await this.page.keyboard.press('Enter');
+                console.log('✅ اختيار الشهر عن طريق الكتابة');
+            } catch (error) {
+                console.log('❌ فشل اختيار الشهر');
+            }
         }
         
         // محاولات مختلفة لـ Day
@@ -130,7 +144,19 @@ class DiscordAccountCreator {
             console.log(`✅ تم اختيار اليوم: ${birthDate.day}`);
             await this.randomDelay(300, 500);
         } else {
-            console.log('⚠️  لم أجد قائمة اختيار اليوم');
+            console.log('⚠️  لم أجد قائمة اختيار اليوم، أجرب طرقاً أخرى...');
+            
+            try {
+                await this.page.click('div[aria-label="Day"]');
+                await this.randomDelay(300, 500);
+                
+                await this.page.keyboard.type(birthDate.day);
+                await this.randomDelay(300, 500);
+                await this.page.keyboard.press('Enter');
+                console.log(`✅ اختيار اليوم عن طريق الكتابة: ${birthDate.day}`);
+            } catch (error) {
+                console.log('❌ فشل اختيار اليوم');
+            }
         }
         
         // محاولات مختلفة لـ Year
@@ -151,10 +177,22 @@ class DiscordAccountCreator {
             console.log(`✅ تم اختيار السنة: ${birthDate.year}`);
             await this.randomDelay(300, 500);
         } else {
-            console.log('⚠️  لم أجد قائمة اختيار السنة');
+            console.log('⚠️  لم أجد قائمة اختيار السنة، أجرب طرقاً أخرى...');
+            
+            try {
+                await this.page.click('div[aria-label="Year"]');
+                await this.randomDelay(300, 500);
+                
+                await this.page.keyboard.type(birthDate.year);
+                await this.randomDelay(300, 500);
+                await this.page.keyboard.press('Enter');
+                console.log(`✅ اختيار السنة عن طريق الكتابة: ${birthDate.year}`);
+            } catch (error) {
+                console.log('❌ فشل اختيار السنة');
+            }
         }
         
-        console.log(`📅 تاريخ الميلاد: ${birthDate.day}/${birthDate.month}/${birthDate.year}`);
+        console.log(`📅 تاريخ الميلاد: سبتمبر/${birthDate.day}/${birthDate.year}`);
     }
 
     // الضغط على زر Create Account مباشرة
@@ -189,7 +227,7 @@ class DiscordAccountCreator {
                     
                     if (!isDisabled && isVisible) {
                         await button.click();
-                        console.log(`✅ تم النقر على زر Create Account`);
+                        console.log(`✅ تم النقر على زر Create Account باستخدام: ${selector}`);
                         return true;
                     }
                 }
@@ -224,6 +262,7 @@ class DiscordAccountCreator {
                             !element.disabled) {
                             
                             element.click();
+                            console.log('تم النقر على:', text);
                             return true;
                         }
                     }
@@ -247,6 +286,43 @@ class DiscordAccountCreator {
             }
         } catch (error) {
             console.log('❌ فشل النقر باستخدام JavaScript:', error.message);
+        }
+        
+        // محاولة النقر باستخدام إحداثيات إذا كان الزر مرئياً
+        console.log('⚠️  أجرب النقر باستخدام الإحداثيات...');
+        try {
+            await this.page.evaluate(() => {
+                // البحث عن أي عنصر يحتوي على نص Create Account
+                const elements = document.querySelectorAll('*');
+                for (const element of elements) {
+                    const text = element.textContent || element.innerText || '';
+                    if (text.toLowerCase().includes('create account')) {
+                        const rect = element.getBoundingClientRect();
+                        if (rect.width > 0 && rect.height > 0) {
+                            // النقر في وسط العنصر
+                            const x = rect.left + rect.width / 2;
+                            const y = rect.top + rect.height / 2;
+                            
+                            const clickEvent = new MouseEvent('click', {
+                                view: window,
+                                bubbles: true,
+                                cancelable: true,
+                                clientX: x,
+                                clientY: y
+                            });
+                            
+                            element.dispatchEvent(clickEvent);
+                            return true;
+                        }
+                    }
+                }
+                return false;
+            });
+            
+            console.log('✅ تمت محاولة النقر باستخدام الإحداثيات');
+            return true;
+        } catch (error) {
+            console.log('❌ فشل النقر باستخدام الإحداثيات');
         }
         
         console.log('❌ لم أستطع النقر على زر Create Account!');
@@ -371,12 +447,12 @@ class DiscordAccountCreator {
             await this.page.screenshot({ path: 'before_creation.png' });
             console.log('📸 تم حفظ صفحة قبل إنشاء الحساب');
 
-            console.log('\n✅ جميع الحقول مملوءة بنجاح!');
+            console.log('\n✅✅✅ جميع الحقول مملوءة بنجاح! ✅✅✅');
             console.log('   ✓ الإيميل');
             console.log('   ✓ Display Name');
             console.log('   ✓ Username');
             console.log('   ✓ Password');
-            console.log(`   ✓ تاريخ الميلاد: ${birthDate.day}/${birthDate.month}/${birthDate.year}`);
+            console.log(`   ✓ تاريخ الميلاد (سبتمبر/${birthDate.day}/${birthDate.year})`);
 
             // الضغط مباشرة على زر Create Account
             console.log('\n🎯 جاري النقر على زر Create Account مباشرة...');
@@ -396,8 +472,10 @@ class DiscordAccountCreator {
                 });
                 
                 if (hasCaptcha) {
-                    console.log('\n⚠️  يوجد Captcha! يرجى حله يدوياً في المتصفح');
-                    console.log('⏳ بعد حل الـ Captcha، سيستمر البرنامج تلقائياً');
+                    console.log('\n⚠️  ════════════════════════════════════════════');
+                    console.log('⚠️   يوجد Captcha! يرجى حله يدوياً في المتصفح');
+                    console.log('⚠️   بعد حل الـ Captcha، سيستمر البرنامج تلقائياً');
+                    console.log('⚠️  ════════════════════════════════════════════\n');
                     
                     // انتظار حل الكابتشا (5 دقائق كحد أقصى)
                     for (let i = 0; i < 60; i++) {
@@ -409,11 +487,15 @@ class DiscordAccountCreator {
                             console.log('✅ تم حل الـ Captcha بنجاح!');
                             break;
                         }
+                        
+                        if (i % 6 === 0) { // كل 30 ثانية
+                            console.log(`⏳ لا يزال في انتظار حل الـ Captcha... (${(i+1)*5} ثانية)`);
+                        }
                     }
                 }
                 
                 // انتظار إنشاء الحساب
-                console.log('⏳ انتظار إنشاء الحساب...');
+                console.log('⏳ انتظار إنشاء الحساب... (10 ثوانٍ)');
                 await this.page.waitForTimeout(10000);
 
                 // التقاط screenshot بعد الإنشاء
@@ -453,7 +535,7 @@ class DiscordAccountCreator {
 👤 Display Name: ${displayName}
 🔤 اليوزرنيم: ${username}
 🔐 الباسورد: ${password}
-📅 تاريخ الميلاد: ${birthDate.day}/${birthDate.month}/${birthDate.year}
+📅 تاريخ الميلاد: سبتمبر/${birthDate.day}/${birthDate.year}
 🔑 التوكن: ${token.substring(0, 30)}...
 ═══════════════════════════════════════════
                     `;
@@ -505,9 +587,12 @@ class DiscordAccountCreator {
 
     async run() {
         console.log(`
-==========================================
- Discord Account Creator - 1990-2000 Edition
-==========================================
+╔══════════════════════════════════════════╗
+║  Discord Account Creator - 1990-2000     ║
+║                                          ║
+║  ✓ تاريخ الميلاد: 1990-2000 عشوائي      ║
+║  ✓ يضغط زر Create Account مباشرة        ║
+╚══════════════════════════════════════════╝
         `);
         
         // التحقق من وجود الملفات
@@ -550,7 +635,7 @@ class DiscordAccountCreator {
             const result = await this.createSingleAccount();
             
             if (result) {
-                console.log('\n✨ تم إنشاء الحساب بنجاح! ✨');
+                console.log('\n✨✨✨ تم إنشاء الحساب بنجاح! ✨✨✨');
             } else {
                 console.log('\n⚠️  هناك مشاكل في إنشاء الحساب');
             }
@@ -572,7 +657,7 @@ class DiscordAccountCreator {
             console.log('   2. ملأ Display Name');
             console.log('   3. ملأ Username');
             console.log('   4. ملأ Password');
-            console.log('   5. ملأ تاريخ الميلاد (1990-2000 عشوائي)');
+            console.log('   5. ملأ تاريخ الميلاد (سبتمبر/23/1990-2000 عشوائي)');
             console.log('   6. ضغط زر Create Account مباشرة');
             console.log('   7. حاول الحصول على التوكن');
             console.log('   8. حفظ التوكن وحذف البيانات المستخدمة');
