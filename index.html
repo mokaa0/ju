@@ -44,39 +44,29 @@ class DiscordAccountCreator {
         }
     }
 
-    // توليد تاريخ ثابت: 1999-01-11
-    generateDate() {
-        // تاريخ ثابت: 1999/01/11
-        return {
-            month: "1",    // شهر يناير (1)
-            day: "11",     // اليوم 11
-            year: "1999"   // سنة 1999
-        };
-    }
-
     // انتظار عشوائي
     async randomDelay(min = 500, max = 1000) {
         const delay = Math.floor(Math.random() * (max - min + 1)) + min;
         await this.page.waitForTimeout(delay);
     }
 
-    // ملء حقل Display Name بطريقة بسيطة
+    // ملء حقل Display Name
     async fillDisplayName(displayName) {
         console.log('✏️  جاري ملء حقل Display Name...');
         
         try {
-            // محاولة الحقل الرئيسي
+            await this.page.waitForSelector('input[name="displayName"]', { timeout: 5000 });
             await this.page.type('input[name="displayName"]', displayName, { delay: 50 });
             console.log('✅ تم ملء حقل Display Name');
             return true;
         } catch (error) {
-            console.log('⚠️  لم أجد حقل Display Name الرئيسي');
+            console.log('⚠️  لم أجد حقل Display Name، جرب selectors أخرى...');
             
-            // محاولة الحقول البديلة
             const alternativeSelectors = [
                 'input[placeholder*="Display Name" i]',
                 'input[placeholder*="اسم العرض" i]',
-                'input[aria-label*="Display Name" i]'
+                'input[aria-label*="Display Name" i]',
+                'input[type="text"][placeholder*="name" i]'
             ];
             
             for (const selector of alternativeSelectors) {
@@ -94,44 +84,24 @@ class DiscordAccountCreator {
         }
     }
 
-    // ملء تاريخ الميلاد بطريقة بسيطة ومباشرة
-    async fillBirthDate(birthDate) {
+    // ملء تاريخ الميلاد بطريقة مباشرة
+    async fillBirthDate() {
         console.log('🎂 جاري ملء تاريخ الميلاد...');
-        console.log(`📅 التاريخ المطلوب: ${birthDate.day}/${birthDate.month}/${birthDate.year}`);
         
         try {
-            // 1. اختيار الشهر أولاً
-            console.log('🔄 اختيار الشهر...');
-            await this.page.waitForSelector('select[aria-label="Month"]', { timeout: 10000 });
-            await this.page.select('select[aria-label="Month"]', birthDate.month);
-            console.log(`✅ تم اختيار الشهر: ${birthDate.month} (يناير)`);
-            await this.randomDelay(300, 500);
+            // التقاط لقطة شاشة قبل البدء
+            await this.page.screenshot({ path: 'before_birthdate.png' });
+            console.log('📸 لقطة شاشة قبل ملء التاريخ: before_birthdate.png');
             
-            // 2. اختيار اليوم
-            console.log('🔄 اختيار اليوم...');
-            await this.page.waitForSelector('select[aria-label="Day"]', { timeout: 10000 });
-            await this.page.select('select[aria-label="Day"]', birthDate.day);
-            console.log(`✅ تم اختيار اليوم: ${birthDate.day}`);
-            await this.randomDelay(300, 500);
-            
-            // 3. اختيار السنة
-            console.log('🔄 اختيار السنة...');
-            await this.page.waitForSelector('select[aria-label="Year"]', { timeout: 10000 });
-            await this.page.select('select[aria-label="Year"]', birthDate.year);
-            console.log(`✅ تم اختيار السنة: ${birthDate.year}`);
-            await this.randomDelay(300, 500);
-            
-            console.log(`📅 تاريخ الميلاد النهائي: ${birthDate.day}/${birthDate.month}/${birthDate.year}`);
-            return true;
-            
-        } catch (error) {
-            console.error('❌ خطأ في ملء تاريخ الميلاد:', error.message);
-            
-            // المحاولة الثانية باستخدام selectors بديلة
-            try {
-                console.log('🔄 المحاولة الثانية باستخدام selectors مختلفة...');
+            // استخدام طريقة التقييم المباشر
+            await this.page.evaluate(() => {
+                console.log('🔄 جاري البحث عن حقول التاريخ...');
                 
-                // محاولة جميع selectors ممكنة
+                // البحث عن جميع عناصر select
+                const selects = document.querySelectorAll('select');
+                console.log(`🔍 عدد حقول select: ${selects.length}`);
+                
+                // محاولة ملء الشهر
                 const monthSelectors = [
                     'select[aria-label="Month"]',
                     'select[name="birthday_month"]',
@@ -139,6 +109,25 @@ class DiscordAccountCreator {
                     'select[name*="month" i]'
                 ];
                 
+                let monthFilled = false;
+                for (const selector of monthSelectors) {
+                    const monthSelect = document.querySelector(selector);
+                    if (monthSelect) {
+                        monthSelect.value = '1'; // يناير
+                        monthSelect.dispatchEvent(new Event('change', { bubbles: true }));
+                        console.log('✅ تم تعيين الشهر إلى 1 (يناير)');
+                        monthFilled = true;
+                        break;
+                    }
+                }
+                
+                if (!monthFilled && selects[0]) {
+                    selects[0].value = '1';
+                    selects[0].dispatchEvent(new Event('change', { bubbles: true }));
+                    console.log('✅ تم تعيين الشهر (الاختيار الأول)');
+                }
+                
+                // محاولة ملء اليوم
                 const daySelectors = [
                     'select[aria-label="Day"]',
                     'select[name="birthday_day"]',
@@ -146,6 +135,25 @@ class DiscordAccountCreator {
                     'select[name*="day" i]'
                 ];
                 
+                let dayFilled = false;
+                for (const selector of daySelectors) {
+                    const daySelect = document.querySelector(selector);
+                    if (daySelect) {
+                        daySelect.value = '11'; // اليوم 11
+                        daySelect.dispatchEvent(new Event('change', { bubbles: true }));
+                        console.log('✅ تم تعيين اليوم إلى 11');
+                        dayFilled = true;
+                        break;
+                    }
+                }
+                
+                if (!dayFilled && selects[1]) {
+                    selects[1].value = '11';
+                    selects[1].dispatchEvent(new Event('change', { bubbles: true }));
+                    console.log('✅ تم تعيين اليوم (الاختيار الثاني)');
+                }
+                
+                // محاولة ملء السنة
                 const yearSelectors = [
                     'select[aria-label="Year"]',
                     'select[name="birthday_year"]',
@@ -153,73 +161,166 @@ class DiscordAccountCreator {
                     'select[name*="year" i]'
                 ];
                 
-                let monthFilled = false;
-                let dayFilled = false;
                 let yearFilled = false;
-                
-                // ملء الشهر
-                for (const selector of monthSelectors) {
-                    try {
-                        await this.page.waitForSelector(selector, { timeout: 3000 });
-                        await this.page.select(selector, birthDate.month);
-                        monthFilled = true;
-                        break;
-                    } catch (e) {}
-                }
-                
-                if (!monthFilled) throw new Error('لم أجد حقل الشهر');
-                
-                await this.randomDelay(300, 500);
-                
-                // ملء اليوم
-                for (const selector of daySelectors) {
-                    try {
-                        await this.page.waitForSelector(selector, { timeout: 3000 });
-                        await this.page.select(selector, birthDate.day);
-                        dayFilled = true;
-                        break;
-                    } catch (e) {}
-                }
-                
-                if (!dayFilled) throw new Error('لم أجد حقل اليوم');
-                
-                await this.randomDelay(300, 500);
-                
-                // ملء السنة
                 for (const selector of yearSelectors) {
-                    try {
-                        await this.page.waitForSelector(selector, { timeout: 3000 });
-                        await this.page.select(selector, birthDate.year);
+                    const yearSelect = document.querySelector(selector);
+                    if (yearSelect) {
+                        yearSelect.value = '1999'; // سنة 1999
+                        yearSelect.dispatchEvent(new Event('change', { bubbles: true }));
+                        console.log('✅ تم تعيين السنة إلى 1999');
                         yearFilled = true;
                         break;
-                    } catch (e) {}
+                    }
                 }
                 
-                if (!yearFilled) throw new Error('لم أجد حقل السنة');
+                if (!yearFilled && selects[2]) {
+                    selects[2].value = '1999';
+                    selects[2].dispatchEvent(new Event('change', { bubbles: true }));
+                    console.log('✅ تم تعيين السنة (الاختيار الثالث)');
+                }
                 
-                console.log(`✅ تم ملء التاريخ بالطريقة البديلة: ${birthDate.day}/${birthDate.month}/${birthDate.year}`);
+                return 'تم تنفيذ الكود';
+            });
+            
+            await this.randomDelay(1000, 1500);
+            
+            // التقاط لقطة بعد التعبئة
+            await this.page.screenshot({ path: 'after_birthdate.png' });
+            console.log('📸 لقطة شاشة بعد ملء التاريخ: after_birthdate.png');
+            
+            // التحقق من أن القيم مضبوطة
+            const birthDateStatus = await this.page.evaluate(() => {
+                const results = {};
+                
+                // التحقق من الشهر
+                const monthSelect = document.querySelector('select[aria-label="Month"], select[name="birthday_month"]');
+                if (monthSelect) {
+                    results.month = monthSelect.value;
+                }
+                
+                // التحقق من اليوم
+                const daySelect = document.querySelector('select[aria-label="Day"], select[name="birthday_day"]');
+                if (daySelect) {
+                    results.day = daySelect.value;
+                }
+                
+                // التحقق من السنة
+                const yearSelect = document.querySelector('select[aria-label="Year"], select[name="birthday_year"]');
+                if (yearSelect) {
+                    results.year = yearSelect.value;
+                }
+                
+                return results;
+            });
+            
+            console.log(`📊 حالة تاريخ الميلاد:`, birthDateStatus);
+            
+            if (birthDateStatus.month === '1' && birthDateStatus.day === '11' && birthDateStatus.year === '1999') {
+                console.log('✅ تم تعبئة تاريخ الميلاد بنجاح: 11/01/1999');
+                return true;
+            } else {
+                console.log('⚠️  تاريخ الميلاد لم يتم تعبئته بشكل صحيح');
+                return false;
+            }
+            
+        } catch (error) {
+            console.error('❌ خطأ في ملء تاريخ الميلاد:', error.message);
+            
+            // محاولة الطريقة التقليدية
+            console.log('🔄 جرب الطريقة التقليدية...');
+            try {
+                // محاولة اختيار الشهر
+                try {
+                    await this.page.select('select[aria-label="Month"]', '1');
+                    console.log('✅ اختيار الشهر: يناير (1)');
+                } catch (e) {
+                    try {
+                        await this.page.select('select[name="birthday_month"]', '1');
+                        console.log('✅ اختيار الشهر باسم: يناير (1)');
+                    } catch (e2) {
+                        console.log('⚠️  لم أجد حقل الشهر');
+                    }
+                }
+                
+                await this.randomDelay(500, 800);
+                
+                // محاولة اختيار اليوم
+                try {
+                    await this.page.select('select[aria-label="Day"]', '11');
+                    console.log('✅ اختيار اليوم: 11');
+                } catch (e) {
+                    try {
+                        await this.page.select('select[name="birthday_day"]', '11');
+                        console.log('✅ اختيار اليوم باسم: 11');
+                    } catch (e2) {
+                        console.log('⚠️  لم أجد حقل اليوم');
+                    }
+                }
+                
+                await this.randomDelay(500, 800);
+                
+                // محاولة اختيار السنة
+                try {
+                    await this.page.select('select[aria-label="Year"]', '1999');
+                    console.log('✅ اختيار السنة: 1999');
+                } catch (e) {
+                    try {
+                        await this.page.select('select[name="birthday_year"]', '1999');
+                        console.log('✅ اختيار السنة باسم: 1999');
+                    } catch (e2) {
+                        console.log('⚠️  لم أجد حقل السنة');
+                    }
+                }
+                
+                await this.randomDelay(1000, 1500);
+                
+                // التقاط لقطة شاشة أخيرة
+                await this.page.screenshot({ path: 'final_birthdate.png' });
+                console.log('📸 لقطة الشاشة النهائية: final_birthdate.png');
+                
+                console.log('🎯 تمت المحاولة يدوياً، تحقق من المتصفح');
                 return true;
                 
-            } catch (error2) {
-                console.error('❌ فشلت جميع المحاولات:', error2.message);
+            } catch (finalError) {
+                console.error('❌ فشلت جميع المحاولات:', finalError.message);
                 
-                // العرض المباشر للمستخدم
-                console.log('\n⚠️  لم أستطع ملء تاريخ الميلاد تلقائياً');
-                console.log('==========================================');
-                console.log('📝 يرجى ملء تاريخ الميلاد يدوياً في المتصفح');
-                console.log('📅 استخدم التاريخ التالي:');
-                console.log(`   الشهر: يناير (1)`);
-                console.log(`   اليوم: 11`);
-                console.log(`   السنة: 1999`);
-                console.log('==========================================');
-                console.log('⏱️  لديك 30 ثانية...');
+                // طلب المساعدة من المستخدم
+                console.log('\n⚠️  ⚠️  ⚠️  انتبه! ⚠️  ⚠️  ⚠️');
+                console.log('==================================');
+                console.log('لم أستطع ملء تاريخ الميلاد تلقائياً');
+                console.log('يجب عليك ملء تاريخ الميلاد يدوياً!');
+                console.log('==================================');
+                console.log('📅 استخدم هذا التاريخ:');
+                console.log('   الشهر: يناير (1)');
+                console.log('   اليوم: 11');
+                console.log('   السنة: 1999');
+                console.log('==================================');
+                console.log('⏱️  لديك 40 ثانية للملء اليدوي...');
+                
+                // عرض تحذير مرئي
+                await this.page.evaluate(() => {
+                    const warning = document.createElement('div');
+                    warning.style.position = 'fixed';
+                    warning.style.top = '10px';
+                    warning.style.right = '10px';
+                    warning.style.background = 'red';
+                    warning.style.color = 'white';
+                    warning.style.padding = '20px';
+                    warning.style.zIndex = '9999';
+                    warning.style.fontSize = '18px';
+                    warning.style.borderRadius = '5px';
+                    warning.innerHTML = '⚠️ املأ تاريخ الميلاد يدوياً:<br>الشهر: 1<br>اليوم: 11<br>السنة: 1999';
+                    document.body.appendChild(warning);
+                    
+                    setTimeout(() => warning.remove(), 40000);
+                });
                 
                 // انتظار المستخدم
-                await this.page.waitForTimeout(30000);
+                await this.page.waitForTimeout(40000);
                 
-                // التقاط screenshot بعد الانتظار
-                await this.page.screenshot({ path: 'birthdate_manual.png' });
-                console.log('📸 تم حفظ لقطة الشاشة في birthdate_manual.png');
+                // التقاط لقطة بعد الانتظار
+                await this.page.screenshot({ path: 'manual_fill_complete.png' });
+                console.log('📸 تم حفظ لقطة الشاشة بعد الانتظار: manual_fill_complete.png');
                 
                 return false;
             }
@@ -231,9 +332,9 @@ class DiscordAccountCreator {
         console.log('🖱️  جاري البحث عن زر Create Account...');
         
         try {
-            // الطريقة المباشرة أولاً
+            // البحث عن زر Submit
             await this.page.click('button[type="submit"]');
-            console.log('✅ تم النقر على زر Create Account');
+            console.log('✅ تم النقر على زر Submit');
             return true;
         } catch (error) {
             console.log('⚠️  لم أجد زر Submit مباشر');
@@ -244,14 +345,15 @@ class DiscordAccountCreator {
             'button[type="submit"]',
             'button:has-text("Create Account")',
             'button:has-text("إنشاء حساب")',
-            'button[aria-label*="Create Account"]'
+            'button[aria-label*="Create Account"]',
+            'button[class*="button"][type="button"]'
         ];
         
         for (const selector of buttonSelectors) {
             try {
-                const button = await this.page.$(selector);
-                if (button) {
-                    await button.click();
+                const buttons = await this.page.$$(selector);
+                if (buttons.length > 0) {
+                    await buttons[0].click();
                     console.log(`✅ تم النقر باستخدام: ${selector}`);
                     return true;
                 }
@@ -272,7 +374,7 @@ class DiscordAccountCreator {
                 for (let i = 0; i < localStorage.length; i++) {
                     const key = localStorage.key(i);
                     const value = localStorage.getItem(key);
-                    if (value && value.length > 50) {
+                    if (value && value.includes('.')) {
                         return value;
                     }
                 }
@@ -281,7 +383,7 @@ class DiscordAccountCreator {
                 const cookies = document.cookie.split(';');
                 for (const cookie of cookies) {
                     const [name, value] = cookie.trim().split('=');
-                    if (value && value.length > 50) {
+                    if (name && value && value.includes('.')) {
                         return value;
                     }
                 }
@@ -330,11 +432,35 @@ class DiscordAccountCreator {
             const pageUrl = await this.page.url();
             console.log(`🔗 الرابط الحالي: ${pageUrl}`);
 
+            // التقاط لقطة أولية
+            await this.page.screenshot({ path: 'initial_page.png' });
+            console.log('📸 لقطة الصفحة الأولى: initial_page.png');
+
             // ملء حقل الإيميل
             console.log('✏️  تعبئة الإيميل...');
-            await this.page.waitForSelector('input[name="email"]', { timeout: 10000 });
-            await this.page.type('input[name="email"]', email, { delay: 50 });
-            console.log('✅ تم ملء الإيميل');
+            try {
+                await this.page.waitForSelector('input[name="email"]', { timeout: 10000 });
+                await this.page.type('input[name="email"]', email, { delay: 50 });
+                console.log('✅ تم ملء الإيميل');
+            } catch (error) {
+                console.log('⚠️  لم أجد حقل الإيميل بالاسم، جرب selectors أخرى...');
+                
+                const emailSelectors = [
+                    'input[type="email"]',
+                    'input[placeholder*="email" i]',
+                    'input[placeholder*="بريد" i]',
+                    'input[aria-label*="email" i]'
+                ];
+                
+                for (const selector of emailSelectors) {
+                    try {
+                        await this.page.type(selector, email, { delay: 50 });
+                        console.log(`✅ تم ملء الإيميل باستخدام: ${selector}`);
+                        break;
+                    } catch (err) {}
+                }
+            }
+            
             await this.randomDelay();
 
             // ملء حقل Display Name
@@ -343,37 +469,64 @@ class DiscordAccountCreator {
 
             // ملء حقل Username
             console.log('✏️  تعبئة Username...');
-            await this.page.waitForSelector('input[name="username"]', { timeout: 5000 });
-            await this.page.type('input[name="username"]', username, { delay: 50 });
-            console.log('✅ تم ملء Username');
+            try {
+                await this.page.waitForSelector('input[name="username"]', { timeout: 5000 });
+                await this.page.type('input[name="username"]', username, { delay: 50 });
+                console.log('✅ تم ملء Username');
+            } catch (error) {
+                console.log('⚠️  لم أجد حقل Username بالاسم، جرب selectors أخرى...');
+                
+                const usernameSelectors = [
+                    'input[placeholder*="username" i]',
+                    'input[placeholder*="اسم المستخدم" i]',
+                    'input[aria-label*="username" i]'
+                ];
+                
+                for (const selector of usernameSelectors) {
+                    try {
+                        await this.page.type(selector, username, { delay: 50 });
+                        console.log(`✅ تم ملء Username باستخدام: ${selector}`);
+                        break;
+                    } catch (err) {}
+                }
+            }
+            
             await this.randomDelay();
 
             // ملء حقل Password
             console.log('✏️  تعبئة Password...');
-            await this.page.waitForSelector('input[name="password"]', { timeout: 5000 });
-            await this.page.type('input[name="password"]', password, { delay: 50 });
-            console.log('✅ تم ملء Password');
+            try {
+                await this.page.waitForSelector('input[name="password"]', { timeout: 5000 });
+                await this.page.type('input[name="password"]', password, { delay: 50 });
+                console.log('✅ تم ملء Password');
+            } catch (error) {
+                console.log('⚠️  لم أجد حقل Password بالاسم، جرب selectors أخرى...');
+                
+                const passwordSelectors = [
+                    'input[type="password"]',
+                    'input[placeholder*="password" i]',
+                    'input[placeholder*="كلمة المرور" i]',
+                    'input[aria-label*="password" i]'
+                ];
+                
+                for (const selector of passwordSelectors) {
+                    try {
+                        await this.page.type(selector, password, { delay: 50 });
+                        console.log(`✅ تم ملء Password باستخدام: ${selector}`);
+                        break;
+                    } catch (err) {}
+                }
+            }
+            
             await this.randomDelay(1000, 1500);
 
-            // ملء تاريخ الميلاد الثابت
-            const birthDate = this.generateDate();
-            console.log(`📅 التاريخ الثابت: ${birthDate.day}/${birthDate.month}/${birthDate.year}`);
-            console.log('🎯 جاري تعبئة تاريخ الميلاد...');
+            // ملء تاريخ الميلاد
+            console.log('\n🎯 بدء عملية ملء تاريخ الميلاد...');
+            await this.fillBirthDate();
             
-            await this.fillBirthDate(birthDate);
-            
-            await this.randomDelay(1000, 1500);
-
-            // التقاط screenshot
-            await this.page.screenshot({ path: 'form_filled.png' });
-            console.log('📸 تم حفظ صفحة النموذج المملوء في form_filled.png');
-
-            console.log('\n✅ جميع الحقول مملوءة!');
-            console.log('   ✓ الإيميل');
-            console.log('   ✓ Display Name');
-            console.log('   ✓ Username');
-            console.log('   ✓ Password');
-            console.log(`   ✓ تاريخ الميلاد: ${birthDate.day}/${birthDate.month}/${birthDate.year}`);
+            // التقاط screenshot قبل النقر
+            await this.page.screenshot({ path: 'before_click.png' });
+            console.log('📸 لقطة قبل النقر على Create Account: before_click.png');
 
             // الضغط على زر Create Account
             console.log('\n🎯 جاري النقر على زر Create Account...');
@@ -381,28 +534,17 @@ class DiscordAccountCreator {
             
             if (!clicked) {
                 console.log('⚠️  يرجى النقر على زر Create Account يدوياً');
+                console.log('⏱️  انتظار 10 ثوانٍ...');
                 await this.page.waitForTimeout(10000);
             }
+
+            // التقاط screenshot بعد النقر
+            await this.page.screenshot({ path: 'after_click.png' });
+            console.log('📸 لقطة بعد النقر: after_click.png');
 
             // انتظار
             console.log('⏳ انتظار 5 ثوانٍ...');
             await this.page.waitForTimeout(5000);
-
-            // التحقق من وجود كابتشا
-            const hasCaptcha = await this.page.evaluate(() => {
-                return document.querySelector('iframe[src*="captcha"]') !== null ||
-                       document.querySelector('div[class*="captcha"]') !== null;
-            });
-
-            if (hasCaptcha) {
-                console.log('\n⚠️  يوجد Captcha!');
-                console.log('⏳ يرجى حله يدوياً خلال 60 ثانية...');
-                await this.page.waitForTimeout(60000);
-            }
-
-            // انتظار إنشاء الحساب
-            console.log('⏳ انتظار إنشاء الحساب...');
-            await this.page.waitForTimeout(8000);
 
             // الحصول على التوكن
             console.log('🔑 جاري الحصول على التوكن...');
@@ -416,18 +558,13 @@ class DiscordAccountCreator {
                 await fs.appendFile('tokens.txt', `${token}\n`);
                 console.log('💾 تم حفظ التوكن في tokens.txt');
                 
-                // حفظ معلومات الحساب
-                const accountInfo = `[${new Date().toLocaleString()}] ${email} | ${username} | ${token.substring(0, 30)}...\n`;
-                await fs.appendFile('accounts.txt', accountInfo);
-                console.log('📝 تم حفظ معلومات الحساب في accounts.txt');
-                
                 // حذف الأسطر المستخدمة
                 await this.deleteFirstLine('gmails.txt');
                 await this.deleteFirstLine('names.txt');
                 await this.deleteFirstLine('username.txt');
                 await this.deleteFirstLine('password.txt');
                 
-                console.log('🗑️  تم حذف البيانات المستخدمة من الملفات');
+                console.log('🗑️  تم حذف البيانات المستخدمة');
                 return token;
             } else {
                 console.log('❌ لم يتم الحصول على التوكن');
@@ -438,12 +575,15 @@ class DiscordAccountCreator {
                 await this.deleteFirstLine('username.txt');
                 await this.deleteFirstLine('password.txt');
                 
-                console.log('🗑️  تم حذف البيانات المستخدمة من الملفات');
+                console.log('🗑️  تم حذف البيانات المستخدمة');
                 return false;
             }
 
         } catch (error) {
             console.error('❌ خطأ في إنشاء الحساب:', error.message);
+            // التقاط لقطة عند الخطأ
+            await this.page.screenshot({ path: 'error.png' });
+            console.log('📸 تم حفظ لقطة الخطأ: error.png');
             return false;
         }
     }
@@ -451,9 +591,9 @@ class DiscordAccountCreator {
     async run() {
         console.log(`
 ==========================================
- Discord Account Creator - FIXED DATE
+ Discord Account Creator
 ==========================================
-📅 تاريخ الميلاد الثابت: 11/01/1999
+🎯 تاريخ الميلاد الثابت: 11 يناير 1999
         `);
         
         // التحقق من الملفات
@@ -461,6 +601,7 @@ class DiscordAccountCreator {
         for (const file of requiredFiles) {
             if (!fsSync.existsSync(file)) {
                 console.error(`❌ ملف ${file} غير موجود!`);
+                console.log(`📝 أنشئ ملف ${file} وضع فيه البيانات`);
                 return;
             }
         }
@@ -471,10 +612,17 @@ class DiscordAccountCreator {
             this.browser = await puppeteer.launch({ 
                 headless: false,
                 defaultViewport: null,
-                args: ['--start-maximized', '--no-sandbox']
+                args: ['--start-maximized', '--no-sandbox', '--disable-blink-features=AutomationControlled']
             });
             
             this.page = await this.browser.newPage();
+            
+            // إخفاء أنه يتم التحكم آلياً
+            await this.page.evaluateOnNewDocument(() => {
+                Object.defineProperty(navigator, 'webdriver', {
+                    get: () => false
+                });
+            });
             
             await this.page.setUserAgent(
                 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
@@ -489,6 +637,7 @@ class DiscordAccountCreator {
                 console.log('\n✨ تم إنشاء الحساب بنجاح! ✨');
             } else {
                 console.log('\n⚠️  العملية اكتملت مع بعض المشاكل');
+                console.log('📸 تم حفظ لقطات شاشة للمساعدة في التشخيص');
             }
 
         } catch (error) {
@@ -503,17 +652,10 @@ class DiscordAccountCreator {
             }
             
             console.log('\n📋 ملخص العملية:');
-            console.log('   1. ملأ الإيميل');
-            console.log('   2. ملأ Display Name');
-            console.log('   3. ملأ Username');
-            console.log('   4. ملأ Password');
-            console.log('   5. ملأ تاريخ الميلاد (1999-01-11)');
-            console.log('   6. ضغط على زر Create Account');
-            console.log('   7. حاول الحصول على التوكن');
-            console.log('   8. حفظ التوكن وحذف البيانات');
-            console.log('   9. أغلق المتصفح');
-            
-            console.log('\n🔄 للتشغيل مرة أخرى، أعد تشغيل البرنامج');
+            console.log('   1. تم حفظ عدة لقطات شاشة للمساعدة');
+            console.log('   2. إذا لم يملأ التاريخ، يجب ملؤه يدوياً');
+            console.log('   3. التاريخ المطلوب: 11 يناير 1999');
+            console.log('   4. توكنات الديسكورد محفوظة في tokens.txt');
         }
     }
 }
