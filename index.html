@@ -1,400 +1,166 @@
-const readline = require('readline');
-const chalk = require('chalk');
-const figlet = require('figlet');
-const axios = require('axios');
+import discord
+import asyncio
+import random
+import logging
 
-const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout
-});
+# Settings
+TOKENS_FILE = "tokens.txt"
+STATUSES = ["dnd", "idle", "online"]
+ACTIVITIES = ["Watching", "Playing", "Listening"]
 
-// Increased delay to avoid detection
-const DELAY = 10000;
+# Setup logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
-// === Main Menu ===
-function showMainMenu() {
-    console.clear();
-    console.log(chalk.red(figlet.textSync('Original', { font: '3D-ASCII' })));
-    console.log(chalk.red('='.repeat(50)));
-    console.log(chalk.red.bold('\n[1] HypeSquad For Tokens'));
-    console.log(chalk.red.bold('[2] About Me For Tokens'));
-    console.log(chalk.red.bold('[3] Add Tokens To Server'));
-    console.log(chalk.red.bold('[4] Token Check'));
-    console.log(chalk.red('='.repeat(50)));
+class DiscordAccount:
+    def __init__(self, token, account_number):
+        self.token = token
+        self.account_number = account_number
+        
+        # User account mode
+        intents = discord.Intents.default()
+        intents.message_content = True
+        intents.guilds = True
+        intents.reactions = True
+        
+        self.client = discord.Client(intents=intents)
+        self.setup_handlers()
     
-    rl.question(chalk.yellow('\nSelect option (1-4): '), handleChoice);
-}
-
-// === Handle Choice ===
-async function handleChoice(choice) {
-    console.clear();
-    switch(choice) {
-        case '1': await getHypeSquad(); break;
-        case '2': await setAboutMe(); break;
-        case '3': await joinServer(); break;
-        case '4': await checkTokens(); break;
-        default: 
-            console.log(chalk.red('Invalid choice'));
-            setTimeout(showMainMenu, 2000);
-    }
-}
-
-// === Option 1: Get HypeSquad Badge ===
-async function getHypeSquad() {
-    console.log(chalk.cyan('Add Tokens - Paste all tokens (one per line):\n'));
-    console.log(chalk.gray('Example:'));
-    console.log(chalk.gray('MTxxxxx.xxxx.xxxx'));
-    console.log(chalk.gray('MTyyyyy.yyyy.yyyy'));
-    console.log(chalk.gray('MTzzzzz.zzzz.zzzz'));
-    console.log(chalk.gray('\nPaste your tokens below:'));
-    
-    const tokens = await getAllTokens();
-    if (!tokens || tokens.length === 0) {
-        console.log(chalk.red('No tokens provided!'));
-        return setTimeout(showMainMenu, 2000);
-    }
-    
-    console.log(chalk.gray(`\nFound ${tokens.length} tokens. Starting...`));
-    
-    let success = 0, failed = 0;
-    
-    for (let i = 0; i < tokens.length; i++) {
-        try {
-            console.log(chalk.gray(`\n[${i+1}/${tokens.length}] Processing token...`));
+    def setup_handlers(self):
+        @self.client.event
+        async def on_ready():
+            logger.info(f"Account {self.account_number} ready: {self.client.user.name}")
             
-            const userResponse = await axios.get('https://discord.com/api/v9/users/@me', {
-                headers: { 
-                    Authorization: tokens[i],
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-                }
-            });
+            # Set random status
+            await self.set_random_status()
             
-            const userTag = `${userResponse.data.username}#${userResponse.data.discriminator}`;
-            const flags = userResponse.data.public_flags || 0;
+            # Update status periodically
+            asyncio.create_task(self.status_update_loop())
+        
+        @self.client.event
+        async def on_message(message):
+            # Ignore our own messages
+            if message.author.id == self.client.user.id:
+                return
             
-            const hasBravery = (flags & 64) !== 0;
-            const hasBrilliance = (flags & 128) !== 0;
-            const hasBalance = (flags & 256) !== 0;
+            # Only respond in guilds
+            if not message.guild:
+                return
             
-            if (!hasBravery && !hasBrilliance && !hasBalance) {
-                const houseId = Math.floor(Math.random() * 3) + 1;
-                const response = await axios.post('https://discord.com/api/v9/hypesquad/online', 
-                    { house_id: houseId },
-                    { 
-                        headers: { 
-                            Authorization: tokens[i],
-                            'Content-Type': 'application/json',
-                            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-                        }
-                    }
-                );
+            # Check if author is a member
+            if not isinstance(message.author, discord.Member):
+                return
+            
+            # Check for Manage Guild permission
+            if not message.author.guild_permissions.manage_guild:
+                return
+            
+            # Trigger words
+            trigger_words = ["بدون شروط", "شارك بس", "@here", "@everyone"]
+            message_content = message.content
+            
+            # Check if any trigger word exists
+            found_trigger = any(word in message_content for word in trigger_words)
+            
+            if found_trigger:
+                logger.info(f"Account {self.account_number}: Trigger detected from {message.author.name}")
                 
-                if (response.status === 204) {
-                    console.log(chalk.green(`✓ ${userTag} - HypeSquad added`));
-                    success++;
-                } else {
-                    console.log(chalk.red(`✗ ${userTag} - Failed`));
-                    failed++;
-                }
-            } else {
-                console.log(chalk.yellow(`⚠ ${userTag} - Already has HypeSquad`));
-                success++;
-            }
-        } catch (error) {
-            if (error.response?.status === 401) {
-                console.log(chalk.red(`✗ Invalid token`));
-            } else {
-                console.log(chalk.red(`✗ Error: ${error.response?.data?.message || error.message}`));
-            }
-            failed++;
-        }
-        
-        if (i < tokens.length - 1) {
-            console.log(chalk.gray(`Waiting ${DELAY/1000} seconds...`));
-            await delay(DELAY);
-        }
-    }
+                # If message is a reply to another message
+                if message.reference and message.reference.message_id:
+                    try:
+                        channel = message.channel
+                        target_message = await channel.fetch_message(message.reference.message_id)
+                        
+                        # Get all reactions on the target message
+                        if target_message.reactions:
+                            # Click on the first reaction available
+                            first_reaction = target_message.reactions[0]
+                            
+                            # Add our reaction
+                            await first_reaction.add()
+                            logger.info(f"Account {self.account_number}: Reacted to message in {message.guild.name}")
+                        
+                    except Exception as e:
+                        logger.error(f"Account {self.account_number}: Error: {e}")
     
-    showResults(success, failed);
-}
-
-// === Option 2: Set About Me ===
-async function setAboutMe() {
-    console.log(chalk.cyan('Add Tokens - Paste all tokens (one per line):\n'));
-    console.log(chalk.gray('Example:'));
-    console.log(chalk.gray('MTxxxxx.xxxx.xxxx'));
-    console.log(chalk.gray('MTyyyyy.yyyy.yyyy'));
-    console.log(chalk.gray('\nPaste your tokens below:'));
-    
-    const tokens = await getAllTokens();
-    if (!tokens || tokens.length === 0) {
-        console.log(chalk.red('No tokens provided!'));
-        return setTimeout(showMainMenu, 2000);
-    }
-    
-    console.log(chalk.gray(`\nFound ${tokens.length} tokens. Starting...`));
-    
-    const aboutTexts = [
-        "Professional gamer and streamer",
-        "Software developer exploring new technologies",
-        "Book lover and world traveler",
-        "Digital artist and creative mind",
-        "Science enthusiast and researcher",
-        "Full stack developer and tech blogger",
-        "University student and part-time freelancer",
-        "Photographer and adventure seeker"
-    ];
-    
-    let success = 0, failed = 0;
-    
-    for (let i = 0; i < tokens.length; i++) {
-        try {
-            console.log(chalk.gray(`\n[${i+1}/${tokens.length}] Processing...`));
+    async def set_random_status(self):
+        try:
+            status_type = random.choice(STATUSES)
+            activity_text = random.choice(ACTIVITIES)
             
-            const bio = aboutTexts[Math.floor(Math.random() * aboutTexts.length)];
-            const response = await axios.patch('https://discord.com/api/v9/users/@me',
-                { bio: bio },
-                { 
-                    headers: { 
-                        Authorization: tokens[i],
-                        'Content-Type': 'application/json',
-                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-                    }
-                }
-            );
+            if status_type == "dnd":
+                await self.client.change_presence(
+                    status=discord.Status.dnd,
+                    activity=discord.Game(name=activity_text)
+                )
+            elif status_type == "idle":
+                await self.client.change_presence(
+                    status=discord.Status.idle,
+                    activity=discord.Game(name=activity_text)
+                )
+            else:
+                await self.client.change_presence(
+                    status=discord.Status.online,
+                    activity=discord.Game(name=activity_text)
+                )
             
-            console.log(chalk.green(`✓ ${response.data.username}#${response.data.discriminator} - About Me updated`));
-            success++;
-        } catch (error) {
-            if (error.response?.status === 401) {
-                console.log(chalk.red(`✗ Invalid token`));
-            } else if (error.response?.status === 403) {
-                console.log(chalk.red(`✗ Account has restrictions`));
-            } else {
-                console.log(chalk.red(`✗ Error: ${error.response?.data?.message || error.message}`));
-            }
-            failed++;
-        }
-        
-        if (i < tokens.length - 1) {
-            console.log(chalk.gray(`Waiting ${DELAY/1000} seconds...`));
-            await delay(DELAY);
-        }
-    }
+            logger.info(f"Account {self.account_number}: Status set to {status_type}")
+        except Exception as e:
+            logger.error(f"Account {self.account_number}: Status error: {e}")
     
-    showResults(success, failed);
-}
+    async def status_update_loop(self):
+        while True:
+            wait_time = random.randint(600, 1800)  # 10-30 minutes
+            await asyncio.sleep(wait_time)
+            await self.set_random_status()
+    
+    async def start(self):
+        try:
+            await self.client.start(self.token, bot=False)
+        except discord.LoginFailure:
+            logger.error(f"Account {self.account_number}: Invalid token")
+        except Exception as e:
+            logger.error(f"Account {self.account_number}: Error: {e}")
 
-// === Option 3: Join Server ===
-async function joinServer() {
-    console.log(chalk.cyan('Add Tokens - Paste all tokens (one per line):\n'));
-    console.log(chalk.gray('Example:'));
-    console.log(chalk.gray('MTxxxxx.xxxx.xxxx'));
-    console.log(chalk.gray('MTyyyyy.yyyy.yyyy'));
-    console.log(chalk.gray('\nPaste your tokens below:'));
+class MultiAccountManager:
+    def __init__(self):
+        self.accounts = []
     
-    const tokens = await getAllTokens();
-    if (!tokens || tokens.length === 0) {
-        console.log(chalk.red('No tokens provided!'));
-        return setTimeout(showMainMenu, 2000);
-    }
-    
-    console.log(chalk.gray(`\nFound ${tokens.length} tokens. Now enter server link:`));
-    
-    rl.question(chalk.yellow('Enter server invite link (discord.gg/XXXX): '), async (inviteLink) => {
-        const inviteCode = extractInviteCode(inviteLink);
-        if (!inviteCode) {
-            console.log(chalk.red('Invalid invite link!'));
-            return setTimeout(showMainMenu, 2000);
-        }
-        
-        console.log(chalk.gray(`\nStarting to join server with ${tokens.length} tokens...`));
-        
-        let success = 0, failed = 0;
-        
-        for (let i = 0; i < tokens.length; i++) {
-            try {
-                console.log(chalk.gray(`\n[${i+1}/${tokens.length}] Joining server...`));
-                
-                const response = await axios.post(`https://discord.com/api/v9/invites/${inviteCode}`,
-                    {},
-                    { 
-                        headers: { 
-                            Authorization: tokens[i],
-                            'Content-Type': 'application/json',
-                            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-                        }
-                    }
-                );
-                
-                console.log(chalk.green(`✓ Successfully joined server`));
-                success++;
-            } catch (error) {
-                if (error.response?.status === 401) {
-                    console.log(chalk.red(`✗ Invalid token`));
-                } else if (error.response?.status === 403) {
-                    console.log(chalk.red(`✗ Cannot join server`));
-                } else if (error.response?.status === 429) {
-                    console.log(chalk.red(`✗ Rate limited, waiting longer...`));
-                    await delay(DELAY * 3);
-                    i--; // Try same token again
-                    continue;
-                } else {
-                    console.log(chalk.red(`✗ Error: ${error.response?.data?.message || error.message}`));
-                }
-                failed++;
-            }
+    def load_tokens(self):
+        try:
+            with open(TOKENS_FILE, 'r', encoding='utf-8') as f:
+                tokens = [line.strip() for line in f if line.strip()]
             
-            if (i < tokens.length - 1) {
-                console.log(chalk.gray(`Waiting ${DELAY/1000} seconds...`));
-                await delay(DELAY);
-            }
-        }
-        
-        showResults(success, failed);
-    });
-}
-
-// === Option 4: Check Tokens ===
-async function checkTokens() {
-    console.log(chalk.cyan('Add Tokens - Paste all tokens (one per line):\n'));
-    console.log(chalk.gray('Example:'));
-    console.log(chalk.gray('MTxxxxx.xxxx.xxxx'));
-    console.log(chalk.gray('MTyyyyy.yyyy.yyyy'));
-    console.log(chalk.gray('MTzzzzz.zzzz.zzzz'));
-    console.log(chalk.gray('\nPaste your tokens below:'));
-    
-    const tokens = await getAllTokens();
-    if (!tokens || tokens.length === 0) {
-        console.log(chalk.red('No tokens provided!'));
-        return setTimeout(showMainMenu, 2000);
-    }
-    
-    console.log(chalk.gray(`\nFound ${tokens.length} tokens. Checking...`));
-    
-    let valid = 0, invalid = 0;
-    
-    for (let i = 0; i < tokens.length; i++) {
-        try {
-            console.log(chalk.gray(`\n[${i+1}/${tokens.length}] Checking...`));
+            for i, token in enumerate(tokens, 1):
+                account = DiscordAccount(token, i)
+                self.accounts.append(account)
             
-            const response = await axios.get('https://discord.com/api/v9/users/@me', {
-                headers: { 
-                    Authorization: tokens[i],
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-                }
-            });
-            
-            const userTag = `${response.data.username}#${response.data.discriminator}`;
-            const verified = response.data.verified ? '✓ Verified' : '✗ Not verified';
-            
-            console.log(chalk.green(`✓ ${userTag} - Valid (${verified})`));
-            valid++;
-        } catch (error) {
-            console.log(chalk.red(`✗ Invalid/expired token`));
-            invalid++;
-        }
+            logger.info(f"Loaded {len(tokens)} accounts")
+        except FileNotFoundError:
+            logger.error(f"File {TOKENS_FILE} not found")
+    
+    async def start_all_accounts(self):
+        self.load_tokens()
         
-        if (i < tokens.length - 1) {
-            await delay(2000);
-        }
-    }
-    
-    console.log(chalk.cyan('\n' + '='.repeat(40)));
-    console.log(chalk.white.bold('TOKEN CHECK RESULTS:'));
-    console.log(chalk.green(`Valid tokens: ${valid}`));
-    console.log(chalk.red(`Invalid tokens: ${invalid}`));
-    console.log(chalk.cyan('='.repeat(40)));
-    
-    console.log(chalk.gray('\nPress Enter to continue...'));
-    rl.question('', () => {
-        showMainMenu();
-    });
-}
-
-// === NEW FUNCTION: Get all tokens at once ===
-async function getAllTokens() {
-    return new Promise((resolve) => {
-        console.log(chalk.gray('(Paste all tokens, then press Enter twice to finish)'));
-        console.log(chalk.gray('-' .repeat(40)));
+        if not self.accounts:
+            logger.error("No accounts to start")
+            return
         
-        const lines = [];
+        tasks = []
+        for account in self.accounts:
+            task = asyncio.create_task(account.start())
+            tasks.append(task)
         
-        rl.on('line', (line) => {
-            if (line.trim() === '' && lines.length > 0) {
-                // Empty line after tokens means finished
-                rl.removeAllListeners('line');
-                const tokens = lines
-                    .filter(l => l.trim() !== '')
-                    .map(l => l.trim())
-                    .filter(token => token.length > 10); // Basic validation
-                
-                console.log(chalk.gray(`\nCollected ${tokens.length} tokens`));
-                resolve(tokens);
-            } else if (line.trim() !== '') {
-                lines.push(line.trim());
-            }
-        });
-        
-        // Timeout after 30 seconds
-        setTimeout(() => {
-            if (lines.length > 0) {
-                rl.removeAllListeners('line');
-                const tokens = lines
-                    .filter(l => l.trim() !== '')
-                    .map(l => l.trim())
-                    .filter(token => token.length > 10);
-                
-                console.log(chalk.gray(`\nCollected ${tokens.length} tokens (timeout)`));
-                resolve(tokens);
-            } else {
-                resolve([]);
-            }
-        }, 30000);
-    });
-}
+        try:
+            await asyncio.gather(*tasks)
+        except KeyboardInterrupt:
+            logger.info("Shutting down...")
+        except Exception as e:
+            logger.error(f"Manager error: {e}")
 
-function extractInviteCode(link) {
-    const patterns = [
-        /discord\.gg\/([a-zA-Z0-9\-_]+)/,
-        /discordapp\.com\/invite\/([a-zA-Z0-9\-_]+)/,
-        /discord\.com\/invite\/([a-zA-Z0-9\-_]+)/
-    ];
-    
-    for (const pattern of patterns) {
-        const match = link.match(pattern);
-        if (match && match[1]) {
-            return match[1];
-        }
-    }
-    
-    return link.trim();
-}
+async def main():
+    manager = MultiAccountManager()
+    await manager.start_all_accounts()
 
-function delay(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-function showResults(success, failed) {
-    console.log(chalk.cyan('\n' + '='.repeat(40)));
-    console.log(chalk.white.bold('OPERATION COMPLETED:'));
-    console.log(chalk.green(`Success: ${success}`));
-    console.log(chalk.red(`Failed: ${failed}`));
-    console.log(chalk.yellow(`Total: ${success + failed}`));
-    console.log(chalk.cyan('='.repeat(40)));
-    
-    setTimeout(() => {
-        console.log(chalk.gray('\nReturning to main menu in 3 seconds...'));
-        setTimeout(showMainMenu, 3000);
-    }, 1000);
-}
-
-// === Start Program ===
-console.log(chalk.red.bold('\n' + '='.repeat(50)));
-console.log(chalk.red.bold('WARNING: This tool violates Discord ToS'));
-console.log(chalk.red.bold('Accounts may be permanently banned'));
-console.log(chalk.red.bold('='.repeat(50) + '\n'));
-
-setTimeout(() => {
-    showMainMenu();
-}, 2000);
+if __name__ == "__main__":
+    asyncio.run(main())
