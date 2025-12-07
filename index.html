@@ -1,166 +1,193 @@
-import discord
-import asyncio
-import random
-import logging
+const { Client } = require('discord.js-selfbot-v13');
+const fs = require('fs').promises;
 
-# Settings
-TOKENS_FILE = "tokens.txt"
-STATUSES = ["dnd", "idle", "online"]
-ACTIVITIES = ["Watching", "Playing", "Listening"]
+const EXCLUDED_GUILD_ID = '1441856943265419266'; // السيرفر المستثنى
 
-# Setup logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-logger = logging.getLogger(__name__)
+class DiscordSelfbotFetcher {
+    constructor() {
+        this.accounts = [];
+    }
 
-class DiscordAccount:
-    def __init__(self, token, account_number):
-        self.token = token
-        self.account_number = account_number
+    async loadTokens() {
+        try {
+            const data = await fs.readFile('tokens.txt', 'utf8');
+            return data.split('\n')
+                .map(token => token.trim())
+                .filter(token => token.length > 0);
+        } catch (error) {
+            console.error('Error reading tokens.txt:', error.message);
+            return [];
+        }
+    }
+
+    async fetchAccountInfo(token) {
+        const client = new Client({
+            checkUpdate: false
+        });
+
+        return new Promise((resolve, reject) => {
+            client.once('ready', async () => {
+                try {
+                    console.log(`Logged in as: ${client.user.tag} (${client.user.id})`);
+                    
+                    const userInfo = {
+                        username: client.user.username,
+                        discriminator: client.user.discriminator,
+                        id: client.user.id,
+                        tokenPreview: token.substring(0, 25) + '...',
+                        guilds: []
+                    };
+
+                    // الحصول على جميع السيرفرات
+                    const guilds = client.guilds.cache;
+                    
+                    console.log(`Found ${guilds.size} guilds for ${client.user.tag}`);
+                    
+                    for (const [guildId, guild] of guilds) {
+                        // تخطي السيرفر المستثنى
+                        if (guildId === EXCLUDED_GUILD_ID) {
+                            console.log(`Skipping excluded guild: ${guild.name} (${guildId})`);
+                            continue;
+                        }
+
+                        // إضافة معلومات السيرفر
+                        userInfo.guilds.push({
+                            id: guildId,
+                            name: guild.name || 'Unknown Guild',
+                            memberCount: guild.memberCount || 'N/A',
+                            joinedAt: guild.joinedAt || new Date()
+                        });
+                    }
+                    
+                    resolve(userInfo);
+                } catch (error) {
+                    reject(error);
+                } finally {
+                    client.destroy();
+                }
+            });
+
+            client.on('error', (error) => {
+                reject(error);
+            });
+
+            // تسجيل الدخول باستخدام التوكن
+            client.login(token).catch(reject);
+        });
+    }
+
+    async displayResults() {
+        console.log('\n' + '='.repeat(80));
+        console.log('DISCORD SELF-BOT ACCOUNTS INFORMATION');
+        console.log('='.repeat(80) + '\n');
         
-        # User account mode
-        intents = discord.Intents.default()
-        intents.message_content = True
-        intents.guilds = True
-        intents.reactions = True
+        let totalGuilds = 0;
         
-        self.client = discord.Client(intents=intents)
-        self.setup_handlers()
-    
-    def setup_handlers(self):
-        @self.client.event
-        async def on_ready():
-            logger.info(f"Account {self.account_number} ready: {self.client.user.name}")
+        this.accounts.forEach((account, index) => {
+            console.log(`${index + 1}. ${account.username}#${account.discriminator} (ID: ${account.id})`);
+            console.log(`   Token Preview: ${account.tokenPreview}`);
             
-            # Set random status
-            await self.set_random_status()
-            
-            # Update status periodically
-            asyncio.create_task(self.status_update_loop())
-        
-        @self.client.event
-        async def on_message(message):
-            # Ignore our own messages
-            if message.author.id == self.client.user.id:
-                return
-            
-            # Only respond in guilds
-            if not message.guild:
-                return
-            
-            # Check if author is a member
-            if not isinstance(message.author, discord.Member):
-                return
-            
-            # Check for Manage Guild permission
-            if not message.author.guild_permissions.manage_guild:
-                return
-            
-            # Trigger words
-            trigger_words = ["بدون شروط", "شارك بس", "@here", "@everyone"]
-            message_content = message.content
-            
-            # Check if any trigger word exists
-            found_trigger = any(word in message_content for word in trigger_words)
-            
-            if found_trigger:
-                logger.info(f"Account {self.account_number}: Trigger detected from {message.author.name}")
+            if (account.error) {
+                console.log(`   Error: ${account.error}`);
+            } else {
+                console.log(`   Total Servers (excluding excluded one): ${account.guilds.length}`);
                 
-                # If message is a reply to another message
-                if message.reference and message.reference.message_id:
-                    try:
-                        channel = message.channel
-                        target_message = await channel.fetch_message(message.reference.message_id)
-                        
-                        # Get all reactions on the target message
-                        if target_message.reactions:
-                            # Click on the first reaction available
-                            first_reaction = target_message.reactions[0]
-                            
-                            # Add our reaction
-                            await first_reaction.add()
-                            logger.info(f"Account {self.account_number}: Reacted to message in {message.guild.name}")
-                        
-                    except Exception as e:
-                        logger.error(f"Account {self.account_number}: Error: {e}")
-    
-    async def set_random_status(self):
-        try:
-            status_type = random.choice(STATUSES)
-            activity_text = random.choice(ACTIVITIES)
+                if (account.guilds.length > 0) {
+                    totalGuilds += account.guilds.length;
+                    
+                    // طباعة التنسيق المطلوب: user1 | اسم السيرفر
+                    console.log('\n   Requested Format (username | server_name):');
+                    account.guilds.forEach(guild => {
+                        console.log(`   ${account.username} | ${guild.name}`);
+                    });
+                    
+                    // طباعة معلومات مفصلة عن السيرفرات
+                    console.log('\n   Detailed Server Information:');
+                    account.guilds.forEach(guild => {
+                        const joinDate = guild.joinedAt ? guild.joinedAt.toLocaleDateString() : 'Unknown';
+                        console.log(`   - ${guild.name} (ID: ${guild.id})`);
+                        console.log(`     Members: ${guild.memberCount} | Joined: ${joinDate}`);
+                    });
+                } else {
+                    console.log('\n   No servers found (or only in excluded server)');
+                }
+            }
             
-            if status_type == "dnd":
-                await self.client.change_presence(
-                    status=discord.Status.dnd,
-                    activity=discord.Game(name=activity_text)
-                )
-            elif status_type == "idle":
-                await self.client.change_presence(
-                    status=discord.Status.idle,
-                    activity=discord.Game(name=activity_text)
-                )
-            else:
-                await self.client.change_presence(
-                    status=discord.Status.online,
-                    activity=discord.Game(name=activity_text)
-                )
-            
-            logger.info(f"Account {self.account_number}: Status set to {status_type}")
-        except Exception as e:
-            logger.error(f"Account {self.account_number}: Status error: {e}")
-    
-    async def status_update_loop(self):
-        while True:
-            wait_time = random.randint(600, 1800)  # 10-30 minutes
-            await asyncio.sleep(wait_time)
-            await self.set_random_status()
-    
-    async def start(self):
-        try:
-            await self.client.start(self.token, bot=False)
-        except discord.LoginFailure:
-            logger.error(f"Account {self.account_number}: Invalid token")
-        except Exception as e:
-            logger.error(f"Account {self.account_number}: Error: {e}")
-
-class MultiAccountManager:
-    def __init__(self):
-        self.accounts = []
-    
-    def load_tokens(self):
-        try:
-            with open(TOKENS_FILE, 'r', encoding='utf-8') as f:
-                tokens = [line.strip() for line in f if line.strip()]
-            
-            for i, token in enumerate(tokens, 1):
-                account = DiscordAccount(token, i)
-                self.accounts.append(account)
-            
-            logger.info(f"Loaded {len(tokens)} accounts")
-        except FileNotFoundError:
-            logger.error(f"File {TOKENS_FILE} not found")
-    
-    async def start_all_accounts(self):
-        self.load_tokens()
+            console.log('\n' + '-'.repeat(80) + '\n');
+        });
         
-        if not self.accounts:
-            logger.error("No accounts to start")
-            return
+        console.log(`Total accounts processed: ${this.accounts.length}`);
+        console.log(`Total servers found (excluding server ${EXCLUDED_GUILD_ID}): ${totalGuilds}`);
         
-        tasks = []
-        for account in self.accounts:
-            task = asyncio.create_task(account.start())
-            tasks.append(task)
+        // طباعة التنسيق النهائي فقط
+        console.log('\n' + '='.repeat(80));
+        console.log('FINAL OUTPUT (username | server_name):');
+        console.log('='.repeat(80));
         
-        try:
-            await asyncio.gather(*tasks)
-        except KeyboardInterrupt:
-            logger.info("Shutting down...")
-        except Exception as e:
-            logger.error(f"Manager error: {e}")
+        this.accounts.forEach(account => {
+            if (!account.error && account.guilds.length > 0) {
+                account.guilds.forEach(guild => {
+                    console.log(`${account.username} | ${guild.name}`);
+                });
+            }
+        });
+    }
 
-async def main():
-    manager = MultiAccountManager()
-    await manager.start_all_accounts()
+    async fetchAllAccounts() {
+        const tokens = await this.loadTokens();
+        
+        if (tokens.length === 0) {
+            console.log('No tokens found in tokens.txt');
+            return;
+        }
+        
+        console.log(`Found ${tokens.length} token(s) to process\n`);
+        
+        for (let i = 0; i < tokens.length; i++) {
+            const token = tokens[i];
+            console.log(`\n[${i + 1}/${tokens.length}] Processing token...`);
+            
+            try {
+                const accountInfo = await this.fetchAccountInfo(token);
+                this.accounts.push(accountInfo);
+                console.log(`Successfully fetched info for: ${accountInfo.username}#${accountInfo.discriminator}`);
+                console.log(`Found ${accountInfo.guilds.length} servers (excluding server ${EXCLUDED_GUILD_ID})`);
+            } catch (error) {
+                console.log(`Failed to process token ${i + 1}: ${error.message}`);
+                // إضافة معلومات التوكن الفاشل
+                this.accounts.push({
+                    username: 'INVALID_TOKEN',
+                    discriminator: '0000',
+                    id: 'N/A',
+                    tokenPreview: token.substring(0, 25) + '...',
+                    guilds: [],
+                    error: error.message
+                });
+            }
+            
+            // تأخير لتجنب Rate Limit
+            await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+        
+        // عرض النتائج
+        await this.displayResults();
+    }
+}
 
-if __name__ == "__main__":
-    asyncio.run(main())
+// التنفيذ الرئيسي
+async function main() {
+    const fetcher = new DiscordSelfbotFetcher();
+    
+    try {
+        await fetcher.fetchAllAccounts();
+    } catch (error) {
+        console.error('Fatal error:', error);
+    }
+}
+
+// تشغيل السكربت
+if (require.main === module) {
+    main();
+}
+
+module.exports = DiscordSelfbotFetcher;
