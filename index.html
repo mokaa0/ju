@@ -1,11 +1,12 @@
 const { Client } = require('discord.js-selfbot-v13');
 const fs = require('fs').promises;
 
-const EXCLUDED_GUILD_ID = '1441856943265419266'; // السيرفر المستثنى
+const EXCLUDED_GUILD_ID = '1441856943265419266'; // السيرفر الي ما تبي تطلع منه
 
-class DiscordSelfbotFetcher {
+class DiscordLeaveGuilds {
     constructor() {
-        this.accounts = [];
+        this.results = [];
+        this.totalGuildsLeft = 0;
     }
 
     async loadTokens() {
@@ -20,7 +21,7 @@ class DiscordSelfbotFetcher {
         }
     }
 
-    async fetchAccountInfo(token) {
+    async leaveGuildsForToken(token) {
         const client = new Client({
             checkUpdate: false
         });
@@ -28,38 +29,83 @@ class DiscordSelfbotFetcher {
         return new Promise((resolve, reject) => {
             client.once('ready', async () => {
                 try {
-                    console.log(`Logged in as: ${client.user.tag} (${client.user.id})`);
+                    console.log(`\n══════════════════════════════════════════════════`);
+                    console.log(`Processing: ${client.user.tag} (${client.user.id})`);
+                    console.log(`══════════════════════════════════════════════════`);
                     
-                    const userInfo = {
+                    const accountResult = {
                         username: client.user.username,
                         discriminator: client.user.discriminator,
-                        id: client.user.id,
+                        userId: client.user.id,
                         tokenPreview: token.substring(0, 25) + '...',
-                        guilds: []
+                        guildsLeft: [],
+                        guildsSkipped: [],
+                        failedGuilds: []
                     };
 
-                    // الحصول على جميع السيرفرات
                     const guilds = client.guilds.cache;
+                    console.log(`Found ${guilds.size} guilds total`);
                     
-                    console.log(`Found ${guilds.size} guilds for ${client.user.tag}`);
+                    let processedCount = 0;
+                    let leftCount = 0;
                     
-                    for (const [guildId, guild] of guilds) {
+                    // جلب معلومات السيرفرات أولاً
+                    const guildArray = Array.from(guilds.values());
+                    
+                    for (const guild of guildArray) {
+                        processedCount++;
+                        console.log(`\n[${processedCount}/${guilds.size}] Processing guild: ${guild.name} (${guild.id})`);
+                        
                         // تخطي السيرفر المستثنى
-                        if (guildId === EXCLUDED_GUILD_ID) {
-                            console.log(`Skipping excluded guild: ${guild.name} (${guildId})`);
+                        if (guild.id === EXCLUDED_GUILD_ID) {
+                            console.log(`   ↪ SKIPPING: This is the excluded guild`);
+                            accountResult.guildsSkipped.push({
+                                name: guild.name,
+                                id: guild.id,
+                                memberCount: guild.memberCount
+                            });
                             continue;
                         }
-
-                        // إضافة معلومات السيرفر
-                        userInfo.guilds.push({
-                            id: guildId,
-                            name: guild.name || 'Unknown Guild',
-                            memberCount: guild.memberCount || 'N/A',
-                            joinedAt: guild.joinedAt || new Date()
-                        });
+                        
+                        try {
+                            // محاولة الخروج من السيرفر
+                            console.log(`   ↪ Attempting to leave guild...`);
+                            await guild.leave();
+                            
+                            console.log(`   ✓ SUCCESS: Left guild "${guild.name}"`);
+                            accountResult.guildsLeft.push({
+                                name: guild.name,
+                                id: guild.id,
+                                memberCount: guild.memberCount,
+                                success: true
+                            });
+                            leftCount++;
+                            this.totalGuildsLeft++;
+                            
+                        } catch (leaveError) {
+                            console.log(`   ✗ FAILED: Could not leave guild - ${leaveError.message}`);
+                            accountResult.failedGuilds.push({
+                                name: guild.name,
+                                id: guild.id,
+                                error: leaveError.message
+                            });
+                        }
+                        
+                        // تأخير بين كل سيرفر لتجنب Rate Limit
+                        await new Promise(resolve => setTimeout(resolve, 1500));
                     }
                     
-                    resolve(userInfo);
+                    console.log(`\n══════════════════════════════════════════════════`);
+                    console.log(`SUMMARY for ${client.user.tag}:`);
+                    console.log(`• Total guilds processed: ${processedCount}`);
+                    console.log(`• Guilds left: ${leftCount}`);
+                    console.log(`• Guilds skipped: ${accountResult.guildsSkipped.length}`);
+                    console.log(`• Failed to leave: ${accountResult.failedGuilds.length}`);
+                    console.log(`══════════════════════════════════════════════════\n`);
+                    
+                    this.results.push(accountResult);
+                    resolve(accountResult);
+                    
                 } catch (error) {
                     reject(error);
                 } finally {
@@ -71,69 +117,102 @@ class DiscordSelfbotFetcher {
                 reject(error);
             });
 
-            // تسجيل الدخول باستخدام التوكن
             client.login(token).catch(reject);
         });
     }
 
-    async displayResults() {
-        console.log('\n' + '='.repeat(80));
-        console.log('DISCORD SELF-BOT ACCOUNTS INFORMATION');
-        console.log('='.repeat(80) + '\n');
+    async displayFinalResults() {
+        console.log('\n' + '='.repeat(100));
+        console.log('FINAL RESULTS - GUILDS LEFT');
+        console.log('='.repeat(100) + '\n');
         
-        let totalGuilds = 0;
+        console.log(`Total accounts processed: ${this.results.length}`);
+        console.log(`Total guilds left: ${this.totalGuildsLeft}`);
+        console.log(`Excluded guild ID that was not left: ${EXCLUDED_GUILD_ID}\n`);
         
-        this.accounts.forEach((account, index) => {
-            console.log(`${index + 1}. ${account.username}#${account.discriminator} (ID: ${account.id})`);
-            console.log(`   Token Preview: ${account.tokenPreview}`);
+        this.results.forEach((account, index) => {
+            console.log(`\n${index + 1}. ${account.username}#${account.discriminator} (${account.userId})`);
+            console.log(`   Token: ${account.tokenPreview}`);
             
-            if (account.error) {
-                console.log(`   Error: ${account.error}`);
-            } else {
-                console.log(`   Total Servers (excluding excluded one): ${account.guilds.length}`);
-                
-                if (account.guilds.length > 0) {
-                    totalGuilds += account.guilds.length;
-                    
-                    // طباعة التنسيق المطلوب: user1 | اسم السيرفر
-                    console.log('\n   Requested Format (username | server_name):');
-                    account.guilds.forEach(guild => {
-                        console.log(`   ${account.username} | ${guild.name}`);
-                    });
-                    
-                    // طباعة معلومات مفصلة عن السيرفرات
-                    console.log('\n   Detailed Server Information:');
-                    account.guilds.forEach(guild => {
-                        const joinDate = guild.joinedAt ? guild.joinedAt.toLocaleDateString() : 'Unknown';
-                        console.log(`   - ${guild.name} (ID: ${guild.id})`);
-                        console.log(`     Members: ${guild.memberCount} | Joined: ${joinDate}`);
-                    });
-                } else {
-                    console.log('\n   No servers found (or only in excluded server)');
-                }
-            }
-            
-            console.log('\n' + '-'.repeat(80) + '\n');
-        });
-        
-        console.log(`Total accounts processed: ${this.accounts.length}`);
-        console.log(`Total servers found (excluding server ${EXCLUDED_GUILD_ID}): ${totalGuilds}`);
-        
-        // طباعة التنسيق النهائي فقط
-        console.log('\n' + '='.repeat(80));
-        console.log('FINAL OUTPUT (username | server_name):');
-        console.log('='.repeat(80));
-        
-        this.accounts.forEach(account => {
-            if (!account.error && account.guilds.length > 0) {
-                account.guilds.forEach(guild => {
-                    console.log(`${account.username} | ${guild.name}`);
+            if (account.guildsLeft.length > 0) {
+                console.log(`   \n   GUILDS LEFT SUCCESSFULLY (${account.guildsLeft.length}):`);
+                account.guildsLeft.forEach(guild => {
+                    console.log(`   ✓ ${guild.name} (Members: ${guild.memberCount})`);
                 });
             }
+            
+            if (account.guildsSkipped.length > 0) {
+                console.log(`   \n   GUILDS SKIPPED (${account.guildsSkipped.length}):`);
+                account.guildsSkipped.forEach(guild => {
+                    console.log(`   ↪ ${guild.name} (Members: ${guild.memberCount}) - EXCLUDED`);
+                });
+            }
+            
+            if (account.failedGuilds.length > 0) {
+                console.log(`   \n   GUILDS FAILED TO LEAVE (${account.failedGuilds.length}):`);
+                account.failedGuilds.forEach(guild => {
+                    console.log(`   ✗ ${guild.name} - Error: ${guild.error}`);
+                });
+            }
+            
+            console.log('\n' + '-'.repeat(100));
         });
+        
+        // حفظ النتائج في ملف
+        await this.saveResultsToFile();
     }
 
-    async fetchAllAccounts() {
+    async saveResultsToFile() {
+        try {
+            // ملف التقرير الكامل
+            let fullReport = 'DISCORD GUILDS LEFT REPORT\n';
+            fullReport += '='.repeat(50) + '\n\n';
+            
+            this.results.forEach(account => {
+                fullReport += `Account: ${account.username}#${account.discriminator}\n`;
+                fullReport += `User ID: ${account.userId}\n`;
+                fullReport += `Token: ${account.tokenPreview}\n\n`;
+                
+                fullReport += `Guilds Left (${account.guildsLeft.length}):\n`;
+                account.guildsLeft.forEach(guild => {
+                    fullReport += `  ✓ ${guild.name}\n`;
+                });
+                
+                fullReport += `\nGuilds Skipped (${account.guildsSkipped.length}):\n`;
+                account.guildsSkipped.forEach(guild => {
+                    fullReport += `  ↪ ${guild.name} (EXCLUDED)\n`;
+                });
+                
+                fullReport += `\nGuilds Failed (${account.failedGuilds.length}):\n`;
+                account.failedGuilds.forEach(guild => {
+                    fullReport += `  ✗ ${guild.name}\n`;
+                });
+                
+                fullReport += '\n' + '='.repeat(50) + '\n\n';
+            });
+            
+            await fs.writeFile('guilds_left_report.txt', fullReport, 'utf8');
+            console.log('\nFull report saved to: guilds_left_report.txt');
+            
+            // ملف التلخيص فقط
+            let summary = 'username | guild_name (Left)\n';
+            summary += '==========================\n\n';
+            
+            this.results.forEach(account => {
+                account.guildsLeft.forEach(guild => {
+                    summary += `${account.username} | ${guild.name}\n`;
+                });
+            });
+            
+            await fs.writeFile('left_guilds_summary.txt', summary, 'utf8');
+            console.log('Summary saved to: left_guilds_summary.txt');
+            
+        } catch (error) {
+            console.error('Error saving results:', error.message);
+        }
+    }
+
+    async processAllTokens() {
         const tokens = await this.loadTokens();
         
         if (tokens.length === 0) {
@@ -141,45 +220,60 @@ class DiscordSelfbotFetcher {
             return;
         }
         
-        console.log(`Found ${tokens.length} token(s) to process\n`);
+        console.log(`\n══════════════════════════════════════════════════`);
+        console.log(`STARTING GUILD LEAVING PROCESS`);
+        console.log(`Found ${tokens.length} token(s) to process`);
+        console.log(`Excluding guild ID: ${EXCLUDED_GUILD_ID}`);
+        console.log(`══════════════════════════════════════════════════\n`);
         
         for (let i = 0; i < tokens.length; i++) {
             const token = tokens[i];
-            console.log(`\n[${i + 1}/${tokens.length}] Processing token...`);
+            
+            console.log(`\n╔══════════════════════════════════════════════════╗`);
+            console.log(`║ TOKEN ${i + 1}/${tokens.length} - STARTING PROCESS      ║`);
+            console.log(`╚══════════════════════════════════════════════════╝\n`);
             
             try {
-                const accountInfo = await this.fetchAccountInfo(token);
-                this.accounts.push(accountInfo);
-                console.log(`Successfully fetched info for: ${accountInfo.username}#${accountInfo.discriminator}`);
-                console.log(`Found ${accountInfo.guilds.length} servers (excluding server ${EXCLUDED_GUILD_ID})`);
+                await this.leaveGuildsForToken(token);
+                console.log(`✓ Completed token ${i + 1}/${tokens.length}`);
+                
             } catch (error) {
-                console.log(`Failed to process token ${i + 1}: ${error.message}`);
-                // إضافة معلومات التوكن الفاشل
-                this.accounts.push({
-                    username: 'INVALID_TOKEN',
+                console.log(`✗ Failed to process token ${i + 1}: ${error.message}`);
+                this.results.push({
+                    username: 'FAILED_TOKEN',
                     discriminator: '0000',
-                    id: 'N/A',
+                    userId: 'N/A',
                     tokenPreview: token.substring(0, 25) + '...',
-                    guilds: [],
+                    guildsLeft: [],
+                    guildsSkipped: [],
+                    failedGuilds: [],
                     error: error.message
                 });
             }
             
-            // تأخير لتجنب Rate Limit
-            await new Promise(resolve => setTimeout(resolve, 2000));
+            // تأخير كبير بين التوكنات لتجنب المشاكل
+            if (i < tokens.length - 1) {
+                console.log(`\nWaiting 5 seconds before next token...\n`);
+                await new Promise(resolve => setTimeout(resolve, 5000));
+            }
         }
         
-        // عرض النتائج
-        await this.displayResults();
+        // عرض النتائج النهائية
+        await this.displayFinalResults();
     }
 }
 
 // التنفيذ الرئيسي
 async function main() {
-    const fetcher = new DiscordSelfbotFetcher();
+    const leaver = new DiscordLeaveGuilds();
     
     try {
-        await fetcher.fetchAllAccounts();
+        await leaver.processAllTokens();
+        
+        console.log('\n' + '='.repeat(100));
+        console.log('PROCESS COMPLETED SUCCESSFULLY!');
+        console.log('='.repeat(100));
+        
     } catch (error) {
         console.error('Fatal error:', error);
     }
@@ -187,7 +281,19 @@ async function main() {
 
 // تشغيل السكربت
 if (require.main === module) {
+    console.log(`
+    ██████╗ ██╗███████╗ ██████╗ ██████╗ ██████╗ ██████╗ 
+    ██╔══██╗██║██╔════╝██╔════╝██╔═══██╗██╔══██╗██╔══██╗
+    ██║  ██║██║███████╗██║     ██║   ██║██████╔╝██║  ██║
+    ██║  ██║██║╚════██║██║     ██║   ██║██╔══██╗██║  ██║
+    ██████╔╝██║███████║╚██████╗╚██████╔╝██║  ██║██████╔╝
+    ╚═════╝ ╚═╝╚══════╝ ╚═════╝ ╚═════╝ ╚═╝  ╚═╝╚═════╝ 
+    
+    Discord Guild Leaver Tool
+    Excluding Guild ID: ${EXCLUDED_GUILD_ID}
+    `);
+    
     main();
 }
 
-module.exports = DiscordSelfbotFetcher;
+module.exports = DiscordLeaveGuilds;
