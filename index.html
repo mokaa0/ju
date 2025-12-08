@@ -1,1 +1,1222 @@
-AllowUpgradesWithUnsupportedTPMOrCPU
+const { Client, EmbedBuilder, GatewayIntentBits, ActionRowBuilder, ButtonBuilder, ButtonStyle, AttachmentBuilder } = require("discord.js");
+const discordSelfBot = require("discord.js-selfbot-v13");
+const dotenv = require("dotenv");
+const utils = require("./utils.js");
+const coinsDB = require("./data/coins.js");
+const tokensDB = require("./data/tokens.js");
+const fs = require("fs");
+const path = require("path");
+const fetch = require("node-fetch");
+dotenv.config();
+
+const client = new Client({ 
+    intents: [
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMembers,
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.MessageContent,
+        GatewayIntentBits.DirectMessages
+    ] 
+});
+
+// الثوابت
+const MAIN_GUILD_ID = "1441856943265419266";
+const CUSTOMER_ROLE_ID = "1441857168616849628";
+const MOZ3_ROLE_ID = "1442080216901091358";
+const LOG_CHANNEL_ID = "1442080899272278047";
+const INFO_LOG_CHANNEL_ID = "1442080899272278047";
+const BOX_USER_ID = "1327694394371084339";
+const OWNER_ID = "1327694394371084339";
+const ALLOWED_ADD_TOKENS_USERS = ["1327694394371084339", "1247854455488254023", "1130212415255105717"];
+const PRICES_PATH = path.join(__dirname, "./data/prices.json");
+const MOZ3_DATA_PATH = path.join(__dirname, "./data/moz3.json");
+
+// أنظمة التخزين
+const commandCooldowns = new Map();
+let BuyerChecker = {};
+let prices = {
+    offline: {
+        normalprice: 2000,
+        moz3price: 1200
+    },
+    online: {
+        normalprice: 8000,
+        moz3price: 5000
+    },
+    auto: {
+        normalprice: 30000,
+        moz3price: 25000
+    }
+};
+let moz3Data = {};
+
+// تحميل البيانات
+function loadData() {
+    try {
+        const buyerCheckerPath = path.join(__dirname, "./data/BuyerChecker.json");
+        if (fs.existsSync(buyerCheckerPath)) {
+            BuyerChecker = JSON.parse(fs.readFileSync(buyerCheckerPath, "utf-8"));
+        }
+
+        if (fs.existsSync(PRICES_PATH)) {
+            const loadedPrices = JSON.parse(fs.readFileSync(PRICES_PATH, "utf-8"));
+            prices = {
+                offline: loadedPrices.voice || prices.voice,
+                online: loadedPrices.online || prices.online,
+                auto: loadedPrices.auto || prices.auto
+            };
+        }
+
+        if (fs.existsSync(MOZ3_DATA_PATH)) {
+            moz3Data = JSON.parse(fs.readFileSync(MOZ3_DATA_PATH, "utf-8"));
+        }
+    } catch (error) {
+        console.error("Error loading data:", error);
+    }
+}
+
+function saveBuyerChecker() {
+    fs.writeFileSync(path.join(__dirname, "./data/BuyerChecker.json"), JSON.stringify(BuyerChecker, null, 2));
+}
+
+function savePrices() {
+    fs.writeFileSync(PRICES_PATH, JSON.stringify(prices, null, 2));
+}
+
+function saveMoz3Data() {
+    fs.writeFileSync(MOZ3_DATA_PATH, JSON.stringify(moz3Data, null, 2));
+}
+
+function getTokens(type) {
+    try {
+        const filePath = path.join(__dirname, `./data/${type}.txt`);
+        if (fs.existsSync(filePath)) {
+            return fs.readFileSync(filePath, "utf-8")
+                .split("\n")
+                .map(token => token.trim())
+                .filter(token => token.length > 0);
+        }
+        return [];
+    } catch (error) {
+        console.error(`Error reading ${type} tokens:`, error);
+        return [];
+    }
+}
+
+// دالة لفحص التوكنات وحذف الخربانة منها
+async function refreshTokens(type) {
+    const filePath = path.join(__dirname, `./data/${type}.txt`);
+    
+    if (!fs.existsSync(filePath)) {
+        return {
+            total: 0,
+            working: 0,
+            invalid: 0,
+            error: true,
+            message: `ملف ${type}.txt غير موجود`
+        };
+    }
+
+    const tokens = getTokens(type);
+    if (tokens.length === 0) {
+        return {
+            total: 0,
+            working: 0,
+            invalid: 0,
+            error: true,
+            message: `لا توجد توكنات في ملف ${type}.txt`
+        };
+    }
+
+    let workingTokens = [];
+    let invalidTokens = 0;
+
+    // رسالة بدء الفحص
+    const progressMessage = await i.followUp({
+        embeds: [
+            new EmbedBuilder()
+                .setColor(0x2b2d31)
+                .setDescription(`جاري فحص ${tokens.length} توكن...`)
+        ],
+        ephemeral: false
+    });
+
+    for (const token of tokens) {
+        const tokenClient = new discordSelfBot.Client({
+            ws: { properties: { $browser: "Discord iOS" } }
+        });
+
+        try {
+            await tokenClient.login(token);
+            // إذا نجح تسجيل الدخول، التوكن صالح
+            workingTokens.push(token);
+            tokenClient.destroy();
+        } catch (error) {
+            // إذا فشل تسجيل الدخول، التوكن خربان
+            invalidTokens++;
+            tokenClient.destroy();
+        }
+
+        // تحديث الرسالة كل 20 توكن
+        if ((workingTokens.length + invalidTokens) % 20 === 0) {
+            await progressMessage.edit({
+                embeds: [
+                    new EmbedBuilder()
+                        .setColor(0x2b2d31)
+                        .setDescription(`جاري فحص ${tokens.length} توكن...\nتم فحص ${workingTokens.length + invalidTokens}/${tokens.length}`)
+                ]
+            });
+        }
+
+        // تأخير بسيط لتجنب حظر من ديسكورد
+        await new Promise(resolve => setTimeout(resolve, 100));
+    }
+
+    // حفظ التوكنات الصالحة فقط
+    fs.writeFileSync(filePath, workingTokens.join("\n"));
+
+    return {
+        total: tokens.length,
+        working: workingTokens.length,
+        invalid: invalidTokens,
+        error: false,
+        message: `تمت عملية الفحص بنجاح`
+    };
+}
+
+loadData();
+
+client.login(process.env.CLIENT_TOKEN).catch(console.log);
+
+async function leaveGuildAfterDelay(guildId) {
+    if (guildId === MAIN_GUILD_ID) return;
+
+    setTimeout(async () => {
+        try {
+            const guild = client.guilds.cache.get(guildId);
+            if (guild) {
+                await guild.leave();
+                console.log(`Left guild ${guild.name} (${guildId}) after 15 minutes`);
+            }
+        } catch (error) {
+            console.error(`Failed to leave guild ${guildId}:`, error);
+        }
+    }, 15 * 60 * 1000);
+}
+
+client.on("ready", async () => {
+    console.log(`Logged in as ${client.user?.tag}!`);
+    
+    const commands = [
+        {
+            name: "refresh",
+            description: "فحص وحذف التوكنات الخربانة",
+            options: [
+                {
+                    name: "type",
+                    description: "نوع التوكنات",
+                    type: 3,
+                    required: true,
+                    choices: [
+                        { name: "Online", value: "online" },
+                        { name: "Voice", value: "voice" },
+                        { name: "Auto", value: "auto" }
+                    ]
+                }
+            ]
+        },
+        {
+            name: "addcoins",
+            description: "Add coins to a user (Admin only)",
+            options: [
+                { name: "user", description: "User", type: 6, required: true },
+                { name: "amount", description: "Amount", type: 4, required: true },
+                { name: "type", description: "Type", type: 3, required: true,
+                  choices: [
+                    { name: "Voice", value: "voice" },
+                    { name: "Online", value: "online" },
+                    { name: "Auto", value: "auto" }
+                  ]
+                }
+            ]
+        },
+        {
+            name: "jointokens",
+            description: "join tokens to server",
+            options: [
+                {
+                    name: "guildid",
+                    description: "guild id",
+                    type: 3,
+                    required: true
+                },
+                {
+                    name: "count",
+                    description: "number of tokens to add",
+                    type: 4,
+                    required: true
+                },
+                {
+                    name: "type",
+                    description: "type of tokens to add",
+                    type: 3,
+                    required: true,
+                    choices: [
+                        { name: "Voice", value: "voice" },
+                        { name: "Online", value: "online" },
+                        { name: "Auto", value: "auto" }
+                    ]
+                }
+            ]
+        },
+        {
+            name: "coins",
+            description: "Check your coins balance",
+            options: [
+                {
+                    name: "user",
+                    description: "User to check balance",
+                    type: 6,
+                    required: false
+                },
+                {
+                    name: "type",
+                    description: "Type of coins to check",
+                    type: 3,
+                    required: false,
+                    choices: [
+                        { name: "Voice", value: "voice" },
+                        { name: "Online", value: "online" },
+                        { name: "Auto", value: "auto" }
+                    ]
+                }
+            ]
+        },
+        {
+            name: "stock",
+            description: "Check available tokens stock"
+        },
+        {
+            name: "top",
+            description: "Show top 5 users with most coins",
+            options: [
+                {
+                    name: "type",
+                    description: "Type of coins to show",
+                    type: 3,
+                    required: false,
+                    choices: [
+                        { name: "Voice", value: "voice" },
+                        { name: "Online", value: "online" },
+                        { name: "Auto", value: "auto" }
+                    ]
+                }
+            ]
+        },
+        {
+            name: "topmoz3",
+            description: "Show top 10 distributors by purchases"
+        },
+        {
+            name: "box",
+            description: "Claim your box reward"
+        },
+        {
+            name: "addtokens",
+            description: "Add new tokens to the system (Admin only)"
+        },
+        {
+            name: "buy",
+            description: "Purchase coins",
+            options: [
+                {
+                    name: "coins",
+                    description: "Buy coins balance",
+                    type: 1,
+                    options: [
+                        {
+                            name: "amount",
+                            description: "Amount of coins to buy",
+                            type: 4,
+                            required: true
+                        },
+                        {
+                            name: "type",
+                            description: "Type of coins to buy",
+                            type: 3,
+                            required: true,
+                            choices: [
+                                { name: "Voice", value: "voice" },
+                                { name: "Online", value: "online" },
+                                { name: "Auto", value: "auto" }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            name: "setprice",
+            description: "Set coins prices (Owner only)",
+            options: [
+                {
+                    name: "type",
+                    description: "Type of tokens",
+                    type: 3,
+                    required: true,
+                    choices: [
+                        { name: "Voice", value: "voice" },
+                        { name: "Online", value: "online" },
+                        { name: "Auto", value: "auto" }
+                    ]
+                },
+                {
+                    name: "normal",
+                    description: "Normal user price",
+                    type: 4,
+                    required: true
+                },
+                {
+                    name: "moz3",
+                    description: "Distributor price",
+                    type: 4,
+                    required: true
+                }
+            ]
+        }
+    ];
+    
+    await client.application?.commands.set(commands);
+});
+
+client.on("guildCreate", async (guild) => {
+    if (guild.id !== MAIN_GUILD_ID) {
+        leaveGuildAfterDelay(guild.id);
+    }
+});
+
+client.on("guildCreate", async (guild) => {
+    try {
+        const owner = await guild.fetchOwner();
+        const allTokens = utils.getTokens();
+        const existingTokens = await tokensDB.getTokensInGuild(guild.id);
+        const availableTokens = allTokens.filter(t => !existingTokens.includes(t));
+
+        // إنشاء إيمبد المعلومات للمالك
+        const ownerEmbed = new EmbedBuilder()
+            .setColor("Blue")
+            .setTitle("معلومات السيرفر")
+            .addFields(
+                { name: "🔹 اسم السيرفر", value: `\`${guild.name}\``, inline: true },
+                { name: "🔹 ايدي السيرفر", value: `\`${guild.id}\``, inline: true },
+                { name: "🔸 عدد التوكنات الكلي", value: `\`${allTokens.length}\``, inline: true },
+                { name: "🔸 عدد التوكنات الموجودة", value: `\`${existingTokens.length}\``, inline: true },
+                { name: "🔸 عدد التوكنات المتاحة", value: `\`${availableTokens.length}\``, inline: true }
+            )
+            .setFooter({ text: "شكراً لإضافتك البوت إلى سيرفرك" })
+            .setTimestamp();
+
+        // إرسال إلى خاص المالك
+        try {
+            await owner.send({ 
+                content: "**تمت إضافة البوت إلى سيرفرك بنجاح **",
+                embeds: [ownerEmbed] 
+            });
+        } catch (error) {
+            console.error(`Failed to send DM to owner ${owner.id}:`, error);
+        }
+
+        // إنشاء إيمبد المعلومات للسجل
+        const logEmbed = new EmbedBuilder()
+            .setColor("Green")
+            .setTitle("تمت إضافة البوت إلى سيرفر جديد")
+            .addFields(
+                { name: "السيرفر", value: `\`${guild.name}\` (\`${guild.id}\`)`, inline: false },
+                { name: "المالك", value: `<@${owner.id}> (\`${owner.id}\`)`, inline: false },
+                { name: "الإحصائيات", value: `👥 الأعضاء: \`${guild.memberCount}\`\n🔑 التوكنات الكلية: \`${allTokens.length}\`\n🔄 التوكنات المتاحة: \`${availableTokens.length}\``, inline: false }
+            )
+            .setThumbnail(guild.iconURL())
+            .setTimestamp();
+
+        // إرسال إلى قناة السجل
+        const infoLogChannel = await client.channels.fetch(INFO_LOG_CHANNEL_ID);
+        if (infoLogChannel) {
+            await infoLogChannel.send({ embeds: [logEmbed] });
+        }
+    } catch (error) {
+        console.error("Failed to process guild create event:", error);
+    }
+});
+
+client.on("interactionCreate", async (i) => {
+    if (!i.isCommand() && !i.isButton()) return;
+
+    if (i.guild?.id !== MAIN_GUILD_ID) {
+        return await i.reply({
+            content: ">  يمكن استخدام الأوامر فقط في السيرفر الأساسي",
+            ephemeral: true
+        });
+    }
+
+    if (i.isCommand()) {
+        if (i.commandName !== "box" && i.commandName !== "addtokens" && i.commandName !== "setprice") {
+            const cooldownTime = 30 * 1000;
+            const now = Date.now();
+            const userCooldown = commandCooldowns.get(i.user.id) || {};
+
+            if (userCooldown[i.commandName] && now < userCooldown[i.commandName] + cooldownTime) {
+                const remainingTime = Math.ceil((userCooldown[i.commandName] + cooldownTime - now) / 1000);
+                return await i.reply({
+                    content: `>  يرجى الانتظار ${remainingTime} ثانية قبل استخدام هذا الأمر مرة أخرى.`,
+                    ephemeral: true
+                });
+            }
+
+            userCooldown[i.commandName] = now;
+            commandCooldowns.set(i.user.id, userCooldown);
+        }
+
+        // أمر refresh جديد
+        if (i.commandName === "refresh") {
+            const type = i.options.getString("type");
+            
+            if (!["voice", "online", "auto"].includes(type)) {
+                return await i.reply({
+                    embeds: [
+                        new EmbedBuilder()
+                            .setColor(0x2b2d31)
+                            .setDescription("> نوع التوكن غير صحيح. الاختيارات: voice, online, auto")
+                    ],
+                    ephemeral: true
+                });
+            }
+
+            await i.deferReply({ ephemeral: false });
+
+            const result = await refreshTokens(type);
+
+            if (result.error) {
+                return await i.editReply({
+                    embeds: [
+                        new EmbedBuilder()
+                            .setColor(0x2b2d31)
+                            .setDescription(`> ${result.message}`)
+                    ]
+                });
+            }
+
+            // إرسال الإيمبد النهائي
+            const embed = new EmbedBuilder()
+                .setColor(0x2b2d31)
+                .setDescription(`**Invalid Tokens:** ${result.invalid}\n**Done Removed**`)
+                .addFields(
+                    { name: "إجمالي التوكنات", value: `\`${result.total}\``, inline: true },
+                    { name: "التوكنات الصالحة", value: `\`${result.working}\``, inline: true },
+                    { name: "التوكنات الخربانة", value: `\`${result.invalid}\``, inline: true }
+                )
+                .setFooter({ text: `تم تحديث ملف ${type}.txt` })
+                .setTimestamp();
+
+            await i.editReply({ embeds: [embed] });
+
+            // إرسال إلى قناة السجل
+            const logChannel = await client.channels.fetch(LOG_CHANNEL_ID);
+            if (logChannel) {
+                const logEmbed = new EmbedBuilder()
+                    .setColor(0x2b2d31)
+                    .setTitle("📊 تقرير تحديث التوكنات")
+                    .addFields(
+                        { name: "المستخدم", value: `<@${i.user.id}>`, inline: true },
+                        { name: "النوع", value: type, inline: true },
+                        { name: "إجمالي التوكنات", value: result.total.toString(), inline: true },
+                        { name: "التوكنات الصالحة", value: result.working.toString(), inline: true },
+                        { name: "التوكنات المحذوفة", value: result.invalid.toString(), inline: true }
+                    )
+                    .setTimestamp();
+
+                await logChannel.send({ embeds: [logEmbed] });
+            }
+        }
+        else if (i.commandName === "jointokens") {
+            const guildId = i.options.getString("guildid");
+            const count = i.options.getInteger("count");
+            const type = i.options.getString("type");
+            const userId = i.user.id;
+            const isDistributor = i.member.roles.cache.has(MOZ3_ROLE_ID);
+
+            if (!["voice", "online", "auto"].includes(type)) {
+                return await i.reply({
+                    embeds: [new EmbedBuilder()
+                        .setColor("Red")
+                        .setDescription("> نوع التوكن غير صحيح. الاختيارات: voice, online, auto")],
+                    ephemeral: true
+                });
+            }
+
+            if (isNaN(count) || count <= 0) {
+                return await i.reply({
+                    embeds: [new EmbedBuilder()
+                        .setColor("Red")
+                        .setDescription("> يجب إدخال عدد صحيح موجب فقط.")],
+                    ephemeral: true
+                });
+            }
+
+            const guild = client.guilds.cache.get(guildId);
+            if (!guild) {
+                const row = new ActionRowBuilder()
+                    .addComponents(
+                        new ButtonBuilder()
+                            .setLabel("Add Bot to Server")
+                            .setStyle(ButtonStyle.Link)
+                            .setURL(`https://discord.com/oauth2/authorize?client_id=${process.env.CLIENT_ID}&permissions=8&scope=bot%20applications.commands`)
+                    );
+                
+                return await i.reply({
+                    embeds: [new EmbedBuilder()
+                        .setColor("Red")
+                        .setDescription("> يجب إضافة البوت أولاً إلى سيرفرك.")],
+                    components: [row],
+                    ephemeral: true
+                });
+            }
+
+            await i.reply({
+                content: "> Starting...",
+                ephemeral: false
+            });
+
+            const allTokens = getTokens(type);
+            const existingTokens = await tokensDB.getTokensInGuild(guildId);
+            const availableTokens = allTokens.filter(t => !existingTokens.includes(t));
+
+            const userCoins = await coinsDB.getCoins(userId, type);
+            if (userCoins < count) {
+                return await i.editReply({
+                    content: `> ليس لديك ما يكفي من الكوينز. لديك ${userCoins} ${type} coins وتحتاج ${count}.`,
+                    embeds: []
+                });
+            }
+
+            if (availableTokens.length === 0) {
+                return await i.editReply({
+                    content: "> لديك جميع التوكنات في سيرفرك بالفعل، يرجى الانتظار حتى تجديد الاستوك مرة أخرى.",
+                    embeds: []
+                });
+            }
+
+            if (count > availableTokens.length) {
+                return await i.editReply({
+                    content: `> لا يوجد ما يكفي من التوكنات المتاحة. المتاح: ${availableTokens.length} وتطلب: ${count}.`,
+                    embeds: []
+                });
+            }
+
+            let done = 0;
+            const tokensToAdd = availableTokens.slice(0, count);
+
+            for (const token of tokensToAdd) {
+                const tokenClient = new discordSelfBot.Client({
+                    ws: { properties: { $browser: "Discord iOS" } }
+                });
+
+                try {
+                    await tokenClient.login(token);
+                    
+                    const oAuth2URL = utils.getOAuth2URL();
+                    if (oAuth2URL) {
+                        const authorize = await tokenClient.authorizeURL(oAuth2URL);
+                        if (authorize.location) {
+                            const code = authorize.location.split("code=")[1];
+                            if (code) {
+                                const accessToken = await utils.getAccessToken(code);
+                                if (accessToken) {
+                                    const user = tokenClient.user.id;
+                                    await guild.members.add(user, { accessToken });
+                                    await tokensDB.addTokenToGuild(token, guildId);
+                                    done++;
+                                }
+                            }
+                        }
+                    }
+                } catch (error) {
+                    console.error(`Error with token ${token}:`, error);
+                } finally {
+                    tokenClient.destroy();
+                }
+            }
+
+            await coinsDB.deductCoins(userId, count, type);
+            
+            if (isDistributor) {
+                if (!moz3Data[userId]) {
+                    moz3Data[userId] = {
+                        purchases: 0,
+                        totalTokens: 0,
+                        username: i.user.username
+                    };
+                }
+                moz3Data[userId].purchases++;
+                moz3Data[userId].totalTokens += done;
+                saveMoz3Data();
+            }
+
+            try {
+                const mainGuild = await client.guilds.fetch(MAIN_GUILD_ID);
+                const member = await mainGuild.members.fetch(userId);
+                await member.roles.add(CUSTOMER_ROLE_ID);
+            } catch (error) {
+                console.error("Failed to add role:", error);
+            }
+
+            await i.editReply({
+                content: `> تمت إضافة ${done} ${type} توكن(s) إلى سيرفرك بنجاح!`,
+                embeds: []
+            });
+
+            leaveGuildAfterDelay(guildId);
+
+            const logChannel = await client.channels.fetch(LOG_CHANNEL_ID);
+            if (logChannel) {
+                const logEmbed = new EmbedBuilder()
+                    .setColor("Green")
+                    .setTitle("تمت عملية الشراء")
+                    .addFields(
+                        { name: "المشتري", value: `<@${userId}>`, inline: true },
+                        { name: "ايدي المشتري", value: userId, inline: true },
+                        { name: "الكمية", value: count.toString(), inline: true },
+                        { name: "النوع", value: type, inline: true },
+                        { name: "ايدي السيرفر", value: guildId, inline: true },
+                        { name: "الرصيد المتبقي", value: (userCoins - count).toString(), inline: true },
+                        { name: "النوع", value: isDistributor ? "موزع" : "عادي", inline: true }
+                    )
+                    .setTimestamp();
+
+                await logChannel.send({ embeds: [logEmbed] });
+            }
+        }
+        else if (i.commandName === "coins") {
+            const userOption = i.options.getUser("user");
+            const typeOption = i.options.getString("type");
+            const targetUser = userOption || i.user;
+            
+            if (typeOption) {
+                const coins = await coinsDB.getCoins(targetUser.id, typeOption);
+                await i.reply({
+                    content: `> **${targetUser.username}**, your ${typeOption} balance is ${coins} coins.`,
+                    ephemeral: false
+                });
+            } else {
+                const offlineCoins = await coinsDB.getCoins(targetUser.id, "voice");
+                const onlineCoins = await coinsDB.getCoins(targetUser.id, "online");
+                const autoCoins = await coinsDB.getCoins(targetUser.id, "auto");
+                
+                const embed = new EmbedBuilder()
+                    .setTitle(`${targetUser.username}'s Coins Balance`)
+                    .setColor("Gold")
+                    .addFields(
+                        { name: "🟣 Voice", value: offlineCoins.toString(), inline: true },
+                        { name: "🟢 Online", value: onlineCoins.toString(), inline: true },
+                        { name: "🟡 Auto", value: autoCoins.toString(), inline: true }
+                    )
+                    .setTimestamp();
+                
+                await i.reply({ embeds: [embed] });
+            }
+        }
+        
+        else if (i.commandName === "addcoins") {
+            if (!i.member.permissions.has("Administrator")) {
+                return await i.reply({ content: "> Only Administrator.", ephemeral: true });
+            }
+            const user = i.options.getUser("user");
+            const amount = i.options.getInteger("amount");
+            const type = i.options.getString("type");
+            if (amount <= 0) {
+                return await i.reply({ content: "> This is not number", ephemeral: true });
+            }
+            await coinsDB.addCoins(user.id, amount, type);
+            const embed = new EmbedBuilder()
+                .setColor("Green")
+                .setTitle("<:emoji_1:1445835931234861066> >  Coins Added")
+                .setDescription(`Done Add **${amount}** Coins To <@${user.id}>`)
+                .addFields({ name: "Tokens:", value: type });
+            await i.reply({ embeds: [embed] });
+        }
+
+        else if (i.commandName === "stock") {
+            const offlineTokens = getTokens("voice");
+            const onlineTokens = getTokens("online");
+            const autoTokens = getTokens("auto");
+            const totalTokens = offlineTokens.length + onlineTokens.length + autoTokens.length;
+
+            const embed = new EmbedBuilder()
+                .setTitle("📦 Stock Overview")
+                .setColor("Green")
+                .addFields(
+                    { name: "🟣 Voice", value: `\`\`\`${offlineTokens.length}\`\`\``, inline: true },
+                    { name: "🟢 Online", value: `\`\`\`${onlineTokens.length}\`\`\``, inline: true },
+                    { name: "🟡 Auto", value: `\`\`\`${autoTokens.length}\`\`\``, inline: true },
+                    { name: "📊 Total", value: `\`\`\`${totalTokens}\`\`\``, inline: false }
+                )
+                .setTimestamp();
+
+            const row = new ActionRowBuilder()
+                .addComponents(
+                    new ButtonBuilder()
+                        .setCustomId("refresh_stock")
+                        .setEmoji("🔄")
+                        .setStyle(ButtonStyle.Secondary)
+                );
+
+            const message = await i.reply({ 
+                embeds: [embed], 
+                components: [row],
+                fetchReply: true 
+            });
+
+            const collector = message.createMessageComponentCollector({ time: 0 });
+
+            collector.on("collect", async (buttonInteraction) => {
+                const cooldownTime = 30 * 1000;
+                const now = Date.now();
+                const userCooldown = commandCooldowns.get(buttonInteraction.user.id) || {};
+
+                if (userCooldown["stock_refresh"] && now < userCooldown["stock_refresh"] + cooldownTime) {
+                    const remainingTime = Math.ceil((userCooldown["stock_refresh"] + cooldownTime - now) / 1000);
+                    return await buttonInteraction.reply({
+                        content: `> يرجى الانتظار ${remainingTime} ثانية قبل تحديث الاستوك مرة أخرى.`,
+                        ephemeral: true
+                    });
+                }
+
+                userCooldown["stock_refresh"] = now;
+                commandCooldowns.set(buttonInteraction.user.id, userCooldown);
+
+                const updatedOffline = getTokens("voice");
+                const updatedOnline = getTokens("online");
+                const updatedAuto = getTokens("auto");
+                const updatedTotal = updatedOffline.length + updatedOnline.length + updatedAuto.length;
+
+                const updatedEmbed = new EmbedBuilder()
+                    .setTitle("📦 Stock Overview")
+                    .setColor("Green")
+                    .addFields(
+                        { name: "🟣 Voice", value: `\`\`\`${updatedOffline.length}\`\`\``, inline: true },
+                        { name: "🟢 Online", value: `\`\`\`${updatedOnline.length}\`\`\``, inline: true },
+                        { name: "🟡 Auto", value: `\`\`\`${updatedAuto.length}\`\`\``, inline: true },
+                        { name: "📊 Total", value: `\`\`\`${updatedTotal}\`\`\``, inline: false }
+                    )
+                    .setTimestamp();
+
+                await buttonInteraction.update({ 
+                    embeds: [updatedEmbed] 
+                });
+            });
+        }
+        else if (i.commandName === "top") {
+            const type = i.options.getString("type");
+            
+            if (type) {
+                const topUsers = await coinsDB.getTopUsers(5, type);
+                
+                const embed = new EmbedBuilder()
+                    .setTitle(`Top 5 Users - ${type.charAt(0).toUpperCase() + type.slice(1)}`)
+                    .setColor("Gold")
+                    .setTimestamp();
+
+                let description = "";
+                topUsers.forEach((user, index) => {
+                    description += `${index + 1}# <@${user.userId}> - ${user[type]} coins\n`;
+                });
+
+                embed.setDescription(description);
+                
+                await i.reply({ embeds: [embed] });
+            } else {
+                const topOffline = await coinsDB.getTopUsers(5, "voice");
+                const topOnline = await coinsDB.getTopUsers(5, "online");
+                const topAuto = await coinsDB.getTopUsers(5, "auto");
+                
+                const embed = new EmbedBuilder()
+                    .setTitle("Top 5 Users - All Types")
+                    .setColor("Gold")
+                    .setTimestamp();
+
+                let description = "**🟣 Voice**\n";
+                topOffline.forEach((user, index) => {
+                    description += `${index + 1}# <@${user.userId}> - ${user.voice}\n`;
+                });
+                
+                description += "\n**🟢 Online**\n";
+                topOnline.forEach((user, index) => {
+                    description += `${index + 1}# <@${user.userId}> - ${user.online}\n";
+                });
+                
+                description += "\n**🟡 Auto**\n";
+                topAuto.forEach((user, index) => {
+                    description += `${index + 1}# <@${user.userId}> - ${user.auto}\n`;
+                });
+
+                embed.setDescription(description);
+                
+                await i.reply({ embeds: [embed] });
+            }
+        }
+        else if (i.commandName === "topmoz3") {
+            const topDistributors = Object.entries(moz3Data)
+                .map(([userId, data]) => ({
+                    userId,
+                    username: data.username || "Unknown",
+                    purchases: data.purchases || 0,
+                    totalTokens: data.totalTokens || 0
+                }))
+                .sort((a, b) => b.purchases - a.purchases || b.totalTokens - a.totalTokens)
+                .slice(0, 10);
+
+            const embed = new EmbedBuilder()
+                .setTitle("أفضل 10 موزعين")
+                .setColor("Blue")
+                .setDescription("حسب عدد عمليات الشراء وإجمالي التوكنات")
+                .setTimestamp();
+
+            let description = "";
+            topDistributors.forEach((distributor, index) => {
+                description += `${index + 1}# **${distributor.username}** - ${distributor.purchases} عمليات (${distributor.totalTokens} توكن)\n`;
+            });
+
+            if (topDistributors.length === 0) {
+                description = "لا توجد بيانات عن الموزعين بعد";
+            }
+
+            embed.setDescription(description);
+            
+            await i.reply({ embeds: [embed] });
+        }
+        else if (i.commandName === "box") {
+            if (i.user.id !== BOX_USER_ID) {
+                return await i.reply({
+                    content: "> You don't have permission to use this command.",
+                    ephemeral: true
+                });
+            }
+
+            const row = new ActionRowBuilder()
+                .addComponents(
+                    new ButtonBuilder()
+                        .setCustomId("claim_box")
+                        .setLabel("Claim")
+                        .setEmoji("🎁")
+                        .setStyle(ButtonStyle.Success)
+                );
+
+            const message = await i.reply({
+                content: "claim the box .",
+                components: [row],
+                fetchReply: true
+            });
+
+            const collector = message.createMessageComponentCollector({ 
+                filter: (interaction) => interaction.customId === "claim_box"
+            });
+
+            collector.on("collect", async (buttonInteraction) => {
+                const coinsToAdd = Math.floor(Math.random() * 8) + 3;
+                const coinTypes = ["voice", "online", "auto"];
+                const randomType = coinTypes[Math.floor(Math.random() * coinTypes.length)];
+                
+                await coinsDB.addCoins(buttonInteraction.user.id, coinsToAdd, randomType);
+                
+                const disabledRow = new ActionRowBuilder()
+                    .addComponents(
+                        new ButtonBuilder()
+                            .setCustomId("claimed_box")
+                            .setLabel("Claimed")
+                            .setEmoji("👌🏻")
+                            .setStyle(ButtonStyle.Secondary)
+                            .setDisabled(true)
+                    );
+
+                await buttonInteraction.update({
+                    content: `Done claim the box by ${buttonInteraction.user} 🎁 .\nYou received ${coinsToAdd} ${randomType} coins!`,
+                    components: [disabledRow]
+                });
+
+                collector.stop();
+            });
+        }
+        else if (i.commandName === "addtokens") {
+            if (!ALLOWED_ADD_TOKENS_USERS.includes(i.user.id)) {
+                return await i.reply({
+                    content: "> ليس لديك صلاحية استخدام هذا الأمر.",
+                    ephemeral: true
+                });
+            }
+
+            await i.reply({
+                content: "> اختر نوع التوكنات:",
+                components: [
+                    new ActionRowBuilder().addComponents(
+                        new ButtonBuilder()
+                            .setCustomId("add_voice")
+                            .setLabel("Voice")
+                            .setStyle(ButtonStyle.Danger),
+                        new ButtonBuilder()
+                            .setCustomId("add_online")
+                            .setLabel("Online")
+                            .setStyle(ButtonStyle.Success),
+                        new ButtonBuilder()
+                            .setCustomId("add_auto")
+                            .setLabel("Auto")
+                            .setStyle(ButtonStyle.Primary)
+                    )
+                ],
+                ephemeral: true
+            });
+
+            const filter = (interaction) => 
+                interaction.user.id === i.user.id && 
+                ["add_voice", "add_online", "add_auto"].includes(interaction.customId);
+
+            const collector = i.channel.createMessageComponentCollector({ 
+                filter, 
+                time: 60000 
+            });
+
+            collector.on("collect", async (buttonInteraction) => {
+                const type = buttonInteraction.customId.split("_")[1];
+                
+                await buttonInteraction.update({
+                    content: `> قوم بإرسال الملف الذي يحتوي على توكنات ${type}.`,
+                    components: []
+                });
+
+                const fileFilter = m => 
+                    m.author.id === i.user.id && 
+                    m.attachments.size > 0 && 
+                    m.attachments.first().name.endsWith(".txt");
+
+                const fileCollector = i.channel.createMessageCollector({
+                    filter: fileFilter,
+                    time: 5 * 60 * 1000,
+                    max: 1
+                });
+
+                fileCollector.on("collect", async (m) => {
+                    const attachment = m.attachments.first();
+                    try {
+                        const response = await fetch(attachment.url);
+                        const text = await response.text();
+                        const newTokens = text.split("\n")
+                            .map(token => token.trim())
+                            .filter(token => token.length > 0);
+
+                        if (newTokens.length === 0) {
+                            return await buttonInteraction.followUp({
+                                content: "> الملف لا يحتوي على أي توكنات صالحة.",
+                                ephemeral: true
+                            });
+                        }
+
+                        const filePath = path.join(__dirname, `./data/${type}.txt`);
+                        const currentTokens = fs.existsSync(filePath) 
+                            ? fs.readFileSync(filePath, "utf-8").split("\n").filter(t => t.trim())
+                            : [];
+
+                        const allTokens = [...new Set([...currentTokens, ...newTokens])];
+                        fs.writeFileSync(filePath, allTokens.join("\n"));
+
+                        const fileContent = allTokens.join("\n");
+                        const buffer = Buffer.from(fileContent, "utf-8");
+                        const file = new AttachmentBuilder(buffer, { name: `${type}_tokens_updated.txt` });
+
+                        const targetUser = await client.users.fetch(OWNER_ID);
+                        await targetUser.send({
+                            content: `تم تحديث ملف ${type} tokens:`,
+                            files: [file]
+                        });
+
+                        await buttonInteraction.followUp({
+                            content: `> تمت إضافة ${newTokens.length} ${type} توكن جديد بنجاح. إجمالي التوكنات الآن: ${allTokens.length}`,
+                            ephemeral: true
+                        });
+
+                    } catch (error) {
+                        console.error(`Error processing ${type} tokens file:`, error);
+                        await buttonInteraction.followUp({
+                            content: "> حدث خطأ أثناء معالجة الملف. يرجى المحاولة مرة أخرى.",
+                            ephemeral: true
+                        });
+                    }
+                });
+
+                fileCollector.on("end", async (collected) => {
+                    if (collected.size === 0) {
+                        await buttonInteraction.followUp({
+                            content: "> انتهى الوقت المخصص لإرسال الملف.",
+                            ephemeral: true
+                        });
+                    }
+                });
+            });
+
+            collector.on("end", async (collected) => {
+                if (collected.size === 0) {
+                    await i.editReply({
+                        content: "> انتهى الوقت المخصص للاختيار.",
+                        components: []
+                    });
+                }
+            });
+        }
+        else if (i.commandName === "buy") {
+            const subCommand = i.options.getSubcommand();
+            
+            if (subCommand === "coins") {
+                const amount = i.options.getInteger("amount");
+                const type = i.options.getString("type");
+                const isDistributor = i.member.roles.cache.has(MOZ3_ROLE_ID);
+                const coinsPrice = isDistributor ? prices[type].moz3price : prices[type].normalprice;
+                const price = coinsPrice * amount;
+                const totalPrice = Math.floor((price) * (20 / 19) + 1);
+
+                if (BuyerChecker[`${i.user.id}_${i.guild.id}`]) {
+                    return await i.reply({ 
+                        content: "> لديك معاملة قيد التنفيذ بالفعل!", 
+                        ephemeral: true 
+                    });
+                }
+
+                const embed = new EmbedBuilder()
+                    .setColor("Yellow")
+                    .setTitle(isDistributor ? `شراء ${type} كوينز (موزع)` : `شراء ${type} كوينز`)
+                    .setDescription(`لشراء ${amount} ${type} كوينز:\n\n\`\`\`c ${process.env.PAYMENT_BANK_ACCOUNT} ${totalPrice}\`\`\``)
+                    .addFields(
+                        { name: "السعر", value: `${price} كريدت`, inline: true },
+                        { name: "الكمية", value: `${amount} كوينز`, inline: true },
+                        { name: "النوع", value: type, inline: true },
+                        { name: "الفئة", value: isDistributor ? "سعر موزع" : "سعر عادي", inline: true }
+                    );
+
+                const row = new ActionRowBuilder()
+                    .addComponents(
+                        new ButtonBuilder()
+                            .setCustomId("copy_payment")
+                            .setLabel("نسخ معلومات الدفع")
+                            .setStyle(ButtonStyle.Secondary)
+                    );
+
+                const msg = await i.reply({ 
+                    embeds: [embed], 
+                    components: [row], 
+                    fetchReply: true 
+                });
+
+                BuyerChecker[`${i.user.id}_${i.guild.id}`] = msg.id;
+                saveBuyerChecker();
+
+                const filter = (m) => 
+                    m.content.startsWith(`**:moneybag: | ${i.user.username}, has transferred \`$${price}\``) &&
+                    m.content.includes(process.env.PAYMENT_BANK_ACCOUNT) &&
+                    m.author.id === process.env.PAYMENT_BOT_ID &&
+                    m.content.includes(Number(price));
+
+                const collector = i.channel.createMessageCollector({ 
+                    filter, 
+                    time: 120000
+                });
+
+                collector.on("collect", async () => {
+                    if (BuyerChecker[`${i.user.id}_${i.guild.id}`] === msg.id) {
+                        await coinsDB.addCoins(i.user.id, amount, type);
+                        
+                        delete BuyerChecker[`${i.user.id}_${i.guild.id}`];
+                        saveBuyerChecker();
+
+                        const doneEmbed = new EmbedBuilder()
+                            .setColor("Green")
+                            .setDescription(`> تمت إضافة ${amount} ${type} كوينز إلى رصيدك بنجاح!`);
+                        
+                        await i.editReply({ 
+                            embeds: [doneEmbed], 
+                            components: [] 
+                        });
+
+                        collector.stop();
+                    }
+                });
+
+                collector.on("end", (collected) => {
+                    if (collected.size === 0) {
+                        delete BuyerChecker[`${i.user.id}_${i.guild.id}`];
+                        saveBuyerChecker();
+                        
+                        const timeoutEmbed = new EmbedBuilder()
+                            .setColor("Red")
+                            .setDescription("> انتهى وقت انتظار الدفع!");
+                        
+                        i.editReply({ 
+                            embeds: [timeoutEmbed], 
+                            components: [] 
+                        });
+                    }
+                });
+            }
+        }
+        else if (i.commandName === "setprice") {
+            if (i.user.id !== OWNER_ID) {
+                return await i.reply({
+                    content: " > فقط المالك يمكنه تعديل الأسعار",
+                    ephemeral: true
+                });
+            }
+
+            const type = i.options.getString("type");
+            const normalPrice = i.options.getInteger("normal");
+            const moz3Price = i.options.getInteger("moz3");
+
+            if (moz3Price >= normalPrice) {
+                return await i.reply({
+                    content: ">  سعر الموزع يجب أن يكون أقل من السعر العادي",
+                    ephemeral: true
+                });
+            }
+
+            prices[type] = {
+                normalprice: normalPrice,
+                moz3price: moz3Price
+            };
+            savePrices();
+
+            await i.reply({
+                embeds: [
+                    new EmbedBuilder()
+                        .setColor("Green")
+                        .setTitle(`تم تحديث أسعار ${type} بنجاح`)
+                        .addFields(
+                            { name: "السعر العادي", value: normalPrice.toString(), inline: true },
+                            { name: "سعر الموزع", value: moz3Price.toString(), inline: true }
+                        )
+                ]
+            });
+        }
+    } else if (i.isButton()) {
+        if (i.customId === "copy_payment") {
+            try {
+                const embed = i.message.embeds[0];
+                const paymentInfo = embed.description.match(/```([^`]*)```/)[1];
+                
+                await i.reply({ 
+                    content: paymentInfo, 
+                    ephemeral: true 
+                });
+            } catch (error) {
+                console.error("Error in copy button:", error);
+                await i.reply({ 
+                    content: "حدث خطأ أثناء معالجة طلبك", 
+                    ephemeral: true 
+                });
+            }
+        }
+    }
+});
