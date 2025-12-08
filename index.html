@@ -1,60 +1,92 @@
 if (i.commandName === "refresh") {
-            const type = i.options.getString("type");
-            
-            if (!["voice", "online", "auto"].includes(type)) {
-                return await i.reply({
-                    embeds: [
-                        new EmbedBuilder()
-                            .setColor(0x2b2d31)
-                            .setDescription("> نوع التوكن غير صحيح. الاختيارات: voice, online, auto")
-                    ],
-                    ephemeral: true
-                });
-            }
+    const type = i.options.getString("type");
 
-            await i.deferReply({ ephemeral: false });
-
-            const result = await refreshTokens(type);
-
-            if (result.error) {
-                return await i.editReply({
-                    embeds: [
-                        new EmbedBuilder()
-                            .setColor(0x2b2d31)
-                            .setDescription(`> ${result.message}`)
-                    ]
-                });
-            }
-
-            // إرسال الإيمبد النهائي
-            const embed = new EmbedBuilder()
-                .setColor(0x2b2d31)
-                .setDescription(`**Invalid Tokens:** ${result.invalid}\n**Done Removed**`)
-                .addFields(
-                    { name: "إجمالي التوكنات", value: `\`${result.total}\``, inline: true },
-                    { name: "التوكنات الصالحة", value: `\`${result.working}\``, inline: true },
-                    { name: "التوكنات الخربانة", value: `\`${result.invalid}\``, inline: true }
-                )
-                .setFooter({ text: `تم تحديث ملف ${type}.txt` })
-                .setTimestamp();
-
-            await i.editReply({ embeds: [embed] });
-
-            // إرسال إلى قناة السجل
-            const logChannel = await client.channels.fetch(LOG_CHANNEL_ID);
-            if (logChannel) {
-                const logEmbed = new EmbedBuilder()
+    // تحقق من نوع التوكن
+    if (!["voice", "online", "auto"].includes(type)) {
+        return await i.reply({
+            embeds: [
+                new EmbedBuilder()
                     .setColor(0x2b2d31)
-                    .setTitle("📊 تقرير تحديث التوكنات")
-                    .addFields(
-                        { name: "المستخدم", value: `<@${i.user.id}>`, inline: true },
-                        { name: "النوع", value: type, inline: true },
-                        { name: "إجمالي التوكنات", value: result.total.toString(), inline: true },
-                        { name: "التوكنات الصالحة", value: result.working.toString(), inline: true },
-                        { name: "التوكنات المحذوفة", value: result.invalid.toString(), inline: true }
-                    )
-                    .setTimestamp();
+                    .setDescription("> نوع التوكن غير صحيح. الاختيارات: voice, online, auto")
+            ],
+            ephemeral: true
+        });
+    }
 
-                await logChannel.send({ embeds: [logEmbed] });
-            }
-        }
+    // تأجيل الرد حتى تكتمل العملية
+    await i.deferReply({ ephemeral: false });
+
+    // استدعاء الدالة مع تمرير i
+    const result = await refreshTokens(type, i);
+
+    // تحقق من وجود خطأ
+    if (result.error) {
+        return await i.editReply({
+            embeds: [
+                new EmbedBuilder()
+                    .setColor(0x2b2d31)
+                    .setDescription(`> ${result.message}`)
+            ]
+        });
+    }
+
+    // إرسال الإيمبد النهائي
+    const embed = new EmbedBuilder()
+        .setColor(0x2b2d31)
+        .setDescription(`**Invalid Tokens:** ${result.invalid}\n**Done Removed**`)
+        .addFields(
+            { name: "إجمالي التوكنات", value: `\`${result.total}\``, inline: true },
+            { name: "التوكنات الصالحة", value: `\`${result.working}\``, inline: true },
+            { name: "التوكنات الخربانة", value: `\`${result.invalid}\``, inline: true }
+        )
+        .setFooter({ text: `تم تحديث ملف ${type}.txt` })
+        .setTimestamp();
+
+    await i.editReply({ embeds: [embed] });
+
+    // إرسال إلى قناة السجل
+    const logChannel = await client.channels.fetch(LOG_CHANNEL_ID);
+    if (logChannel) {
+        const logEmbed = new EmbedBuilder()
+            .setColor(0x2b2d31)
+            .setTitle("📊 تقرير تحديث التوكنات")
+            .addFields(
+                { name: "المستخدم", value: `<@${i.user.id}>`, inline: true },
+                { name: "النوع", value: type, inline: true },
+                { name: "إجمالي التوكنات", value: result.total.toString(), inline: true },
+                { name: "التوكنات الصالحة", value: result.working.toString(), inline: true },
+                { name: "التوكنات المحذوفة", value: result.invalid.toString(), inline: true }
+            )
+            .setTimestamp();
+
+        await logChannel.send({ embeds: [logEmbed] });
+    }
+}
+
+// ----------------------------
+// دالة refreshTokens مع تمرير i
+async function refreshTokens(type, i) {
+    // مثال: عملية تحديث التوكنات حسب النوع
+    // هنا ضع الكود الخاص بمعالجة التوكنات
+    // لنفترض أنك تحسب:
+    const total = 10;   // إجمالي التوكنات
+    const working = 8;  // التوكنات الصالحة
+    const invalid = 2;  // التوكنات الخربانة
+
+    // يمكنك استخدام i داخل الدالة
+    await i.editReply({
+        embeds: [
+            new EmbedBuilder()
+                .setColor(0x2b2d31)
+                .setDescription(`> جاري تحديث توكنات ${type}...`)
+        ]
+    });
+
+    // في النهاية ترجع النتيجة
+    return {
+        error: false,
+        total,
+        working,
+        invalid
+    };
+}
