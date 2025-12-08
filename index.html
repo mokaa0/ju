@@ -1,6 +1,178 @@
+const fs = require('fs');
+const axios = require('axios');
+const chalk = require('chalk');
+
+// إعدادات Colors
+const colors = {
+    green: (text) => chalk.hex('#00FF00')(text),
+    cyan: (text) => chalk.cyan(text),
+    yellow: (text) => chalk.yellow(text),
+    red: (text) => chalk.red(text),
+    reset: chalk.reset
+};
+
+// مسح الكونسول وطباعة العنوان
+console.clear();
+
+// طباعة العنوان المزخرف
+console.log(colors.green(`
 ██████╗ ██████╗██████╗ ███████╗██╗    ██╗    
 ██╔════╝██╔════╝██╔══██╗██╔════╝██║    ██║    
 ███████╗██║     ██████╔╝█████╗  ██║ █╗ ██║    
 ╚════██║██║     ██╔══██╗██╔══╝  ██║███╗██║    
 ███████║╚██████╗██║  ██║███████╗╚███╔███╔╝    
-╚══════╝ ╚═════╝╚═╝  ╚═╝╚══════╝ ╚══╝╚══╝ 
+╚══════╝ ╚═════╝╚═╝  ╚═╝╚══════╝ ╚══╝╚══╝     
+`));
+
+console.log(colors.cyan("Original Auto - TokenChecker"));
+console.log(colors.yellow("Developed By iiabdu"));
+console.log();
+console.log(colors.green("Loading Tool…"));
+console.log();
+
+// قراءة ملف التوكنات
+let tokens = [];
+try {
+    tokens = fs.readFileSync('tokens.txt', 'utf8')
+        .split('\n')
+        .map(token => token.trim())
+        .filter(token => token.length > 0);
+    
+    console.log(colors.green(`Loaded [${tokens.length}] tokens`));
+} catch (error) {
+    console.log(colors.red("Error: tokens.txt file not found or empty!"));
+    process.exit(1);
+}
+
+console.log(colors.yellow("Validating Tokens..."));
+console.log();
+
+// إحصاءات
+let validTokens = 0;
+let invalidTokens = 0;
+let checkedTokens = 0;
+const totalTokens = tokens.length;
+
+// دالة للتحقق من التوكن
+async function checkToken(token) {
+    try {
+        // استخدم واجهة Discord API للتحقق من التوكن
+        const response = await axios.get('https://discord.com/api/v9/users/@me', {
+            headers: {
+                'Authorization': token
+            },
+            timeout: 10000 // مهلة 10 ثواني
+        });
+
+        // إذا وصلنا هنا، التوكن صالح
+        return {
+            valid: true,
+            data: response.data
+        };
+    } catch (error) {
+        // إذا كان الخطأ 401 أو 403 فالتوكن غير صالح
+        if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+            return { valid: false };
+        }
+        // أخطاء أخرى نعتبرها غير صالحة أيضاً
+        return { valid: false };
+    }
+}
+
+// دالة لعرض التقدم
+function showProgress() {
+    process.stdout.write(`\r${colors.yellow(`Progress: ${checkedTokens}/${totalTokens}`)}`);
+}
+
+// دالة للفحص السريع باستخدام Promise.all
+async function validateTokens() {
+    const batchSize = 50; // حجم الدفعة الواحدة للفحص المتوازي
+    const results = [];
+
+    for (let i = 0; i < tokens.length; i += batchSize) {
+        const batch = tokens.slice(i, i + batchSize);
+        
+        // إنشاء وعود لجميع التوكنات في الدفعة
+        const promises = batch.map(token => checkToken(token));
+        
+        // تنفيذ جميع الفحوصات بشكل متوازي
+        const batchResults = await Promise.all(promises);
+        
+        // تحديث الإحصائيات
+        batchResults.forEach(result => {
+            if (result.valid) {
+                validTokens++;
+            } else {
+                invalidTokens++;
+            }
+            checkedTokens++;
+        });
+        
+        results.push(...batchResults);
+        showProgress();
+        
+        // تأخير قصير بين الدفعات لتجنب Rate Limiting
+        if (i + batchSize < tokens.length) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+        }
+    }
+    
+    return results;
+}
+
+// دالة رئيسية للبدء
+async function main() {
+    const startTime = Date.now();
+    
+    // بدء عملية الفحص
+    await validateTokens();
+    
+    const endTime = Date.now();
+    const totalTime = ((endTime - startTime) / 1000).toFixed(2);
+    
+    console.log('\n\n' + '='.repeat(50));
+    console.log(colors.green(`✓ Valid: ${validTokens}`));
+    console.log(colors.red(`✗ Invalid: ${invalidTokens}`));
+    console.log(colors.cyan(`⏱️  Time taken: ${totalTime} seconds`));
+    console.log('='.repeat(50));
+    
+    // حفظ التوكنات الصالحة في ملف
+    if (validTokens > 0) {
+        const validTokensList = [];
+        const allResults = await Promise.all(tokens.map(checkToken));
+        
+        allResults.forEach((result, index) => {
+            if (result.valid) {
+                validTokensList.push(tokens[index]);
+            }
+        });
+        
+        fs.writeFileSync('valid_tokens.txt', validTokensList.join('\n'), 'utf8');
+        console.log(colors.green(`\n✅ Valid tokens saved to: valid_tokens.txt`));
+    }
+    
+    console.log(colors.yellow("\nPress any key to exit..."));
+    process.stdin.setRawMode(true);
+    process.stdin.resume();
+    process.stdin.on('data', process.exit.bind(process, 0));
+}
+
+// بدء التشغيل
+main().catch(console.error);
+
+
+{
+  "name": "discord-token-checker",
+  "version": "1.0.0",
+  "description": "Fast Discord Token Checker",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "axios": "^1.6.2",
+    "chalk": "^4.1.2",
+    "fs": "^0.0.1-security"
+  }
+}
+
