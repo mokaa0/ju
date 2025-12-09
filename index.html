@@ -8,9 +8,9 @@ class DiscordSelfbotUsernameChanger {
         this.tokens = [];
         this.usernames = [];
         this.proxies = [];
+        this.password = '0798733935ss'; // كلمة المرور الثابتة
         this.successCount = 0;
         this.failCount = 0;
-        this.currentProxyIndex = 0;
         this.clients = [];
     }
 
@@ -42,6 +42,7 @@ class DiscordSelfbotUsernameChanger {
             console.log(`${this.colors.green}Loaded ${this.tokens.length} tokens${this.colors.reset}`);
             console.log(`${this.colors.green}Loaded ${this.usernames.length} usernames${this.colors.reset}`);
             console.log(`${this.colors.green}Loaded ${this.proxies.length} proxies${this.colors.reset}`);
+            console.log(`${this.colors.yellow}Using password: ${this.password}${this.colors.reset}`);
 
             if (this.tokens.length !== this.usernames.length) {
                 console.log(`${this.colors.yellow}Warning: Number of tokens (${this.tokens.length}) does not match number of usernames (${this.usernames.length})${this.colors.reset}`);
@@ -122,23 +123,34 @@ class DiscordSelfbotUsernameChanger {
         });
     }
 
-    async changeUsernameWithSelfbot(client, newUsername, index) {
+    async changeUsernameWithPassword(client, newUsername, index) {
         try {
+            const currentTime = this.getCurrentTime();
             const oldUsername = client.user.username;
             
-            await client.user.setUsername(newUsername);
-            
-            const currentTime = this.getCurrentTime();
             console.log(`\n${this.colors.purple}[${currentTime}]${this.colors.reset} Processing account ${index + 1}/${this.tokens.length}`);
             console.log(`${this.colors.red}Old username: ${oldUsername}${this.colors.reset}`);
+            
+            // تغيير اليوزرنيم مع كلمة المرور
+            await client.user.setUsername(newUsername, this.password);
+            
             console.log(`${this.colors.green}New username: ${newUsername}${this.colors.reset}`);
+            console.log(`${this.colors.green}Successfully changed username!${this.colors.reset}`);
             
             this.successCount++;
             return true;
         } catch (error) {
             const currentTime = this.getCurrentTime();
-            console.log(`\n${this.colors.purple}[${currentTime}]${this.colors.reset} Processing account ${index + 1}/${this.tokens.length}`);
-            console.error(`${this.colors.red}Failed to change username: ${error.message}${this.colors.reset}`);
+            
+            if (error.message.includes('password')) {
+                console.error(`${this.colors.red}Wrong password for this account${this.colors.reset}`);
+            } else if (error.message.includes('rate limit')) {
+                console.error(`${this.colors.red}Rate limited, please wait 2 hours${this.colors.reset}`);
+            } else if (error.message.includes('username')) {
+                console.error(`${this.colors.red}Invalid username or already taken${this.colors.reset}`);
+            } else {
+                console.error(`${this.colors.red}Failed to change username: ${error.message}${this.colors.reset}`);
+            }
             
             this.failCount++;
             return false;
@@ -163,8 +175,10 @@ class DiscordSelfbotUsernameChanger {
 
             console.log(`${this.colors.green}Successfully logged in as: ${client.user.tag}${this.colors.reset}`);
             
-            await this.changeUsernameWithSelfbot(client, username, index);
+            // محاولة تغيير اليوزرنيم
+            await this.changeUsernameWithPassword(client, username, index);
             
+            // تأخير قصير ثم إغلاق الاتصال
             await new Promise(resolve => setTimeout(resolve, 1000));
             
             client.destroy();
@@ -181,8 +195,11 @@ class DiscordSelfbotUsernameChanger {
         for (let i = 0; i < totalAccounts; i++) {
             await this.processAccount(i);
             
+            // تأخير بين الحسابات لتجنب rate limit
             if (i < totalAccounts - 1) {
-                await new Promise(resolve => setTimeout(resolve, 3000));
+                const delay = 3000; // 3 ثواني بين كل حساب
+                console.log(`${this.colors.yellow}Waiting ${delay/1000} seconds before next account...${this.colors.reset}`);
+                await new Promise(resolve => setTimeout(resolve, delay));
             }
         }
     }
@@ -192,10 +209,16 @@ class DiscordSelfbotUsernameChanger {
         console.log(`${this.colors.green}Successful: ${this.successCount}${this.colors.reset}`);
         console.log(`${this.colors.red}Failed: ${this.failCount}${this.colors.reset}`);
         console.log(`${this.colors.yellow}Total tokens: ${this.tokens.length}${this.colors.reset}`);
+        
+        if (this.failCount > 0) {
+            console.log(`\n${this.colors.yellow}Note: Some accounts may have different passwords${this.colors.reset}`);
+            console.log(`${this.colors.yellow}If password is wrong for an account, username change will fail${this.colors.reset}`);
+        }
     }
 
     async start() {
         console.log(`${this.colors.purple}Starting username change process using Selfbot...${this.colors.reset}\n`);
+        console.log(`${this.colors.yellow}Fixed password: ${this.password}${this.colors.reset}\n`);
 
         const filesLoaded = await this.loadFiles();
         if (!filesLoaded) {
@@ -215,5 +238,6 @@ class DiscordSelfbotUsernameChanger {
     }
 }
 
+// تشغيل البرنامج
 const changer = new DiscordSelfbotUsernameChanger();
 changer.start().catch(console.error);
