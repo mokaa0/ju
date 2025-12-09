@@ -1,67 +1,208 @@
-Sëlin
-Sõren
-Ravran
-Serãph
-Mavẽn
-天力
-Purelence
-Eren
-Silver .
-明华
-Anarchy
-1
-#Evaitn
-Old
-Oud.
-#Ren
-!               Abo Z3be
-! Ft
-ابو عايض
-DiroNghtMr
-P
-flàk
-Slo
-وهٌٍمــُ
-@Z3em
-‧₊˚ ୨ ୧ ˚₊.
-Endothermic
-愛
-Lonely
-大好き
-Liliana
-Turaya
-Lien
-Kali
-Lethia
-Joliette
-Ulva
-Oana
-Lorraine
-Madison
-Lisha
-Lavinia
-Turaya
-Madeline
-Callidora
-Orenda
-Druilla
-Roman
-Sun
-Sun
-Zeidan
-Bjorn
-Victor
-Church
-Griffin
-Arthur
-Peter
-Roman
-Sun
-Sun
-Zeidan
-Bjorn
-Victor
-Church
-Griffin
-Arthur
-Peter
+const fs = require('fs');
+const axios = require('axios');
+const { HttpsProxyAgent } = require('https-proxy-agent');
+const { SocksProxyAgent } = require('socks-proxy-agent');
+
+class DiscordUsernameChanger {
+    constructor() {
+        this.tokens = [];
+        this.usernames = [];
+        this.proxies = [];
+        this.successCount = 0;
+        this.failCount = 0;
+        this.currentProxyIndex = 0;
+    }
+
+    colors = {
+        purple: '\x1b[35m',
+        red: '\x1b[31m',
+        green: '\x1b[32m',
+        yellow: '\x1b[33m',
+        reset: '\x1b[0m'
+    };
+
+    async loadFiles() {
+        try {
+            const tokensContent = fs.readFileSync('tokens.txt', 'utf8');
+            this.tokens = tokensContent.split('\n')
+                .map(token => token.trim())
+                .filter(token => token.length > 0);
+
+            const usernamesContent = fs.readFileSync('username.txt', 'utf8');
+            this.usernames = usernamesContent.split('\n')
+                .map(username => username.trim())
+                .filter(username => username.length > 0);
+
+            const proxiesContent = fs.readFileSync('proxies.txt', 'utf8');
+            this.proxies = proxiesContent.split('\n')
+                .map(proxy => proxy.trim())
+                .filter(proxy => proxy.length > 0);
+
+            console.log(`${this.colors.green}Loaded ${this.tokens.length} tokens${this.colors.reset}`);
+            console.log(`${this.colors.green}Loaded ${this.usernames.length} usernames${this.colors.reset}`);
+            console.log(`${this.colors.green}Loaded ${this.proxies.length} proxies${this.colors.reset}`);
+
+            if (this.tokens.length !== this.usernames.length) {
+                console.log(`${this.colors.yellow}Warning: Number of tokens (${this.tokens.length}) does not match number of usernames (${this.usernames.length})${this.colors.reset}`);
+            }
+
+            return true;
+        } catch (error) {
+            console.error(`${this.colors.red}Error loading files: ${error.message}${this.colors.reset}`);
+            return false;
+        }
+    }
+
+    getNextProxy() {
+        if (this.proxies.length === 0) return null;
+        
+        const proxy = this.proxies[this.currentProxyIndex];
+        this.currentProxyIndex = (this.currentProxyIndex + 1) % this.proxies.length;
+        
+        return proxy;
+    }
+
+    createProxyAgent(proxy) {
+        if (!proxy) return null;
+        
+        try {
+            if (proxy.includes('socks4://') || proxy.includes('socks5://')) {
+                return new SocksProxyAgent(proxy);
+            }
+            else if (proxy.includes('://')) {
+                return new HttpsProxyAgent(proxy);
+            }
+            else {
+                const [ip, port] = proxy.split(':');
+                if (ip && port) {
+                    return new HttpsProxyAgent(`http://${ip}:${port}`);
+                }
+            }
+        } catch (error) {
+            console.error(`${this.colors.red}Error creating proxy agent: ${error.message}${this.colors.reset}`);
+        }
+        
+        return null;
+    }
+
+    getCurrentTime() {
+        const now = new Date();
+        return now.toLocaleTimeString('en-US', {
+            hour12: true,
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        });
+    }
+
+    async getCurrentUsername(token, proxyAgent) {
+        try {
+            const response = await axios.get('https://discord.com/api/v10/users/@me', {
+                headers: {
+                    'Authorization': token,
+                    'Content-Type': 'application/json'
+                },
+                httpsAgent: proxyAgent,
+                timeout: 10000
+            });
+
+            return response.data.username;
+        } catch (error) {
+            return null;
+        }
+    }
+
+    async changeUsername(token, newUsername, proxyAgent) {
+        try {
+            const response = await axios.patch(
+                'https://discord.com/api/v10/users/@me',
+                { username: newUsername },
+                {
+                    headers: {
+                        'Authorization': token,
+                        'Content-Type': 'application/json'
+                    },
+                    httpsAgent: proxyAgent,
+                    timeout: 15000
+                }
+            );
+
+            return response.data;
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    async processAccount(token, username, index) {
+        const proxy = this.getNextProxy();
+        const proxyAgent = this.createProxyAgent(proxy);
+        
+        const currentTime = this.getCurrentTime();
+        const oldUsername = await this.getCurrentUsername(token, proxyAgent);
+        
+        console.log(`\n${this.colors.purple}[${currentTime}]${this.colors.reset} Processing account ${index + 1}/${this.tokens.length}`);
+        
+        if (oldUsername) {
+            console.log(`${this.colors.red}Old username: ${oldUsername}${this.colors.reset}`);
+        } else {
+            console.log(`${this.colors.red}Failed to get old username${this.colors.reset}`);
+        }
+
+        try {
+            const result = await this.changeUsername(token, username, proxyAgent);
+            console.log(`${this.colors.green}New username: ${username}${this.colors.reset}`);
+            this.successCount++;
+            return true;
+        } catch (error) {
+            console.error(`${this.colors.red}Failed to change username: ${error.message}${this.colors.reset}`);
+            
+            if (error.response) {
+                console.error(`${this.colors.red}Error code: ${error.response.status}${this.colors.reset}`);
+                console.error(`${this.colors.red}Message: ${JSON.stringify(error.response.data)}${this.colors.reset}`);
+            }
+            
+            this.failCount++;
+            return false;
+        }
+    }
+
+    showResults() {
+        console.log(`\n${this.colors.green}=== PROCESS COMPLETED ===${this.colors.reset}`);
+        console.log(`${this.colors.green}Successful: ${this.successCount}${this.colors.reset}`);
+        console.log(`${this.colors.red}Failed: ${this.failCount}${this.colors.reset}`);
+        console.log(`${this.colors.yellow}Total tokens: ${this.tokens.length}${this.colors.reset}`);
+    }
+
+    async start() {
+        console.log(`${this.colors.purple}Starting username change process...${this.colors.reset}\n`);
+
+        const filesLoaded = await this.loadFiles();
+        if (!filesLoaded) {
+            console.log(`${this.colors.red}Failed to load files${this.colors.reset}`);
+            return;
+        }
+
+        if (this.tokens.length === 0 || this.usernames.length === 0) {
+            console.log(`${this.colors.red}Token or username files are empty${this.colors.reset}`);
+            return;
+        }
+
+        const totalAccounts = Math.min(this.tokens.length, this.usernames.length);
+
+        for (let i = 0; i < totalAccounts; i++) {
+            const token = this.tokens[i];
+            const username = this.usernames[i];
+            
+            await this.processAccount(token, username, i);
+            
+            if (i < totalAccounts - 1) {
+                await new Promise(resolve => setTimeout(resolve, 2000));
+            }
+        }
+
+        this.showResults();
+    }
+}
+
+const changer = new DiscordUsernameChanger();
+changer.start().catch(console.error);
