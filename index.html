@@ -1,186 +1,67 @@
-const Discord = require('discord.js-selfbot-v13');
-const fs = require('fs');
-const colors = require('colors');
-const { setTimeout } = require('timers/promises');
-
-class TokenChecker {
-    constructor() {
-        this.validTokens = [];
-        this.invalidTokens = [];
-        this.checkedCount = 0;
-        this.totalTokens = 0;
-    }
-
-    getCurrentTime() {
-        const now = new Date();
-        return now.toTimeString().split(' ')[0];
-    }
-
-    async checkToken(token) {
-        const client = new Discord.Client({
-            checkUpdate: false,
-            syncStatus: false
-        });
-
-        try {
-            await client.login(token.trim());
-            
-            // Additional validation by making an API call
-            const user = client.user;
-            if (user) {
-                this.validTokens.push({
-                    token: token,
-                    username: user.username,
-                    tag: user.tag,
-                    id: user.id
-                });
-                
-                console.log(
-                    `[${colors.magenta(this.getCurrentTime())}] ` +
-                    `Token: ${colors.green(token.substring(0, 25) + '...')} ` +
-                    `| User: ${colors.green(user.tag)} ` +
-                    `| ID: ${colors.green(user.id)} ` +
-                    `${colors.green('✓ VALID')}`
-                );
-                
-                return { valid: true, user };
-            }
-        } catch (error) {
-            // Invalid token
-            this.invalidTokens.push(token);
-            
-            console.log(
-                `[${colors.magenta(this.getCurrentTime())}] ` +
-                `Token: ${colors.red(token.substring(0, 25) + '...')} ` +
-                `${colors.red('✗ INVALID')}`
-            );
-            
-            return { valid: false, error };
-        } finally {
-            try {
-                client.destroy();
-            } catch (e) {
-                // Ignore destroy errors
-            }
-            this.checkedCount++;
-        }
-    }
-
-    async checkAllTokens(tokens) {
-        this.totalTokens = tokens.length;
-        
-        console.log(colors.yellow(`\nStarting token check for ${this.totalTokens} tokens...\n`));
-        
-        // Check tokens sequentially to avoid rate limits
-        for (const token of tokens) {
-            if (token.trim()) {
-                await this.checkToken(token.trim());
-                // Small delay between checks
-                await setTimeout(1000);
-            }
-        }
-        
-        this.displayResults();
-        this.saveResults();
-    }
-
-    displayResults() {
-        console.log('\n' + '='.repeat(50));
-        console.log(colors.green(`Valid Tokens: ${this.validTokens.length}`));
-        console.log(colors.red(`Invalid Tokens: ${this.invalidTokens.length}`));
-        console.log(colors.yellow(`Total Tokens: ${this.totalTokens}`));
-        console.log('='.repeat(50) + '\n');
-    }
-
-    saveResults() {
-        // Save valid tokens
-        const validData = this.validTokens.map(t => 
-            `${t.token} | ${t.tag} | ${t.id}`
-        ).join('\n');
-        
-        fs.writeFileSync('valid_tokens.txt', validData);
-        console.log(colors.green(`✓ Saved ${this.validTokens.length} valid tokens to valid_tokens.txt`));
-        
-        // Save invalid tokens
-        const invalidData = this.invalidTokens.join('\n');
-        fs.writeFileSync('invalid_tokens.txt', invalidData);
-        console.log(colors.red(`✓ Saved ${this.invalidTokens.length} invalid tokens to invalid_tokens.txt`));
-        
-        // Save detailed valid tokens
-        const detailedData = this.validTokens.map(t => 
-            `Token: ${t.token}\nUsername: ${t.username}\nTag: ${t.tag}\nID: ${t.id}\n${'='.repeat(40)}`
-        ).join('\n\n');
-        
-        fs.writeFileSync('valid_tokens_detailed.txt', detailedData);
-        console.log(colors.cyan(`✓ Saved detailed info to valid_tokens_detailed.txt`));
-    }
-
-    loadTokensFromFile(filename) {
-        try {
-            const data = fs.readFileSync(filename, 'utf8');
-            return data.split('\n')
-                .map(token => token.trim())
-                .filter(token => token.length > 0);
-        } catch (error) {
-            console.log(colors.red(`Error loading tokens from ${filename}: ${error.message}`));
-            return [];
-        }
-    }
-}
-
-// Main execution
-async function main() {
-    const checker = new TokenChecker();
-    
-    console.log(colors.cyan(`
-╔══════════════════════════════════════════════╗
-║    DISCORD TOKEN CHECKER - Selfbot v13      ║
-╚══════════════════════════════════════════════╝
-    `));
-    
-    // Check if tokens.txt exists
-    if (!fs.existsSync('tokens.txt')) {
-        console.log(colors.red('ERROR: tokens.txt file not found!'));
-        console.log(colors.yellow('Please create a tokens.txt file with one token per line.'));
-        return;
-    }
-    
-    const tokens = checker.loadTokensFromFile('tokens.txt');
-    
-    if (tokens.length === 0) {
-        console.log(colors.red('No tokens found in tokens.txt'));
-        return;
-    }
-    
-    console.log(colors.yellow(`Loaded ${tokens.length} tokens from tokens.txt\n`));
-    
-    await checker.checkAllTokens(tokens);
-    
-    console.log(colors.green('\nToken checking completed!'));
-}
-
-// Handle errors
-process.on('unhandledRejection', (error) => {
-    console.error(colors.red('Unhandled Promise Rejection:'), error);
-});
-
-// Run the checker
-if (require.main === module) {
-    main().catch(console.error);
-}
-
-module.exports = TokenChecker;
-
-
-{
-  "name": "discord-token-checker",
-  "version": "1.0.0",
-  "main": "index.js",
-  "scripts": {
-    "start": "node index.js"
-  },
-  "dependencies": {
-    "discord.js-selfbot-v13": "^1.8.3",
-    "colors": "^1.4.0"
-  }
-}
+Sëlin
+Sõren
+Ravran
+Serãph
+Mavẽn
+天力
+Purelence
+Eren
+Silver .
+明华
+Anarchy
+1
+#Evaitn
+Old
+Oud.
+#Ren
+!               Abo Z3be
+! Ft
+ابو عايض
+DiroNghtMr
+P
+flàk
+Slo
+وهٌٍمــُ
+@Z3em
+‧₊˚ ୨ ୧ ˚₊.
+Endothermic
+愛
+Lonely
+大好き
+Liliana
+Turaya
+Lien
+Kali
+Lethia
+Joliette
+Ulva
+Oana
+Lorraine
+Madison
+Lisha
+Lavinia
+Turaya
+Madeline
+Callidora
+Orenda
+Druilla
+Roman
+Sun
+Sun
+Zeidan
+Bjorn
+Victor
+Church
+Griffin
+Arthur
+Peter
+Roman
+Sun
+Sun
+Zeidan
+Bjorn
+Victor
+Church
+Griffin
+Arthur
+Peter
