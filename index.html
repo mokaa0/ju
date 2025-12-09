@@ -1,9 +1,9 @@
 const fs = require('fs');
-const axios = require('axios');
+const { Client } = require('discord.js-selfbot-v13');
 const { HttpsProxyAgent } = require('https-proxy-agent');
 const { SocksProxyAgent } = require('socks-proxy-agent');
 
-class DiscordUsernameChanger {
+class DiscordSelfbotUsernameChanger {
     constructor() {
         this.tokens = [];
         this.usernames = [];
@@ -11,6 +11,7 @@ class DiscordUsernameChanger {
         this.successCount = 0;
         this.failCount = 0;
         this.currentProxyIndex = 0;
+        this.clients = [];
     }
 
     colors = {
@@ -53,13 +54,11 @@ class DiscordUsernameChanger {
         }
     }
 
-    getNextProxy() {
+    getProxyForAccount(index) {
         if (this.proxies.length === 0) return null;
         
-        const proxy = this.proxies[this.currentProxyIndex];
-        this.currentProxyIndex = (this.currentProxyIndex + 1) % this.proxies.length;
-        
-        return proxy;
+        const proxyIndex = index % this.proxies.length;
+        return this.proxies[proxyIndex];
     }
 
     createProxyAgent(proxy) {
@@ -95,74 +94,96 @@ class DiscordUsernameChanger {
         });
     }
 
-    async getCurrentUsername(token, proxyAgent) {
-        try {
-            const response = await axios.get('https://discord.com/api/v10/users/@me', {
-                headers: {
-                    'Authorization': token,
-                    'Content-Type': 'application/json'
-                },
-                httpsAgent: proxyAgent,
-                timeout: 10000
+    async createClient(token, proxy, index) {
+        return new Promise((resolve) => {
+            const proxyAgent = this.createProxyAgent(proxy);
+            
+            const client = new Client({
+                checkUpdate: false,
+                restRequestTimeout: 30000
             });
 
-            return response.data.username;
-        } catch (error) {
-            return null;
-        }
+            client.on('ready', () => {
+                resolve(client);
+            });
+
+            client.on('error', (error) => {
+                console.error(`${this.colors.red}Client ${index + 1} error: ${error.message}${this.colors.reset}`);
+            });
+
+            const loginOptions = {
+                agent: proxyAgent
+            };
+
+            client.login(token).catch(error => {
+                console.error(`${this.colors.red}Failed to login client ${index + 1}: ${error.message}${this.colors.reset}`);
+                resolve(null);
+            });
+        });
     }
 
-    async changeUsername(token, newUsername, proxyAgent) {
+    async changeUsernameWithSelfbot(client, newUsername, index) {
         try {
-            const response = await axios.patch(
-                'https://discord.com/api/v10/users/@me',
-                { username: newUsername },
-                {
-                    headers: {
-                        'Authorization': token,
-                        'Content-Type': 'application/json'
-                    },
-                    httpsAgent: proxyAgent,
-                    timeout: 15000
-                }
-            );
-
-            return response.data;
-        } catch (error) {
-            throw error;
-        }
-    }
-
-    async processAccount(token, username, index) {
-        const proxy = this.getNextProxy();
-        const proxyAgent = this.createProxyAgent(proxy);
-        
-        const currentTime = this.getCurrentTime();
-        const oldUsername = await this.getCurrentUsername(token, proxyAgent);
-        
-        console.log(`\n${this.colors.purple}[${currentTime}]${this.colors.reset} Processing account ${index + 1}/${this.tokens.length}`);
-        
-        if (oldUsername) {
+            const oldUsername = client.user.username;
+            
+            await client.user.setUsername(newUsername);
+            
+            const currentTime = this.getCurrentTime();
+            console.log(`\n${this.colors.purple}[${currentTime}]${this.colors.reset} Processing account ${index + 1}/${this.tokens.length}`);
             console.log(`${this.colors.red}Old username: ${oldUsername}${this.colors.reset}`);
-        } else {
-            console.log(`${this.colors.red}Failed to get old username${this.colors.reset}`);
-        }
-
-        try {
-            const result = await this.changeUsername(token, username, proxyAgent);
-            console.log(`${this.colors.green}New username: ${username}${this.colors.reset}`);
+            console.log(`${this.colors.green}New username: ${newUsername}${this.colors.reset}`);
+            
             this.successCount++;
             return true;
         } catch (error) {
+            const currentTime = this.getCurrentTime();
+            console.log(`\n${this.colors.purple}[${currentTime}]${this.colors.reset} Processing account ${index + 1}/${this.tokens.length}`);
             console.error(`${this.colors.red}Failed to change username: ${error.message}${this.colors.reset}`);
-            
-            if (error.response) {
-                console.error(`${this.colors.red}Error code: ${error.response.status}${this.colors.reset}`);
-                console.error(`${this.colors.red}Message: ${JSON.stringify(error.response.data)}${this.colors.reset}`);
-            }
             
             this.failCount++;
             return false;
+        }
+    }
+
+    async processAccount(index) {
+        const token = this.tokens[index];
+        const username = this.usernames[index];
+        const proxy = this.getProxyForAccount(index);
+
+        console.log(`\n${this.colors.purple}[${this.getCurrentTime()}]${this.colors.reset} Initializing account ${index + 1}/${this.tokens.length}...`);
+        
+        try {
+            const client = await this.createClient(token, proxy, index);
+            
+            if (!client) {
+                console.error(`${this.colors.red}Failed to create client for account ${index + 1}${this.colors.reset}`);
+                this.failCount++;
+                return;
+            }
+
+            console.log(`${this.colors.green}Successfully logged in as: ${client.user.tag}${this.colors.reset}`);
+            
+            await this.changeUsernameWithSelfbot(client, username, index);
+            
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            client.destroy();
+            
+        } catch (error) {
+            console.error(`${this.colors.red}Error processing account ${index + 1}: ${error.message}${this.colors.reset}`);
+            this.failCount++;
+        }
+    }
+
+    async processAllAccounts() {
+        const totalAccounts = Math.min(this.tokens.length, this.usernames.length);
+        
+        for (let i = 0; i < totalAccounts; i++) {
+            await this.processAccount(i);
+            
+            if (i < totalAccounts - 1) {
+                await new Promise(resolve => setTimeout(resolve, 3000));
+            }
         }
     }
 
@@ -174,7 +195,7 @@ class DiscordUsernameChanger {
     }
 
     async start() {
-        console.log(`${this.colors.purple}Starting username change process...${this.colors.reset}\n`);
+        console.log(`${this.colors.purple}Starting username change process using Selfbot...${this.colors.reset}\n`);
 
         const filesLoaded = await this.loadFiles();
         if (!filesLoaded) {
@@ -187,22 +208,12 @@ class DiscordUsernameChanger {
             return;
         }
 
-        const totalAccounts = Math.min(this.tokens.length, this.usernames.length);
-
-        for (let i = 0; i < totalAccounts; i++) {
-            const token = this.tokens[i];
-            const username = this.usernames[i];
-            
-            await this.processAccount(token, username, i);
-            
-            if (i < totalAccounts - 1) {
-                await new Promise(resolve => setTimeout(resolve, 2000));
-            }
-        }
-
+        await this.processAllAccounts();
         this.showResults();
+        
+        process.exit(0);
     }
 }
 
-const changer = new DiscordUsernameChanger();
+const changer = new DiscordSelfbotUsernameChanger();
 changer.start().catch(console.error);
