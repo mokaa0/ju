@@ -47,7 +47,7 @@ def clear_console():
 
 def load_config():
     with open("config.json", "r") as file:
-        return config.load(file)
+        return json.load(file)
 
 def color_text(text, color_code):
     return f"\033[{color_code}m{text}\033[0m"
@@ -64,42 +64,47 @@ banner = f"""                           ┌─                                  
 print(banner)
 
 config = load_config()
-token = config["token"]
 clear_enabled = config["clear_enabled"]
 clear_interval = config["clear_interval"]
 sleep_interval = config["sleep_interval"]
 
-status_count = 0  
-emoji_count = 0
+# قراءة التوكنات من ملف tokens.txt
+with open("tokens.txt", "r") as file:
+    tokens = [line.strip() for line in file.readlines() if line.strip()]
 
-while True:
-    user_info, is_valid_token = get_user_info(token)
-    statuses = read_statuses("text.txt")
-    emojis = read_statuses("emojis.txt")
-    for status in statuses:
-        time_formatted = color_text(time.strftime("%I:%M %p:"), "35") 
-        if is_valid_token:
-            token_color_code = "32" 
-        else:
-            token_color_code = "31"
-        token_masked = token[:10] + "*****"
-        token_info = f"{token_masked} | {user_info}"
-        token_colored = color_text(token_info, token_color_code)
-        status_colored = color_text(status, "35") 
+# تشغيل كل توكن
+for token in tokens:
+    status_count = 0  
+    emoji_count = 0
 
-        emoji_data = emojis[emoji_count % len(emojis)].split(":")  
-        if len(emoji_data) == 2:
-            emoji_name, emoji_id = emoji_data
-        elif len(emoji_data) == 1:
-            emoji_name = emoji_data[0]
-            emoji_id = None
-        else:
-            print(f"Invalid emoji: {emojis[emoji_count % len(emojis)]}")
-            continue
-        print(f"{time_formatted} {Fore.LIGHTBLACK_EX}Status changed for: \033[34m{token_colored}\033[90m. New status: \033[34m{status_colored}\033[0m.{Fore.LIGHTBLACK_EX} | Emoji: {emoji_name}")
-        change_status(token, status, emoji_name, emoji_id)
-        status_count += 1
-        emoji_count += 1
-        time.sleep(sleep_interval)
-        if clear_enabled and status_count % clear_interval == 0:
-            clear_console()
+    while True:
+        user_info, is_valid_token = get_user_info(token)
+        statuses = read_statuses("text.txt")
+        emojis = read_statuses("emojis.txt")
+        for status in statuses:
+            time_formatted = color_text(time.strftime("%I:%M %p:"), "35") 
+            if is_valid_token:
+                token_color_code = "32" 
+            else:
+                token_color_code = "31"
+            token_masked = token[:10] + "*****"
+            token_info = f"{token_masked} | {user_info}"
+            token_colored = color_text(token_info, token_color_code)
+            status_colored = color_text(status, "35") 
+
+            emoji_data = emojis[emoji_count % len(emojis)].split(":")  
+            if len(emoji_data) == 2:
+                emoji_name, emoji_id = emoji_data
+            elif len(emoji_data) == 1:
+                emoji_name = emoji_data[0]
+                emoji_id = None
+            else:
+                print(f"Invalid emoji: {emojis[emoji_count % len(emojis)]}")
+                continue
+            print(f"{time_formatted} {Fore.LIGHTBLACK_EX}Status changed for: \033[34m{token_colored}\033[90m. New status: \033[34m{status_colored}\033[0m.{Fore.LIGHTBLACK_EX} | Emoji: {emoji_name}")
+            change_status(token, status, emoji_name, emoji_id)
+            status_count += 1
+            emoji_count += 1
+            time.sleep(sleep_interval)
+            if clear_enabled and status_count % clear_interval == 0:
+                clear_console()
