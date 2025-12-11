@@ -448,6 +448,107 @@ def create_fallback_email():
     log.warning(f"Using fallback email: {email}")
     return email, password
 
+def fill_form_fast(inbox_email, inbox_password, username, global_name, month_idx, day, year):
+    """Fill form with optimized speed and timing"""
+    try:
+        type_interval = 0.04  # أسرع من 0.07
+        
+        # 1. Email field
+        pyautogui.write(inbox_email, interval=type_interval)
+        time.sleep(0.08)
+        
+        # 2. TAB to Display Name
+        pyautogui.press('tab')
+        time.sleep(0.08)
+        
+        # 3. Display Name field
+        pyautogui.write(global_name, interval=type_interval)
+        time.sleep(0.08)
+        
+        # 4. TAB to Username
+        pyautogui.press('tab')
+        time.sleep(0.08)
+        
+        # 5. Username field
+        pyautogui.write(username, interval=type_interval)
+        time.sleep(0.08)
+        
+        # 6. TAB to Password
+        pyautogui.press('tab')
+        time.sleep(0.08)
+        
+        # 7. Password field
+        pyautogui.write(inbox_password, interval=type_interval)
+        time.sleep(0.08)
+        
+        # 8. TAB to Month dropdown
+        pyautogui.press('tab')
+        time.sleep(0.15)
+        
+        # 9. Select Month - حل محسّن
+        # فتح القائمة
+        pyautogui.press('space')
+        time.sleep(0.15)
+        
+        # اختصار: استخدام الحرف الأول من الشهر إن أمكن
+        # Discord قد يدعم اختيار الشهر بالحرف الأول
+        month_letter = months[month_idx][0].lower()
+        pyautogui.write(month_letter)
+        time.sleep(0.1)
+        
+        # أو استخدام الأسهم للتنقل بشكل أسرع
+        # إذا كان الرقم 12، نذهب للأسفل مرتين أكثر
+        if month_idx > 0:
+            pyautogui.press('down', presses=month_idx, interval=0.03)
+        
+        # تأكيد الاختيار
+        pyautogui.press('enter')
+        time.sleep(0.15)
+        
+        # 10. TAB to Day
+        pyautogui.press('tab')
+        time.sleep(0.07)
+        
+        # 11. Day field
+        pyautogui.write(day, interval=type_interval)
+        time.sleep(0.07)
+        
+        # 12. TAB to Year
+        pyautogui.press('tab')
+        time.sleep(0.07)
+        
+        # 13. Year field
+        pyautogui.write(year, interval=type_interval)
+        time.sleep(0.07)
+        
+        # 14. TAB to email checkbox
+        pyautogui.press('tab')
+        time.sleep(0.06)
+        
+        # 15. Press SPACE to check email checkbox
+        pyautogui.press('space')
+        time.sleep(0.06)
+        
+        # 16. Press TAB 2 times to skip Terms links
+        pyautogui.press('tab')
+        time.sleep(0.06)
+        pyautogui.press('tab')
+        time.sleep(0.06)
+        
+        # 17. TAB to Create Account button
+        pyautogui.press('tab')
+        time.sleep(0.06)
+        
+        # 18. Press Enter on Create Account button
+        pyautogui.press('enter')
+        time.sleep(0.8)  # وقت أقل للانتظار
+        
+        return True
+        
+    except Exception as e:
+        log.error(f"❌ Error while typing form: {e}")
+        return False
+
 async def register_and_get_promo(is_last_instance=False):
     firefox_path = get_firefox_path()
     discord_register_url = 'https://discord.com/register'
@@ -458,7 +559,7 @@ async def register_and_get_promo(is_last_instance=False):
         log.error(f"❌ Failed to start Firefox: {e}")
         return
 
-    time.sleep(18)
+    time.sleep(12)  # وقت أقل للتحميل
     log.info("✅ Register Page loaded")
 
     try:
@@ -468,120 +569,32 @@ async def register_and_get_promo(is_last_instance=False):
         return
 
     log.info(f"✉️ Using {inbox_email}")
-    time.sleep(2)
+    time.sleep(1.5)
 
     username = generate_random_name()
     global_name = "Somo Acc"
     month_num = random.randint(1, 12)
     month_idx = month_num - 1
-    day = f"{random.randint(1, 28)}"
+    day = f"{random.randint(1, 28):02d}"  # إضافة صفر أمام الأرقام < 10
     year = f"{random.randint(1995, 2005)}"
 
-    type_interval = 0.07
-
-    try:
-        log.info("📝 Filling form...")
-        
-        # 1. Email field
-        pyautogui.write(inbox_email, interval=type_interval)
-        time.sleep(0.15)
-        
-        # 2. TAB to Display Name
-        pyautogui.press('tab')
-        time.sleep(0.12)
-        
-        # 3. Display Name field
-        pyautogui.write(global_name, interval=type_interval)
-        time.sleep(0.12)
-        
-        # 4. TAB to Username
-        pyautogui.press('tab')
-        time.sleep(0.12)
-        
-        # 5. Username field
-        pyautogui.write(username, interval=type_interval)
-        time.sleep(0.12)
-        
-        # 6. TAB to Password
-        pyautogui.press('tab')
-        time.sleep(0.12)
-        
-        # 7. Password field
-        pyautogui.write(inbox_password, interval=type_interval)
-        time.sleep(0.12)
-        
-        # 8. TAB to Month dropdown - FIXED
-        pyautogui.press('tab')
-        time.sleep(0.2)
-
-        # 9. Select Month - FIXED METHOD (نختار شهر عشوائي)
-        # افتح القائمة المنسدلة
-        pyautogui.press('space')
-        time.sleep(0.2)
-        
-        # حرك للأسفل لعدد عشوائي لاختيار شهر مختلف
-        for _ in range(month_idx + 1):
-            pyautogui.press('down')
-            time.sleep(0.05)
-        
-        # اضغط Enter لتأكيد الاختيار
-        pyautogui.press('enter')
-        time.sleep(0.2)
-        
-        # 10. TAB to Day
-        pyautogui.press('tab')
-        time.sleep(0.1)
-        
-        # 11. Day field
-        pyautogui.write(day, interval=type_interval)
-        time.sleep(0.1)
-        
-        # 12. TAB to Year
-        pyautogui.press('tab')
-        time.sleep(0.1)
-        
-        # 13. Year field
-        pyautogui.write(year, interval=type_interval)
-        time.sleep(0.1)
-        
-        # === CHECK EMAIL OPTION ===
-        # 14. TAB to email checkbox
-        pyautogui.press('tab')
-        time.sleep(0.08)
-        
-        # 15. Press SPACE to check email checkbox (Optional)
-        pyautogui.press('space')
-        time.sleep(0.08)
-        
-        # === SKIP TERMS BUTTONS ===
-        # 16. Press TAB 2 times to skip Terms of Service and Privacy Policy links
-        pyautogui.press('tab')
-        time.sleep(0.08)
-        pyautogui.press('tab')
-        time.sleep(0.08)
-        
-        # 17. TAB to Create Account button
-        pyautogui.press('tab')
-        time.sleep(0.08)
-        
-        # 18. Press Enter on Create Account button
-        pyautogui.press('enter')
-        time.sleep(1.0)
-
-        log.info("✅ Month selected: " + months[month_idx])
-        log.info("✅ Day entered: " + day)
-        log.info("✅ Year entered: " + year)
-
-    except Exception as e:
-        log.error(f"❌ Error while typing: {e}")
+    # ملء النموذج بسرعة
+    form_filled = fill_form_fast(inbox_email, inbox_password, username, global_name, month_idx, day, year)
+    
+    if not form_filled:
+        log.error("❌ Failed to fill form")
         return
+
+    log.info(f"✅ Month selected: {months[month_idx]}")
+    log.info(f"✅ Day entered: {day}")
+    log.info(f"✅ Year entered: {year}")
 
     log.info("✅ Form submitted")
     log.warning("⚠️ Solve Captcha if shown!")
-    time.sleep(25)
+    time.sleep(18)  # وقت أقل للانتظار
 
     log.info("⏳ Waiting for email...")
-    time.sleep(10)
+    time.sleep(8)
 
     verify_url = verify(inbox_email, inbox_password)
     if not verify_url:
@@ -600,13 +613,14 @@ async def register_and_get_promo(is_last_instance=False):
         except Exception as e:
             log.error(f"❌ Failed to open link: {e}")
 
-    time.sleep(20)
+    time.sleep(15)  # وقت أقل للتحقق
 
     try:
         close_firefox()
     except Exception:
         pass
 
+    # الحصول على التوكن
     try:
         session = requests.Session()
         payload = {'login': inbox_email, 'password': inbox_password}
@@ -616,31 +630,53 @@ async def register_and_get_promo(is_last_instance=False):
             'Origin': 'https://discord.com',
             'Referer': 'https://discord.com/login'
         }
-        response = session.post('https://discord.com/api/v9/auth/login', json=payload, headers=headers, timeout=15)
-        try:
-            response_data = response.json()
-            if response.status_code == 200 and 'token' in response_data:
-                token = response_data['token']
-                log.success(f"🎉 Token: {token[:25]}***")
-                with open('tokens.txt', 'a', encoding='utf-8') as f:
-                    f.write(f"{token}\n")
-                with open('acc.txt', 'a', encoding='utf-8') as f:
-                    f.write(f"{inbox_email}:{inbox_password}:{token}\n")
-                    f.flush()
-                    os.fsync(f.fileno())
-                log.success("💾 Saved to tokens.txt")
-            else:
-                log.debug(f"Login response ({response.status_code}): {response.text}")
-        except json.JSONDecodeError:
-            log.failure(f"❌ Failed to parse response: {response.text}")
+        
+        # محاولات متعددة للحصول على التوكن
+        for attempt in range(3):
+            try:
+                response = session.post('https://discord.com/api/v9/auth/login', 
+                                      json=payload, 
+                                      headers=headers, 
+                                      timeout=10)
+                
+                if response.status_code == 200:
+                    response_data = response.json()
+                    if 'token' in response_data:
+                        token = response_data['token']
+                        log.success(f"🎉 Token: {token[:25]}***")
+                        
+                        # حفظ التوكن
+                        with open('tokens.txt', 'a', encoding='utf-8') as f:
+                            f.write(f"{token}\n")
+                        
+                        with open('acc.txt', 'a', encoding='utf-8') as f:
+                            f.write(f"{inbox_email}:{inbox_password}:{token}\n")
+                            f.flush()
+                            os.fsync(f.fileno())
+                        
+                        log.success("💾 Saved to tokens.txt")
+                        break
+                    else:
+                        log.debug(f"No token in response: {response.text}")
+                else:
+                    log.debug(f"Login failed ({response.status_code}): {response.text}")
+                    
+            except Exception as e:
+                log.debug(f"Login attempt {attempt + 1} failed: {e}")
+                time.sleep(2)
+                
     except Exception as e:
         log.error(f"❌ Error getting token: {e}")
 
+    # التحقق من Rate Limit
     if not is_last_instance and config.get("check_ratelimit", True):
         try:
             wait_time = account_ratelimit()
-            log.warning(f"⚠️ Rate limit — wait {wait_time} seconds")
-            countdown_timer(wait_time)
+            if wait_time > 1:
+                log.warning(f"⚠️ Rate limit detected — wait {wait_time} seconds")
+                countdown_timer(wait_time)
+            else:
+                log.info("✅ No rate limit detected, continuing...")
         except Exception as e:
             log.error(f"❌ Failed to check rate limit: {e}")
 
@@ -676,65 +712,88 @@ def run_register_and_get_promo(is_last_instance=False):
 
 def main():
     multiprocessing.freeze_support()
+    
+    print("\n")
+    print_gradient_text(Center.XCenter(banner))
+    print_gradient_text(Center.XCenter(cret))
+    print("\n")
+    
     try:
         instance_count = int(input(Fore.CYAN + f"[{Fore.MAGENTA}?{Fore.CYAN}] Number of parallel processes (1-3): "))
         instance_count = max(1, min(3, instance_count))
     except ValueError:
         log.warning("⚠️ Invalid input. Defaulting to 1.")
         instance_count = 1
+    
     try:
         max_runs = int(input(Fore.CYAN + f"[{Fore.MAGENTA}?{Fore.CYAN}] Number of accounts to generate (0 = infinite): "))
     except ValueError:
         log.warning("⚠️ Invalid input. Defaulting to 1 account.")
         max_runs = 1
-    run_count = 0
-    active_processes = []
+    
+    if not config.get("check_ratelimit", True):
+        log.warning("⚠️ Rate limit checking is disabled at config.json.")
     
     log.info(f"📧 Using email API: {config['mail_api']}")
     log.info(f"🔧 Parallel processes: {instance_count}")
     log.info(f"🎯 Target accounts: {max_runs if max_runs > 0 else 'Infinite'}")
     
+    run_count = 0
+    active_processes = []
+    
     while True:
+        # تنظيف العمليات المنتهية
         active_processes = [p for p in active_processes if p.is_alive()]
+        
+        # تشغيل عمليات جديدة إذا كان هناك متسع
         if len(active_processes) < instance_count and (max_runs == 0 or run_count < max_runs):
             run_count += 1
             log.info(f"🚀 Starting account #{run_count}")
+            
             try:
                 is_last = (max_runs != 0 and run_count == max_runs)
                 p = multiprocessing.Process(target=run_register_and_get_promo, args=(is_last,))
                 p.start()
                 active_processes.append(p)
+                time.sleep(2)  # تأخير بسيط بين بدء كل عملية
             except Exception as e:
                 log.failure(f"❌ Failed to launch process: {e}")
+        
+        # التحقق إذا انتهى كل شيء
         if max_runs and run_count >= max_runs and not active_processes:
             break
+        
         time.sleep(1)
+    
+    # انتظار انتهاء العمليات المتبقية
     for p in active_processes:
         p.join(timeout=300)
+        if p.is_alive():
+            p.terminate()
+    
     log.success("🎉 All account generations completed!")
+    input("Press Enter to exit...")
 
 if __name__ == "__main__":
     multiprocessing.freeze_support()
     import sys
     from PyQt6.QtWidgets import QApplication
     from PyQt6.QtCore import QTimer
+    
     def run_cli_logic():
-        print("\n")
-        print_gradient_text(Center.XCenter(banner))
-        print_gradient_text(Center.XCenter(cret))
-        print("\n")
-        if not config.get("check_ratelimit", True):
-            log.warning("⚠️ Rate limit checking is disabled at config.json.")
         main()
+    
     def start_message_splash():
         msg = MessageSplashScreen("Made by Somo\nEnjoy!\nسومو العم")
         msg.showWithFade()
-        QTimer.singleShot(2500, lambda: msg.fadeOut(continue_to_main))
+        QTimer.singleShot(2000, lambda: msg.fadeOut(continue_to_main))  # وقت أقل
+    
     def continue_to_main():
         app.quit()
         run_cli_logic()
+    
     app = QApplication(sys.argv)
     splash = SplashScreen()
     splash.start()
-    QTimer.singleShot(2500, lambda: splash.fadeOut(start_message_splash))
+    QTimer.singleShot(2000, lambda: splash.fadeOut(start_message_splash))  # وقت أقل
     app.exec()
