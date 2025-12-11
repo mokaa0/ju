@@ -284,7 +284,6 @@ months = [
     "July", "August", "September", "October", "November", "December"
 ]
 
-# ==================== ENHANCED EMAIL API FUNCTIONS ====================
 def verify(inbox_email, inbox_password):
     try:
         log.debug(f"Attempting to verify email: {inbox_email}")
@@ -449,48 +448,6 @@ def create_fallback_email():
     log.warning(f"Using fallback email: {email}")
     return email, password
 
-# ==================== NEW: PAGE LOAD CHECK ====================
-def check_page_ready():
-    """Check if Discord register page is loaded"""
-    try:
-        # Method 1: Check for specific pixel color (Discord blue)
-        for _ in range(10):
-            try:
-                # Check for Discord blue color at specific position
-                screenshot = pyautogui.screenshot()
-                # Check multiple points
-                points = [(100, 100), (200, 200), (300, 300)]
-                discord_blue = (88, 101, 242)
-                
-                for point in points:
-                    try:
-                        pixel = screenshot.getpixel(point)
-                        # If we find Discord blue color
-                        if abs(pixel[0] - discord_blue[0]) < 20 and \
-                           abs(pixel[1] - discord_blue[1]) < 20 and \
-                           abs(pixel[2] - discord_blue[2]) < 20:
-                            return True
-                    except:
-                        continue
-                
-                # Method 2: Check for "Register" text using image recognition
-                try:
-                    register_pos = pyautogui.locateOnScreen('register_button.png', confidence=0.7)
-                    if register_pos:
-                        return True
-                except:
-                    pass
-                
-                time.sleep(2)
-            except:
-                time.sleep(2)
-        
-        return False
-    except Exception as e:
-        log.debug(f"Page check error: {e}")
-        return True  # Continue anyway
-
-# ==================== MAIN ACCOUNT CREATION FUNCTION ====================
 async def register_and_get_promo(is_last_instance=False):
     firefox_path = get_firefox_path()
     discord_register_url = 'https://discord.com/register'
@@ -501,16 +458,7 @@ async def register_and_get_promo(is_last_instance=False):
         log.error(f"❌ Failed to start Firefox: {e}")
         return
 
-    # WAIT FOR PAGE TO LOAD - FIXED
-    log.info("🕒 Waiting for Discord page to load...")
-    
-    # Method 1: Fixed wait time
-    time.sleep(15)
-    
-    # Method 2: Additional check
-    if not check_page_ready():
-        log.warning("⚠️ Page might not be fully loaded, but continuing...")
-    
+    time.sleep(17)
     log.info("✅ Register Page loaded")
 
     try:
@@ -520,7 +468,7 @@ async def register_and_get_promo(is_last_instance=False):
         return
 
     log.info(f"✉️ Using {inbox_email}")
-    time.sleep(3)
+    time.sleep(2)
 
     username = generate_random_name()
     global_name = "Somo Acc"
@@ -528,17 +476,16 @@ async def register_and_get_promo(is_last_instance=False):
     day = f"{random.randint(1, 28)}"
     year = f"{random.randint(1995, 2005)}"
 
-    type_interval = 0.06
+    type_interval = 0.07
 
     try:
-        # FIXED FORM FILLING - SKIP TERMS BUTTON
         log.info("📝 Filling form...")
         
         # 1. Email field
         pyautogui.write(inbox_email, interval=type_interval)
-        time.sleep(0.16)
+        time.sleep(0.15)
         
-        # 2. TAB to next field (Display Name)
+        # 2. TAB to Display Name
         pyautogui.press('tab')
         time.sleep(0.12)
         
@@ -562,65 +509,54 @@ async def register_and_get_promo(is_last_instance=False):
         pyautogui.write(inbox_password, interval=type_interval)
         time.sleep(0.12)
         
-        # 8. TAB to Date of Birth (Month)
+        # 8. TAB to Month dropdown
         pyautogui.press('tab')
         time.sleep(0.12)
 
-        # 9. Select Month
-        try:
-            pyautogui.press('space')
-            time.sleep(0.12)
-            pyautogui.write(month_choice[:3], interval=type_interval)
-            time.sleep(0.12)
-            pyautogui.press('enter')
-            time.sleep(0.18)
-        except Exception:
-            pass
-
-        # Alternative month selection
-        try:
-            pyautogui.press('space')
-            time.sleep(0.10)
-            idx = months.index(month_choice) if month_choice in months else 0
-            pyautogui.press('home')
-            time.sleep(0.06)
-            if idx > 0:
-                pyautogui.press('down', presses=idx, interval=0.06)
-            pyautogui.press('enter')
-            time.sleep(0.12)
-        except Exception:
-            pass
-
+        # 9. Select Month - FIXED METHOD
+        time.sleep(0.2)
+        pyautogui.press('down', presses=1, interval=0.05)  # Move down one
+        time.sleep(0.1)
+        pyautogui.press('enter')
+        time.sleep(0.15)
+        
         # 10. TAB to Day
         pyautogui.press('tab')
-        time.sleep(0.08)
+        time.sleep(0.1)
         
         # 11. Day field
         pyautogui.write(day, interval=type_interval)
-        time.sleep(0.08)
+        time.sleep(0.1)
         
         # 12. TAB to Year
         pyautogui.press('tab')
-        time.sleep(0.08)
+        time.sleep(0.1)
         
         # 13. Year field
         pyautogui.write(year, interval=type_interval)
-        time.sleep(0.08)
+        time.sleep(0.1)
         
-        # === FIX FOR TERMS BUTTON ===
-        # 14. TAB to Terms checkbox
+        # === FIX FOR "It's okay to send me emails" checkbox ===
+        # 14. TAB to email checkbox
         pyautogui.press('tab')
         time.sleep(0.08)
         
-        # 15. Press SPACE to check Terms checkbox
+        # 15. Press SPACE to check email checkbox (Optional)
         pyautogui.press('space')
         time.sleep(0.08)
         
-        # 16. TAB to Create Account button (skip Terms button)
+        # === SKIP TERMS BUTTONS ===
+        # 16. Press TAB 2 times to skip Terms of Service and Privacy Policy links
+        pyautogui.press('tab')
+        time.sleep(0.08)
         pyautogui.press('tab')
         time.sleep(0.08)
         
-        # 17. Press Enter on Create Account button
+        # 17. TAB to Create Account button
+        pyautogui.press('tab')
+        time.sleep(0.08)
+        
+        # 18. Press Enter on Create Account button
         pyautogui.press('enter')
         time.sleep(1.0)
 
