@@ -451,7 +451,7 @@ def create_fallback_email():
 def fill_form_fast(inbox_email, inbox_password, username, global_name, month_idx, day, year):
     """Fill form with optimized speed and timing"""
     try:
-        type_interval = 0.04  # أسرع من 0.07
+        type_interval = 0.04
         
         # 1. Email field
         pyautogui.write(inbox_email, interval=type_interval)
@@ -485,25 +485,25 @@ def fill_form_fast(inbox_email, inbox_password, username, global_name, month_idx
         pyautogui.press('tab')
         time.sleep(0.15)
         
-        # 9. Select Month - حل محسّن
-        # فتح القائمة
+        # 9. Select Month - الحل الصحيح كما طلبت
+        log.info(f"📅 Selecting month: {months[month_idx]} (index: {month_idx})")
+        
+        # 1. فتح القائمة المنسدلة
         pyautogui.press('space')
-        time.sleep(0.15)
+        time.sleep(0.3)  # وقت كاف لفتح القائمة
         
-        # اختصار: استخدام الحرف الأول من الشهر إن أمكن
-        # Discord قد يدعم اختيار الشهر بالحرف الأول
-        month_letter = months[month_idx][0].lower()
-        pyautogui.write(month_letter)
-        time.sleep(0.1)
-        
-        # أو استخدام الأسهم للتنقل بشكل أسرع
-        # إذا كان الرقم 12، نذهب للأسفل مرتين أكثر
+        # 2. النزول بالسهم عدد مرات يساوي رقم الشهر - 1
+        # لأن القائمة تبدأ من يناير (index 0)
         if month_idx > 0:
-            pyautogui.press('down', presses=month_idx, interval=0.03)
+            # الانتقال للشهر المطلوب باستخدام الأسهم
+            pyautogui.press('down', presses=month_idx, interval=0.1)
+            time.sleep(0.2)  # وقت للانتقال بين الخيارات
         
-        # تأكيد الاختيار
+        # 3. الضغط على Enter لتحديد الخيار
         pyautogui.press('enter')
         time.sleep(0.15)
+        
+        log.success(f"✅ Month selected successfully: {months[month_idx]}")
         
         # 10. TAB to Day
         pyautogui.press('tab')
@@ -541,7 +541,7 @@ def fill_form_fast(inbox_email, inbox_password, username, global_name, month_idx
         
         # 18. Press Enter on Create Account button
         pyautogui.press('enter')
-        time.sleep(0.8)  # وقت أقل للانتظار
+        time.sleep(0.8)
         
         return True
         
@@ -559,7 +559,7 @@ async def register_and_get_promo(is_last_instance=False):
         log.error(f"❌ Failed to start Firefox: {e}")
         return
 
-    time.sleep(12)  # وقت أقل للتحميل
+    time.sleep(12)
     log.info("✅ Register Page loaded")
 
     try:
@@ -574,9 +574,11 @@ async def register_and_get_promo(is_last_instance=False):
     username = generate_random_name()
     global_name = "Somo Acc"
     month_num = random.randint(1, 12)
-    month_idx = month_num - 1
-    day = f"{random.randint(1, 28):02d}"  # إضافة صفر أمام الأرقام < 10
+    month_idx = month_num - 1  # تحويل لـ zero-based index
+    day = f"{random.randint(1, 28):02d}"
     year = f"{random.randint(1995, 2005)}"
+
+    log.info(f"🎯 Account details: Month={month_num}({months[month_idx]}), Day={day}, Year={year}")
 
     # ملء النموذج بسرعة
     form_filled = fill_form_fast(inbox_email, inbox_password, username, global_name, month_idx, day, year)
@@ -585,13 +587,9 @@ async def register_and_get_promo(is_last_instance=False):
         log.error("❌ Failed to fill form")
         return
 
-    log.info(f"✅ Month selected: {months[month_idx]}")
-    log.info(f"✅ Day entered: {day}")
-    log.info(f"✅ Year entered: {year}")
-
     log.info("✅ Form submitted")
     log.warning("⚠️ Solve Captcha if shown!")
-    time.sleep(18)  # وقت أقل للانتظار
+    time.sleep(18)
 
     log.info("⏳ Waiting for email...")
     time.sleep(8)
@@ -613,7 +611,7 @@ async def register_and_get_promo(is_last_instance=False):
         except Exception as e:
             log.error(f"❌ Failed to open link: {e}")
 
-    time.sleep(15)  # وقت أقل للتحقق
+    time.sleep(15)
 
     try:
         close_firefox()
@@ -755,7 +753,7 @@ def main():
                 p = multiprocessing.Process(target=run_register_and_get_promo, args=(is_last,))
                 p.start()
                 active_processes.append(p)
-                time.sleep(2)  # تأخير بسيط بين بدء كل عملية
+                time.sleep(2)
             except Exception as e:
                 log.failure(f"❌ Failed to launch process: {e}")
         
@@ -786,7 +784,7 @@ if __name__ == "__main__":
     def start_message_splash():
         msg = MessageSplashScreen("Made by Somo\nEnjoy!\nسومو العم")
         msg.showWithFade()
-        QTimer.singleShot(2000, lambda: msg.fadeOut(continue_to_main))  # وقت أقل
+        QTimer.singleShot(2000, lambda: msg.fadeOut(continue_to_main))
     
     def continue_to_main():
         app.quit()
@@ -795,5 +793,5 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     splash = SplashScreen()
     splash.start()
-    QTimer.singleShot(2000, lambda: splash.fadeOut(start_message_splash))  # وقت أقل
+    QTimer.singleShot(2000, lambda: splash.fadeOut(start_message_splash))
     app.exec()
