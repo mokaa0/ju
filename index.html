@@ -1,98 +1,792 @@
-🖤
-🤍
-❤️
-💜
-💙
-💚
-💛
-🤎
-💔
-✨
-⚡
-🔥
-🌪️
-🌧️
-🌫️
-🌙
-⭐
-🌟
-☁️
-🌈
-☔
-🪽
-🕊️
-🌿
-🍃
-🌸
-🌹
-🌺
-🌻
-🌷
-🕯️
-🪞
-🎧
-🎶
-🎼
-🎵
-📌
-📎
-📍
-📖
-✒️
-📝
-📜
-💼
-🪫
-🔋
-⌛
-⏳
-🗝️
-🔐
-🔒
-🪬
-💭
-🫥
-🫨
-🫠
-😶‍🌫️
-🙂‍↔️
-🫤
-😔
-😞
-😣
-😖
-😩
-😫
-🥺
-😭
-😢
-😤
-😶
-😐
-🫡
-🤨
-🙃
-😴
-💤
-🙇‍♂️
-🙇‍♀️
-🧠
-💬
-📦
-🧳
-🧥
-🪩
-🪐
-⚙️
-🔮
-🧿
-🎁
-🏴
-🚫
-💯
-🆘
-🛑
-📣
-🎯
-🏹
-🌌
+import time
+import requests
+import psutil
+import pyperclip
+import os
+from colorama import init, Fore, Style
+import json
+import datetime
+import random
+from enum import Enum
+import asyncio
+import string
+import multiprocessing
+import sys
+from pystyle import Center
+import hashlib
+from datetime import datetime, timedelta, timezone
+import subprocess
+import keyboard
+import pyautogui
+import re
+import base64
+from PyQt6.QtCore import Qt, QBuffer, QPropertyAnimation, QEasingCurve, QTimer
+from PyQt6.QtGui import QPainter, QColor, QFont
+from PyQt6.QtWidgets import QSplashScreen, QLabel, QGraphicsOpacityEffect, QApplication
+import urllib3
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+import hmac
+import httpx
+
+def resource_path(relative_path):
+    try:
+        base_path = sys._MEIPASS 
+    except Exception:
+        base_path = os.path.dirname(os.path.abspath(__file__))
+    return os.path.join(base_path, relative_path)
+
+class SplashScreen(QSplashScreen):
+    def __init__(self):
+        super().__init__()
+        self.setWindowFlag(Qt.WindowType.FramelessWindowHint)
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+        self.resize(240, 120)
+        screen = QApplication.primaryScreen().geometry()
+        self.move((screen.width() - self.width()) // 2,
+                  (screen.height() - self.height()) // 2)
+        self.opacity_effect = QGraphicsOpacityEffect(self)
+        self.setGraphicsEffect(self.opacity_effect)
+        self.opacity_effect.setOpacity(1.0)
+        self.fade_anim = QPropertyAnimation(self.opacity_effect, b"opacity")
+        self.fade_anim.setDuration(600)
+        self.fade_anim.setStartValue(1.0)
+        self.fade_anim.setEndValue(0.0)
+
+    def start(self):
+        self.show()
+
+    def fadeOut(self, callback):
+        def on_finished():
+            self.hide()
+            callback()
+        self.fade_anim.finished.connect(on_finished)
+        self.fade_anim.start()
+
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        painter.setBrush(QColor(24, 24, 24))
+        painter.setPen(Qt.PenStyle.NoPen)
+        painter.drawRoundedRect(self.rect(), 14, 14)
+        painter.setPen(QColor(255, 255, 255))
+        font = QFont('Segoe UI', 15, QFont.Weight.Bold)
+        painter.setFont(font)
+        painter.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, "Loading...")
+
+class MessageSplashScreen(QSplashScreen):
+    def __init__(self, message):
+        super().__init__()
+        self.message = message
+        self.setWindowFlag(Qt.WindowType.FramelessWindowHint)
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+        self.resize(240, 120)
+        screen = QApplication.primaryScreen().geometry()
+        self.move((screen.width() - self.width()) // 2,
+                  (screen.height() - self.height()) // 2)
+        self.opacity_effect = QGraphicsOpacityEffect(self)
+        self.setGraphicsEffect(self.opacity_effect)
+        self.opacity_effect.setOpacity(0)
+        self.fade_in = QPropertyAnimation(self.opacity_effect, b"opacity")
+        self.fade_in.setDuration(300)
+        self.fade_in.setStartValue(0)
+        self.fade_in.setEndValue(1)
+        self.fade_in.setEasingCurve(QEasingCurve.Type.OutCubic)
+        self.fade_out = QPropertyAnimation(self.opacity_effect, b"opacity")
+        self.fade_out.setDuration(600)
+        self.fade_out.setStartValue(1)
+        self.fade_out.setEndValue(0)
+        self.fade_out.setEasingCurve(QEasingCurve.Type.OutCubic)
+
+    def showWithFade(self):
+        self.show()
+        self.fade_in.start()
+
+    def fadeOut(self, callback):
+        def on_finished():
+            self.hide()
+            callback()
+        self.fade_out.finished.connect(on_finished)
+        self.fade_out.start()
+
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        painter.setBrush(QColor(24, 24, 24))
+        painter.setPen(Qt.PenStyle.NoPen)
+        painter.drawRoundedRect(self.rect(), 14, 14)
+        painter.setPen(QColor(255, 255, 255))
+        font = QFont('Segoe UI', 15, QFont.Weight.Bold)
+        painter.setFont(font)
+        painter.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, self.message)
+
+init(autoreset=True)
+
+config = {
+    "check_ratelimit": True,
+    "notify": False,  
+    "mail_api": "https://api.temp-mail.org/",
+    "mail_domain": "temp-mail.org"
+}
+
+class LogLevel(Enum):
+    DEBUG = 1
+    INFO = 2
+    WARNING = 3
+    SUCCESS = 4
+    ERROR = 5
+    CRITICAL = 6
+
+class Logger:
+    def __init__(self, level: LogLevel = LogLevel.DEBUG):
+        self.level = level
+        self.prefix = "\033[38;5;176m[\033[38;5;97mLegend\033[38;5;176m] "
+        self.WHITE = "\u001b[37m"
+        self.MAGENTA = "\033[38;5;97m"
+        self.BRIGHT_MAGENTA = "\033[38;2;157;38;255m"
+        self.LIGHT_CORAL = "\033[38;5;210m"
+        self.RED = "\033[38;5;196m"
+        self.GREEN = "\033[38;5;40m"
+        self.YELLOW = "\033[38;5;220m"
+        self.BLUE = "\033[38;5;21m"
+        self.PINK = "\033[38;5;176m"
+        self.CYAN = "\033[96m"
+
+    def get_time(self):
+        return datetime.now().strftime("%H:%M:%S")
+
+    def _should_log(self, message_level: LogLevel) -> bool:
+        return message_level.value >= self.level.value
+
+    def _write(self, level_color, level_tag, message):
+        print(f"{self.prefix}[{self.BRIGHT_MAGENTA}{self.get_time()}{self.PINK}] {self.PINK}[{level_color}{level_tag}{self.PINK}] -> {level_color}{message}{Style.RESET_ALL}")
+
+    def info(self, message: str):
+        if self._should_log(LogLevel.INFO):
+            self._write(self.CYAN, "!", message)
+
+    def success(self, message: str):
+        if self._should_log(LogLevel.SUCCESS):
+            self._write(self.GREEN, "Success", message)
+
+    def warning(self, message: str):
+        if self._should_log(LogLevel.WARNING):
+            self._write(self.YELLOW, "Warning", message)
+
+    def error(self, message: str):
+        if self._should_log(LogLevel.ERROR):
+            self._write(self.RED, "Error", message)
+
+    def failure(self, message: str):
+        if self._should_log(LogLevel.ERROR):
+            self._write(self.RED, "Failure", message)
+
+    def debug(self, message: str):
+        if self._should_log(LogLevel.DEBUG):
+            self._write(self.BLUE, "DEBUG", message)
+
+log = Logger()
+
+def generate_random_name():
+    return ''.join(random.choices(string.ascii_letters, k=8))
+
+def generate_random_string(length=10):
+    return ''.join(random.choices('abcdefghijklmnopqrstuvwxyz0123456789', k=length))
+
+def account_ratelimit(email=None, nam=None):
+    try:
+        headers = {
+            "Accept": "*/*",
+            "Accept-Encoding": "gzip, deflate, br",
+            "Accept-Language": "en-US,en;q=0.5",
+            "Content-Type": "application/json",
+            "DNT": "1",
+            "Host": "discord.com",
+            "Origin": "https://discord.com",
+            "Referer": "https://discord.com/register",
+            "Sec-Fetch-Dest": "empty",
+            "Sec-Fetch-Mode": "cors",
+            "Sec-Fetch-Site": "same-origin",
+            "Sec-GPC": "1",
+            "TE": "trailers",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100101 Firefox/128.0",
+            "X-Debug-Options": "bugReporterEnabled",
+            "X-Discord-Locale": "en-US",
+            "X-Discord-Timezone": "Asia/Calcutta",
+        }
+        mailbaba = generate_random_string(10)
+        email = mailbaba + "@gmail.com"
+        nam = generate_random_name()
+        data = {
+            'email': email,     
+            'date_of_birth': "2000-09-20",
+            'username': email,
+            'global_name': nam,
+            'consent': True,
+            'captcha_service': 'hcaptcha',
+            'captcha_key': None,
+            'invite': None,
+            'promotional_email_opt_in': False,
+            'gift_code_sku_id': None
+        }
+        req = requests.post('https://discord.com/api/v9/auth/register', json=data, headers=headers)
+        try:
+            resp_data = req.json()
+        except Exception as je:
+            return 1
+        if req.status_code == 429 or 'retry_after' in resp_data:
+            limit = resp_data.get('retry_after', 1)
+            return int(float(limit)) + 1 if limit else 1
+        else:
+            return 1
+    except Exception as e:
+        log.failure(f"❌ Account ratelimit crashed: {e}")
+        return 1
+    
+def countdown_timer(duration):
+    for i in range(duration):
+        sys.stdout.write(
+            f"\r\033[38;5;176m[\033[38;5;97mSomo\033[38;5;176m] "
+            f"[{datetime.now().strftime('%H:%M:%S')}]\033[38;5;176m "
+            f"[{Fore.CYAN}!{Style.RESET_ALL}\033[38;5;176m] -> "
+            f"{Fore.YELLOW}[{i+1:02d}/{duration}] Waiting before generating next token...{Style.RESET_ALL}"
+        )
+        sys.stdout.flush()
+        time.sleep(1)
+    print() 
+
+def close_firefox():
+    for proc in psutil.process_iter(['pid', 'name']):
+        if 'firefox' in proc.info['name'].lower():
+            try:
+                proc.kill()
+            except (psutil.NoSuchProcess, psutil.AccessDenied):
+                pass  
+        pass
+    else:  
+        pass
+
+def get_firefox_path():
+    if sys.platform == 'darwin':
+        possible_paths = ['/Applications/Firefox.app/Contents/MacOS/firefox', os.path.expanduser('~/Applications/Firefox.app/Contents/MacOS/firefox')]
+    else:  
+        possible_paths = ['C:\\Program Files\\Mozilla Firefox\\firefox.exe', 'C:\\Program Files (x86)\\Mozilla Firefox\\firefox.exe', os.path.expanduser('~') + '\\AppData\\Local\\Mozilla Firefox\\firefox.exe']
+    for path in possible_paths:
+        if os.path.exists(path):
+            return path
+    else:  
+        log.warning('Firefox not found! Please install Firefox browser.')
+        log.info('You can download Firefox from: https://www.mozilla.org/firefox')
+        input('Press Enter to exit...')
+        sys.exit(1)
+
+months = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+]
+
+# ==================== ENHANCED EMAIL API FUNCTIONS ====================
+def verify(inbox_email, inbox_password):
+    try:
+        log.debug(f"Attempting to verify email: {inbox_email}")
+        
+        email_name = inbox_email.split('@')[0]
+        
+        headers = {
+            'accept': '*/*',
+            'accept-language': 'en-US,en;q=0.9',
+            'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        }
+        
+        for _ in range(35):
+            try:
+                response = requests.get(
+                    f'https://api.temp-mail.org/mail/id/{email_name}/format/json',
+                    headers=headers,
+                    timeout=10
+                )
+                
+                log.debug(f"Email check response status: {response.status_code}")
+                
+                if response.status_code == 200:
+                    try:
+                        messages = response.json()
+                        log.debug(f"Found {len(messages)} messages")
+                        
+                        for message in messages:
+                            subject = message.get('mail_subject', '').lower()
+                            body = message.get('mail_text', '') + message.get('mail_html', '')
+                            
+                            if 'discord' in subject or 'verify' in subject or 'confirm' in subject:
+                                log.debug(f"Found Discord email with subject: {subject}")
+                                
+                                patterns = [
+                                    r'https://discord\.com[^\s"\'<>\\]+',
+                                    r'https://click\.discord\.com[^\s"\'<>\\]+',
+                                    r'https://verify-email\.discord\.com[^\s"\'<>\\]+',
+                                    r'https://ptb\.discord\.com[^\s"\'<>\\]+',
+                                    r'https://canary\.discord\.com[^\s"\'<>\\]+',
+                                    r'verify-email[^\s"\'<>\\]+'
+                                ]
+                                
+                                for pattern in patterns:
+                                    matches = re.findall(pattern, body, re.IGNORECASE)
+                                    if matches:
+                                        link = matches[0].split("\n")[0].strip()
+                                        if not link.startswith('http'):
+                                            link = 'https://' + link
+                                        log.success(f"Found verification link: {link[:50]}...")
+                                        return link
+                    except json.JSONDecodeError:
+                        log.debug("No valid JSON response, waiting...")
+                    except Exception as e:
+                        log.debug(f"Error processing messages: {e}")
+                elif response.status_code == 404:
+                    log.debug("Email not found yet, waiting...")
+                else:
+                    log.debug(f"Unexpected status: {response.status_code}")
+            
+            except requests.exceptions.RequestException as e:
+                log.debug(f"Request error: {e}")
+            
+            time.sleep(2)
+            
+        log.warning("No verification link found after maximum attempts")
+        return None
+        
+    except Exception as e:
+        log.error(f"❌ Error verifying email: {e}")
+        return None
+
+def create_inbox():
+    try:
+        email_services = [
+            create_temp_mail_org,
+            create_guerrilla_mail,
+            create_10minutemail
+        ]
+        
+        for service_func in email_services:
+            try:
+                email, password = service_func()
+                if email:
+                    log.success(f"Successfully created inbox: {email}")
+                    return email, password
+            except Exception as e:
+                log.debug(f"Service {service_func.__name__} failed: {e}")
+                continue
+        
+        return create_fallback_email()
+        
+    except Exception as e:
+        log.error(f"❌ Error creating inbox: {e}")
+        raise Exception(f"Inbox creation failed: {str(e)}")
+
+def create_temp_mail_org():
+    try:
+        domains = [
+            "@temp-mail.org", "@temp-mail.io", "@temp-mail.net",
+            "@tempmail.com", "@tempmail.org", "@mail.tm"
+        ]
+        domain = random.choice(domains)
+        username = ''.join(random.choices(string.ascii_lowercase + string.digits, k=12))
+        email = f"{username}{domain}"
+        password = ''.join(random.choices(string.ascii_letters + string.digits, k=16))
+        
+        log.debug(f"Created temp-mail.org email: {email}")
+        return email, password
+        
+    except Exception as e:
+        log.debug(f"Temp-mail.org creation failed: {e}")
+        raise
+
+def create_guerrilla_mail():
+    try:
+        response = requests.get(
+            'https://api.guerrillamail.com/ajax.php?f=get_email_address',
+            timeout=10
+        )
+        
+        if response.status_code == 200:
+            data = response.json()
+            email = data.get('email_addr')
+            if email:
+                log.debug(f"Created Guerrilla Mail email: {email}")
+                return email, "no_password_needed"
+        
+        raise Exception("Guerrilla Mail API failed")
+        
+    except Exception as e:
+        log.debug(f"Guerrilla Mail creation failed: {e}")
+        raise
+
+def create_10minutemail():
+    try:
+        response = requests.get(
+            'https://10minutemail.com/session/address',
+            timeout=10
+        )
+        
+        if response.status_code == 200:
+            data = response.json()
+            email = data.get('address')
+            if email:
+                log.debug(f"Created 10MinuteMail email: {email}")
+                return email, "no_password_needed"
+        
+        raise Exception("10MinuteMail API failed")
+        
+    except Exception as e:
+        log.debug(f"10MinuteMail creation failed: {e}")
+        raise
+
+def create_fallback_email():
+    domains = ["@gmail.com", "@yahoo.com", "@outlook.com", "@hotmail.com"]
+    domain = random.choice(domains)
+    username = ''.join(random.choices(string.ascii_lowercase + string.digits, k=10))
+    email = f"{username}{domain}"
+    password = ''.join(random.choices(string.ascii_letters + string.digits, k=14))
+    
+    log.warning(f"Using fallback email: {email}")
+    return email, password
+
+# ==================== NEW: PAGE LOAD CHECK ====================
+def check_page_ready():
+    """Check if Discord register page is loaded"""
+    try:
+        # Method 1: Check for specific pixel color (Discord blue)
+        for _ in range(10):
+            try:
+                # Check for Discord blue color at specific position
+                screenshot = pyautogui.screenshot()
+                # Check multiple points
+                points = [(100, 100), (200, 200), (300, 300)]
+                discord_blue = (88, 101, 242)
+                
+                for point in points:
+                    try:
+                        pixel = screenshot.getpixel(point)
+                        # If we find Discord blue color
+                        if abs(pixel[0] - discord_blue[0]) < 20 and \
+                           abs(pixel[1] - discord_blue[1]) < 20 and \
+                           abs(pixel[2] - discord_blue[2]) < 20:
+                            return True
+                    except:
+                        continue
+                
+                # Method 2: Check for "Register" text using image recognition
+                try:
+                    register_pos = pyautogui.locateOnScreen('register_button.png', confidence=0.7)
+                    if register_pos:
+                        return True
+                except:
+                    pass
+                
+                time.sleep(2)
+            except:
+                time.sleep(2)
+        
+        return False
+    except Exception as e:
+        log.debug(f"Page check error: {e}")
+        return True  # Continue anyway
+
+# ==================== MAIN ACCOUNT CREATION FUNCTION ====================
+async def register_and_get_promo(is_last_instance=False):
+    firefox_path = get_firefox_path()
+    discord_register_url = 'https://discord.com/register'
+
+    try:
+        subprocess.Popen([firefox_path, "-private-window", discord_register_url])
+    except Exception as e:
+        log.error(f"❌ Failed to start Firefox: {e}")
+        return
+
+    # WAIT FOR PAGE TO LOAD - FIXED
+    log.info("🕒 Waiting for Discord page to load...")
+    
+    # Method 1: Fixed wait time
+    time.sleep(15)
+    
+    # Method 2: Additional check
+    if not check_page_ready():
+        log.warning("⚠️ Page might not be fully loaded, but continuing...")
+    
+    log.info("✅ Register Page loaded")
+
+    try:
+        inbox_email, inbox_password = create_inbox()
+    except Exception as e:
+        log.error(f"❌ Failed to create inbox: {e}")
+        return
+
+    log.info(f"✉️ Using {inbox_email}")
+    time.sleep(3)
+
+    username = generate_random_name()
+    global_name = "Somo Acc"
+    month_choice = random.choice(months)
+    day = f"{random.randint(1, 28)}"
+    year = f"{random.randint(1995, 2005)}"
+
+    type_interval = 0.06
+
+    try:
+        # FIXED FORM FILLING - SKIP TERMS BUTTON
+        log.info("📝 Filling form...")
+        
+        # 1. Email field
+        pyautogui.write(inbox_email, interval=type_interval)
+        time.sleep(0.16)
+        
+        # 2. TAB to next field (Display Name)
+        pyautogui.press('tab')
+        time.sleep(0.12)
+        
+        # 3. Display Name field
+        pyautogui.write(global_name, interval=type_interval)
+        time.sleep(0.12)
+        
+        # 4. TAB to Username
+        pyautogui.press('tab')
+        time.sleep(0.12)
+        
+        # 5. Username field
+        pyautogui.write(username, interval=type_interval)
+        time.sleep(0.12)
+        
+        # 6. TAB to Password
+        pyautogui.press('tab')
+        time.sleep(0.12)
+        
+        # 7. Password field
+        pyautogui.write(inbox_password, interval=type_interval)
+        time.sleep(0.12)
+        
+        # 8. TAB to Date of Birth (Month)
+        pyautogui.press('tab')
+        time.sleep(0.12)
+
+        # 9. Select Month
+        try:
+            pyautogui.press('space')
+            time.sleep(0.12)
+            pyautogui.write(month_choice[:3], interval=type_interval)
+            time.sleep(0.12)
+            pyautogui.press('enter')
+            time.sleep(0.18)
+        except Exception:
+            pass
+
+        # Alternative month selection
+        try:
+            pyautogui.press('space')
+            time.sleep(0.10)
+            idx = months.index(month_choice) if month_choice in months else 0
+            pyautogui.press('home')
+            time.sleep(0.06)
+            if idx > 0:
+                pyautogui.press('down', presses=idx, interval=0.06)
+            pyautogui.press('enter')
+            time.sleep(0.12)
+        except Exception:
+            pass
+
+        # 10. TAB to Day
+        pyautogui.press('tab')
+        time.sleep(0.08)
+        
+        # 11. Day field
+        pyautogui.write(day, interval=type_interval)
+        time.sleep(0.08)
+        
+        # 12. TAB to Year
+        pyautogui.press('tab')
+        time.sleep(0.08)
+        
+        # 13. Year field
+        pyautogui.write(year, interval=type_interval)
+        time.sleep(0.08)
+        
+        # === FIX FOR TERMS BUTTON ===
+        # 14. TAB to Terms checkbox
+        pyautogui.press('tab')
+        time.sleep(0.08)
+        
+        # 15. Press SPACE to check Terms checkbox
+        pyautogui.press('space')
+        time.sleep(0.08)
+        
+        # 16. TAB to Create Account button (skip Terms button)
+        pyautogui.press('tab')
+        time.sleep(0.08)
+        
+        # 17. Press Enter on Create Account button
+        pyautogui.press('enter')
+        time.sleep(1.0)
+
+    except Exception as e:
+        log.error(f"❌ Error while typing: {e}")
+        return
+
+    log.info("✅ Form submitted")
+    log.warning("⚠️ Solve Captcha if shown!")
+    time.sleep(25)
+
+    log.info("⏳ Waiting for email...")
+    time.sleep(10)
+
+    verify_url = verify(inbox_email, inbox_password)
+    if not verify_url:
+        log.error("❌ Verification URL not found.")
+        return
+    log.info("✅ Email verification link found!")
+
+    try:
+        subprocess.Popen([firefox_path, "-private-window", verify_url])
+        log.info("🌐 Opened verification link")
+    except Exception:
+        try:
+            import webbrowser
+            webbrowser.open(verify_url)
+            log.info("🌐 Opened in default browser")
+        except Exception as e:
+            log.error(f"❌ Failed to open link: {e}")
+
+    time.sleep(20)
+
+    try:
+        close_firefox()
+    except Exception:
+        pass
+
+    try:
+        session = requests.Session()
+        payload = {'login': inbox_email, 'password': inbox_password}
+        headers = {
+            'Content-Type': 'application/json',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+            'Origin': 'https://discord.com',
+            'Referer': 'https://discord.com/login'
+        }
+        response = session.post('https://discord.com/api/v9/auth/login', json=payload, headers=headers, timeout=15)
+        try:
+            response_data = response.json()
+            if response.status_code == 200 and 'token' in response_data:
+                token = response_data['token']
+                log.success(f"🎉 Token: {token[:25]}***")
+                with open('tokens.txt', 'a', encoding='utf-8') as f:
+                    f.write(f"{token}\n")
+                with open('acc.txt', 'a', encoding='utf-8') as f:
+                    f.write(f"{inbox_email}:{inbox_password}:{token}\n")
+                    f.flush()
+                    os.fsync(f.fileno())
+                log.success("💾 Saved to tokens.txt")
+            else:
+                log.debug(f"Login response ({response.status_code}): {response.text}")
+        except json.JSONDecodeError:
+            log.failure(f"❌ Failed to parse response: {response.text}")
+    except Exception as e:
+        log.error(f"❌ Error getting token: {e}")
+
+    if not is_last_instance and config.get("check_ratelimit", True):
+        try:
+            wait_time = account_ratelimit()
+            log.warning(f"⚠️ Rate limit — wait {wait_time} seconds")
+            countdown_timer(wait_time)
+        except Exception as e:
+            log.error(f"❌ Failed to check rate limit: {e}")
+
+banner = '''
+ █    ██  ██▓  ▄▄▄█████▓ ██▓ ███▄ ▄███▓ ▄▄▄     ▄▄▄█████▓▓█████ 
+ ██  ▓██▒▓██▒  ▓  ██▒ ▓▒▓██▒▓██▒▀█▀ ██▒▒████▄   ▓  ██▒ ▓▒▓█   ▀ 
+▓██  ▒██░▒██░  ▒ ▓██░ ▒░▒██▒▓██    ▓██░▒██  ▀█▄ ▒ ▓██░ ▒░▒███   
+▓▓█  ░██░▒██░  ░ ▓██▓ ░ ░██░▒██    ▒██ ░██▄▄▄▄██░ ▓██▓ ░ ▒▓█  ▄ 
+▒▒█████▓ ░██████▒▒██▒ ░ ░██░▒██▒   ░██▒ ▓█   ▓██▒ ▒██▒ ░ ░▒████▒
+░▒▓▒ ▒ ▒ ░ ▒░▓  ░▒ ░░   ░▓  ░ ▒░   ░  ░ ▒▒   ▓▒█░ ▒ ░░   ░░ ▒░ ░
+░░▒░ ░ ░ ░ ░ ▒  ░  ░     ▒ ░░  ░      ░  ▒   ▒▒ ░   ░     ░ ░  ░
+ ░░░ ░ ░   ░ ░   ░       ▒ ░░      ░     ░   ▒    ░         ░   
+   ░         ░  ░        ░         ░         ░  ░           ░  ░
+                                                                
+'''
+cret = f'''[+] Creator - @930b'''
+
+def print_gradient_text(text, start_color=(137, 207, 240), end_color=(25, 25, 112)):
+    lines = text.split('\n')
+    total_lines = len(lines)
+    for i, line in enumerate(lines):
+        if not line.strip():
+            print(line)
+            continue
+        r = int(start_color[0] + (end_color[0] - start_color[0]) * i / total_lines)
+        g = int(start_color[1] + (end_color[1] - start_color[1]) * i / total_lines)
+        b = int(start_color[2] + (end_color[2] - start_color[2]) * i / total_lines)
+        color_code = f"\033[38;2;{r};{g};{b}m"
+        print(f"{color_code}{line}{Style.RESET_ALL}")            
+
+def run_register_and_get_promo(is_last_instance=False):
+    asyncio.run(register_and_get_promo(is_last_instance))
+
+def main():
+    multiprocessing.freeze_support()
+    try:
+        instance_count = int(input(Fore.CYAN + f"[{Fore.MAGENTA}?{Fore.CYAN}] Number of parallel processes (1-3): "))
+        instance_count = max(1, min(3, instance_count))
+    except ValueError:
+        log.warning("⚠️ Invalid input. Defaulting to 1.")
+        instance_count = 1
+    try:
+        max_runs = int(input(Fore.CYAN + f"[{Fore.MAGENTA}?{Fore.CYAN}] Number of accounts to generate (0 = infinite): "))
+    except ValueError:
+        log.warning("⚠️ Invalid input. Defaulting to 1 account.")
+        max_runs = 1
+    run_count = 0
+    active_processes = []
+    
+    log.info(f"📧 Using email API: {config['mail_api']}")
+    log.info(f"🔧 Parallel processes: {instance_count}")
+    log.info(f"🎯 Target accounts: {max_runs if max_runs > 0 else 'Infinite'}")
+    
+    while True:
+        active_processes = [p for p in active_processes if p.is_alive()]
+        if len(active_processes) < instance_count and (max_runs == 0 or run_count < max_runs):
+            run_count += 1
+            log.info(f"🚀 Starting account #{run_count}")
+            try:
+                is_last = (max_runs != 0 and run_count == max_runs)
+                p = multiprocessing.Process(target=run_register_and_get_promo, args=(is_last,))
+                p.start()
+                active_processes.append(p)
+            except Exception as e:
+                log.failure(f"❌ Failed to launch process: {e}")
+        if max_runs and run_count >= max_runs and not active_processes:
+            break
+        time.sleep(1)
+    for p in active_processes:
+        p.join(timeout=300)
+    log.success("🎉 All account generations completed!")
+
+if __name__ == "__main__":
+    multiprocessing.freeze_support()
+    import sys
+    from PyQt6.QtWidgets import QApplication
+    from PyQt6.QtCore import QTimer
+    def run_cli_logic():
+        print("\n")
+        print_gradient_text(Center.XCenter(banner))
+        print_gradient_text(Center.XCenter(cret))
+        print("\n")
+        if not config.get("check_ratelimit", True):
+            log.warning("⚠️ Rate limit checking is disabled at config.json.")
+        main()
+    def start_message_splash():
+        msg = MessageSplashScreen("Made by Somo\nEnjoy!\nسومو العم")
+        msg.showWithFade()
+        QTimer.singleShot(2500, lambda: msg.fadeOut(continue_to_main))
+    def continue_to_main():
+        app.quit()
+        run_cli_logic()
+    app = QApplication(sys.argv)
+    splash = SplashScreen()
+    splash.start()
+    QTimer.singleShot(2500, lambda: splash.fadeOut(start_message_splash))
+    app.exec()
