@@ -458,7 +458,7 @@ async def register_and_get_promo(is_last_instance=False):
         log.error(f"❌ Failed to start Firefox: {e}")
         return
 
-    time.sleep(17)
+    time.sleep(18)
     log.info("✅ Register Page loaded")
 
     try:
@@ -472,7 +472,8 @@ async def register_and_get_promo(is_last_instance=False):
 
     username = generate_random_name()
     global_name = "Somo Acc"
-    month_choice = random.choice(months)
+    month_num = random.randint(1, 12)
+    month_idx = month_num - 1
     day = f"{random.randint(1, 28)}"
     year = f"{random.randint(1995, 2005)}"
 
@@ -509,16 +510,23 @@ async def register_and_get_promo(is_last_instance=False):
         pyautogui.write(inbox_password, interval=type_interval)
         time.sleep(0.12)
         
-        # 8. TAB to Month dropdown
+        # 8. TAB to Month dropdown - FIXED
         pyautogui.press('tab')
-        time.sleep(0.12)
-
-        # 9. Select Month - FIXED METHOD
         time.sleep(0.2)
-        pyautogui.press('down', presses=1, interval=0.05)  # Move down one
-        time.sleep(0.1)
+
+        # 9. Select Month - FIXED METHOD (نختار شهر عشوائي)
+        # افتح القائمة المنسدلة
+        pyautogui.press('space')
+        time.sleep(0.2)
+        
+        # حرك للأسفل لعدد عشوائي لاختيار شهر مختلف
+        for _ in range(month_idx + 1):
+            pyautogui.press('down')
+            time.sleep(0.05)
+        
+        # اضغط Enter لتأكيد الاختيار
         pyautogui.press('enter')
-        time.sleep(0.15)
+        time.sleep(0.2)
         
         # 10. TAB to Day
         pyautogui.press('tab')
@@ -536,7 +544,7 @@ async def register_and_get_promo(is_last_instance=False):
         pyautogui.write(year, interval=type_interval)
         time.sleep(0.1)
         
-        # === FIX FOR "It's okay to send me emails" checkbox ===
+        # === CHECK EMAIL OPTION ===
         # 14. TAB to email checkbox
         pyautogui.press('tab')
         time.sleep(0.08)
@@ -559,6 +567,10 @@ async def register_and_get_promo(is_last_instance=False):
         # 18. Press Enter on Create Account button
         pyautogui.press('enter')
         time.sleep(1.0)
+
+        log.info("✅ Month selected: " + months[month_idx])
+        log.info("✅ Day entered: " + day)
+        log.info("✅ Year entered: " + year)
 
     except Exception as e:
         log.error(f"❌ Error while typing: {e}")
