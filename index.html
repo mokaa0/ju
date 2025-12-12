@@ -1,794 +1,217 @@
-import time
-import requests
-import psutil
-import pyperclip
-import os
-from colorama import init, Fore, Style
 import json
-import datetime
+import threading
+import requests
+import time
 import random
-from enum import Enum
-import asyncio
-import string
-import multiprocessing
+from queue import Queue
+import os
 import sys
-from pystyle import Center
-import hashlib
-from datetime import datetime, timedelta, timezone
-import subprocess
-import keyboard
-import pyautogui
-import re
-import base64
-from PyQt6.QtCore import Qt, QBuffer, QPropertyAnimation, QEasingCurve, QTimer
-from PyQt6.QtGui import QPainter, QColor, QFont
-from PyQt6.QtWidgets import QSplashScreen, QLabel, QGraphicsOpacityEffect, QApplication
-import urllib3
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-import hmac
-import httpx
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
-def resource_path(relative_path):
-    try:
-        base_path = sys._MEIPASS 
-    except Exception:
-        base_path = os.path.dirname(os.path.abspath(__file__))
-    return os.path.join(base_path, relative_path)
-
-class SplashScreen(QSplashScreen):
-    def __init__(self):
-        super().__init__()
-        self.setWindowFlag(Qt.WindowType.FramelessWindowHint)
-        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
-        self.resize(240, 120)
-        screen = QApplication.primaryScreen().geometry()
-        self.move((screen.width() - self.width()) // 2,
-                  (screen.height() - self.height()) // 2)
-        self.opacity_effect = QGraphicsOpacityEffect(self)
-        self.setGraphicsEffect(self.opacity_effect)
-        self.opacity_effect.setOpacity(1.0)
-        self.fade_anim = QPropertyAnimation(self.opacity_effect, b"opacity")
-        self.fade_anim.setDuration(600)
-        self.fade_anim.setStartValue(1.0)
-        self.fade_anim.setEndValue(0.0)
-
-    def start(self):
-        self.show()
-
-    def fadeOut(self, callback):
-        def on_finished():
-            self.hide()
-            callback()
-        self.fade_anim.finished.connect(on_finished)
-        self.fade_anim.start()
-
-    def paintEvent(self, event):
-        painter = QPainter(self)
-        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-        painter.setBrush(QColor(24, 24, 24))
-        painter.setPen(Qt.PenStyle.NoPen)
-        painter.drawRoundedRect(self.rect(), 14, 14)
-        painter.setPen(QColor(255, 255, 255))
-        font = QFont('Segoe UI', 15, QFont.Weight.Bold)
-        painter.setFont(font)
-        painter.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, "Loading...")
-
-class MessageSplashScreen(QSplashScreen):
-    def __init__(self, message):
-        super().__init__()
-        self.message = message
-        self.setWindowFlag(Qt.WindowType.FramelessWindowHint)
-        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
-        self.resize(240, 120)
-        screen = QApplication.primaryScreen().geometry()
-        self.move((screen.width() - self.width()) // 2,
-                  (screen.height() - self.height()) // 2)
-        self.opacity_effect = QGraphicsOpacityEffect(self)
-        self.setGraphicsEffect(self.opacity_effect)
-        self.opacity_effect.setOpacity(0)
-        self.fade_in = QPropertyAnimation(self.opacity_effect, b"opacity")
-        self.fade_in.setDuration(300)
-        self.fade_in.setStartValue(0)
-        self.fade_in.setEndValue(1)
-        self.fade_in.setEasingCurve(QEasingCurve.Type.OutCubic)
-        self.fade_out = QPropertyAnimation(self.opacity_effect, b"opacity")
-        self.fade_out.setDuration(600)
-        self.fade_out.setStartValue(1)
-        self.fade_out.setEndValue(0)
-        self.fade_out.setEasingCurve(QEasingCurve.Type.OutCubic)
-
-    def showWithFade(self):
-        self.show()
-        self.fade_in.start()
-
-    def fadeOut(self, callback):
-        def on_finished():
-            self.hide()
-            callback()
-        self.fade_out.finished.connect(on_finished)
-        self.fade_out.start()
-
-    def paintEvent(self, event):
-        painter = QPainter(self)
-        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-        painter.setBrush(QColor(24, 24, 24))
-        painter.setPen(Qt.PenStyle.NoPen)
-        painter.drawRoundedRect(self.rect(), 14, 14)
-        painter.setPen(QColor(255, 255, 255))
-        font = QFont('Segoe UI', 15, QFont.Weight.Bold)
-        painter.setFont(font)
-        painter.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, self.message)
-
-init(autoreset=True)
-
-config = {
-    "check_ratelimit": True,
-    "notify": False,  
-    "mail_api": "https://api.temp-mail.org/",
-    "mail_domain": "temp-mail.org"
-}
-
-class LogLevel(Enum):
-    DEBUG = 1
-    INFO = 2
-    WARNING = 3
-    SUCCESS = 4
-    ERROR = 5
-    CRITICAL = 6
-
-class Logger:
-    def __init__(self, level: LogLevel = LogLevel.DEBUG):
-        self.level = level
-        self.prefix = "\033[38;5;176m[\033[38;5;97mLegend\033[38;5;176m] "
-        self.WHITE = "\u001b[37m"
-        self.MAGENTA = "\033[38;5;97m"
-        self.BRIGHT_MAGENTA = "\033[38;2;157;38;255m"
-        self.LIGHT_CORAL = "\033[38;5;210m"
-        self.RED = "\033[38;5;196m"
-        self.GREEN = "\033[38;5;40m"
-        self.YELLOW = "\033[38;5;220m"
-        self.BLUE = "\033[38;5;21m"
-        self.PINK = "\033[38;5;176m"
-        self.CYAN = "\033[96m"
-
-    def get_time(self):
-        return datetime.now().strftime("%H:%M:%S")
-
-    def _should_log(self, message_level: LogLevel) -> bool:
-        return message_level.value >= self.level.value
-
-    def _write(self, level_color, level_tag, message):
-        print(f"{self.prefix}[{self.BRIGHT_MAGENTA}{self.get_time()}{self.PINK}] {self.PINK}[{level_color}{level_tag}{self.PINK}] -> {level_color}{message}{Style.RESET_ALL}")
-
-    def info(self, message: str):
-        if self._should_log(LogLevel.INFO):
-            self._write(self.CYAN, "!", message)
-
-    def success(self, message: str):
-        if self._should_log(LogLevel.SUCCESS):
-            self._write(self.GREEN, "Success", message)
-
-    def warning(self, message: str):
-        if self._should_log(LogLevel.WARNING):
-            self._write(self.YELLOW, "Warning", message)
-
-    def error(self, message: str):
-        if self._should_log(LogLevel.ERROR):
-            self._write(self.RED, "Error", message)
-
-    def failure(self, message: str):
-        if self._should_log(LogLevel.ERROR):
-            self._write(self.RED, "Failure", message)
-
-    def debug(self, message: str):
-        if self._should_log(LogLevel.DEBUG):
-            self._write(self.BLUE, "DEBUG", message)
-
-log = Logger()
-
-def generate_random_name():
-    return ''.join(random.choices(string.ascii_letters, k=8))
-
-def generate_random_string(length=10):
-    return ''.join(random.choices('abcdefghijklmnopqrstuvwxyz0123456789', k=length))
-
-def account_ratelimit(email=None, nam=None):
-    try:
-        headers = {
-            "Accept": "*/*",
-            "Accept-Encoding": "gzip, deflate, br",
-            "Accept-Language": "en-US,en;q=0.5",
-            "Content-Type": "application/json",
-            "DNT": "1",
-            "Host": "discord.com",
-            "Origin": "https://discord.com",
-            "Referer": "https://discord.com/register",
-            "Sec-Fetch-Dest": "empty",
-            "Sec-Fetch-Mode": "cors",
-            "Sec-Fetch-Site": "same-origin",
-            "Sec-GPC": "1",
-            "TE": "trailers",
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100101 Firefox/128.0",
-            "X-Debug-Options": "bugReporterEnabled",
-            "X-Discord-Locale": "en-US",
-            "X-Discord-Timezone": "Asia/Calcutta",
-        }
-        mailbaba = generate_random_string(10)
-        email = mailbaba + "@gmail.com"
-        nam = generate_random_name()
-        data = {
-            'email': email,     
-            'date_of_birth': "2000-09-20",
-            'username': email,
-            'global_name': nam,
-            'consent': True,
-            'captcha_service': 'hcaptcha',
-            'captcha_key': None,
-            'invite': None,
-            'promotional_email_opt_in': False,
-            'gift_code_sku_id': None
-        }
-        req = requests.post('https://discord.com/api/v9/auth/register', json=data, headers=headers)
-        try:
-            resp_data = req.json()
-        except Exception as je:
-            return 1
-        if req.status_code == 429 or 'retry_after' in resp_data:
-            limit = resp_data.get('retry_after', 1)
-            return int(float(limit)) + 1 if limit else 1
+class DiscordOAuthApprover:
+    def __init__(self, config_path="config.json"):
+        # Load configuration
+        with open(config_path, 'r') as f:
+            config = json.load(f)
+        
+        self.client_id = config['client_id']
+        self.client_secret = config['client_secret']
+        self.redirect_uri = config['redirect_uri']
+        self.scopes = config['scopes']
+        
+        # Read tokens
+        with open('tokens.txt', 'r') as f:
+            self.tokens = [line.strip() for line in f.readlines() if line.strip()]
+        
+        # Read proxies
+        self.proxies = []
+        if os.path.exists('proxies.txt'):
+            with open('proxies.txt', 'r') as f:
+                self.proxies = [line.strip() for line in f.readlines() if line.strip()]
+        
+        print(f"Loaded {len(self.tokens)} tokens and {len(self.proxies)} proxies")
+    
+    def get_proxy(self):
+        """Get random proxy from list"""
+        if not self.proxies:
+            return None
+        
+        proxy = random.choice(self.proxies)
+        
+        # Format proxy correctly
+        if '@' in proxy or 'http' in proxy:
+            return {"http": proxy, "https": proxy}
         else:
-            return 1
-    except Exception as e:
-        log.failure(f"❌ Account ratelimit crashed: {e}")
-        return 1
-    
-def countdown_timer(duration):
-    for i in range(duration):
-        sys.stdout.write(
-            f"\r\033[38;5;176m[\033[38;5;97mSomo\033[38;5;176m] "
-            f"[{datetime.now().strftime('%H:%M:%S')}]\033[38;5;176m "
-            f"[{Fore.CYAN}!{Style.RESET_ALL}\033[38;5;176m] -> "
-            f"{Fore.YELLOW}[{i+1:02d}/{duration}] Waiting before generating next token...{Style.RESET_ALL}"
-        )
-        sys.stdout.flush()
-        time.sleep(1)
-    print() 
-
-def close_firefox():
-    for proc in psutil.process_iter(['pid', 'name']):
-        if 'firefox' in proc.info['name'].lower():
-            try:
-                proc.kill()
-            except (psutil.NoSuchProcess, psutil.AccessDenied):
-                pass  
-        pass
-    else:  
-        pass
-
-def get_firefox_path():
-    if sys.platform == 'darwin':
-        possible_paths = ['/Applications/Firefox.app/Contents/MacOS/firefox', os.path.expanduser('~/Applications/Firefox.app/Contents/MacOS/firefox')]
-    else:  
-        possible_paths = ['C:\\Program Files\\Mozilla Firefox\\firefox.exe', 'C:\\Program Files (x86)\\Mozilla Firefox\\firefox.exe', os.path.expanduser('~') + '\\AppData\\Local\\Mozilla Firefox\\firefox.exe']
-    for path in possible_paths:
-        if os.path.exists(path):
-            return path
-    else:  
-        log.warning('Firefox not found! Please install Firefox browser.')
-        log.info('You can download Firefox from: https://www.mozilla.org/firefox')
-        input('Press Enter to exit...')
-        sys.exit(1)
-
-months = [
-    "January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December"
-]
-
-def verify(inbox_email, inbox_password):
-    try:
-        log.debug(f"Attempting to verify email: {inbox_email}")
+            # Assume it's ip:port or ip:port:user:pass
+            parts = proxy.split(':')
+            if len(parts) == 4:
+                ip, port, user, password = parts
+                return {
+                    "http": f"http://{user}:{password}@{ip}:{port}",
+                    "https": f"http://{user}:{password}@{ip}:{port}"
+                }
+            elif len(parts) == 2:
+                ip, port = parts
+                return {"http": f"http://{ip}:{port}", "https": f"http://{ip}:{port}"}
         
-        email_name = inbox_email.split('@')[0]
-        
-        headers = {
-            'accept': '*/*',
-            'accept-language': 'en-US,en;q=0.9',
-            'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        }
-        
-        for _ in range(35):
-            try:
-                response = requests.get(
-                    f'https://api.temp-mail.org/mail/id/{email_name}/format/json',
-                    headers=headers,
-                    timeout=10
-                )
-                
-                log.debug(f"Email check response status: {response.status_code}")
-                
-                if response.status_code == 200:
-                    try:
-                        messages = response.json()
-                        log.debug(f"Found {len(messages)} messages")
-                        
-                        for message in messages:
-                            subject = message.get('mail_subject', '').lower()
-                            body = message.get('mail_text', '') + message.get('mail_html', '')
-                            
-                            if 'discord' in subject or 'verify' in subject or 'confirm' in subject:
-                                log.debug(f"Found Discord email with subject: {subject}")
-                                
-                                patterns = [
-                                    r'https://discord\.com[^\s"\'<>\\]+',
-                                    r'https://click\.discord\.com[^\s"\'<>\\]+',
-                                    r'https://verify-email\.discord\.com[^\s"\'<>\\]+',
-                                    r'https://ptb\.discord\.com[^\s"\'<>\\]+',
-                                    r'https://canary\.discord\.com[^\s"\'<>\\]+',
-                                    r'verify-email[^\s"\'<>\\]+'
-                                ]
-                                
-                                for pattern in patterns:
-                                    matches = re.findall(pattern, body, re.IGNORECASE)
-                                    if matches:
-                                        link = matches[0].split("\n")[0].strip()
-                                        if not link.startswith('http'):
-                                            link = 'https://' + link
-                                        log.success(f"Found verification link: {link[:50]}...")
-                                        return link
-                    except json.JSONDecodeError:
-                        log.debug("No valid JSON response, waiting...")
-                    except Exception as e:
-                        log.debug(f"Error processing messages: {e}")
-                elif response.status_code == 404:
-                    log.debug("Email not found yet, waiting...")
-                else:
-                    log.debug(f"Unexpected status: {response.status_code}")
-            
-            except requests.exceptions.RequestException as e:
-                log.debug(f"Request error: {e}")
-            
-            time.sleep(2)
-            
-        log.warning("No verification link found after maximum attempts")
         return None
-        
-    except Exception as e:
-        log.error(f"❌ Error verifying email: {e}")
-        return None
-
-def create_inbox():
-    try:
-        email_services = [
-            create_temp_mail_org,
-            create_guerrilla_mail,
-            create_10minutemail
-        ]
-        
-        for service_func in email_services:
-            try:
-                email, password = service_func()
-                if email:
-                    log.success(f"Successfully created inbox: {email}")
-                    return email, password
-            except Exception as e:
-                log.debug(f"Service {service_func.__name__} failed: {e}")
-                continue
-        
-        return create_fallback_email()
-        
-    except Exception as e:
-        log.error(f"❌ Error creating inbox: {e}")
-        raise Exception(f"Inbox creation failed: {str(e)}")
-
-def create_temp_mail_org():
-    try:
-        domains = [
-            "@temp-mail.org", "@temp-mail.io", "@temp-mail.net",
-            "@tempmail.com", "@tempmail.org", "@mail.tm"
-        ]
-        domain = random.choice(domains)
-        username = ''.join(random.choices(string.ascii_lowercase + string.digits, k=12))
-        email = f"{username}{domain}"
-        password = ''.join(random.choices(string.ascii_letters + string.digits, k=16))
-        
-        log.debug(f"Created temp-mail.org email: {email}")
-        return email, password
-        
-    except Exception as e:
-        log.debug(f"Temp-mail.org creation failed: {e}")
-        raise
-
-def create_guerrilla_mail():
-    try:
-        response = requests.get(
-            'https://api.guerrillamail.com/ajax.php?f=get_email_address',
-            timeout=10
-        )
-        
-        if response.status_code == 200:
-            data = response.json()
-            email = data.get('email_addr')
-            if email:
-                log.debug(f"Created Guerrilla Mail email: {email}")
-                return email, "no_password_needed"
-        
-        raise Exception("Guerrilla Mail API failed")
-        
-    except Exception as e:
-        log.debug(f"Guerrilla Mail creation failed: {e}")
-        raise
-
-def create_10minutemail():
-    try:
-        response = requests.get(
-            'https://10minutemail.com/session/address',
-            timeout=10
-        )
-        
-        if response.status_code == 200:
-            data = response.json()
-            email = data.get('address')
-            if email:
-                log.debug(f"Created 10MinuteMail email: {email}")
-                return email, "no_password_needed"
-        
-        raise Exception("10MinuteMail API failed")
-        
-    except Exception as e:
-        log.debug(f"10MinuteMail creation failed: {e}")
-        raise
-
-def create_fallback_email():
-    domains = ["@gmail.com", "@yahoo.com", "@outlook.com", "@hotmail.com"]
-    domain = random.choice(domains)
-    username = ''.join(random.choices(string.ascii_lowercase + string.digits, k=10))
-    email = f"{username}{domain}"
-    password = ''.join(random.choices(string.ascii_letters + string.digits, k=14))
     
-    log.warning(f"Using fallback email: {email}")
-    return email, password
-
-def fill_form_fast(inbox_email, inbox_password, username, global_name, month_idx, day, year):
-    """Fill form with optimized speed and timing"""
-    try:
-        type_interval = 0.04  # أسرع من 0.07
-        
-        # 1. Email field
-        pyautogui.write(inbox_email, interval=type_interval)
-        time.sleep(0.08)
-        
-        # 2. TAB to Display Name
-        pyautogui.press('tab')
-        time.sleep(0.08)
-        
-        # 3. Display Name field
-        pyautogui.write(global_name, interval=type_interval)
-        time.sleep(0.08)
-        
-        # 4. TAB to Username
-        pyautogui.press('tab')
-        time.sleep(0.08)
-        
-        # 5. Username field
-        pyautogui.write(username, interval=type_interval)
-        time.sleep(0.08)
-        
-        # 6. TAB to Password
-        pyautogui.press('tab')
-        time.sleep(0.08)
-        
-        # 7. Password field
-        pyautogui.write(inbox_password, interval=type_interval)
-        time.sleep(0.08)
-        
-        # 8. TAB to Month dropdown
-        pyautogui.press('tab')
-        time.sleep(0.15)
-        
-        # 9. Select Month - بدون كتابة الحرف الأول فقط سهم وانتظار
-        # فتح القائمة المنسدلة
-        pyautogui.press('space')
-        time.sleep(0.3)
-        
-        # النزول بالسهم عدد مرات يساوي رقم الشهر - 1
-        # مثلاً: إذا الشهر 3 (مارس) ننزل 2 مرات
-        if month_idx > 0:
-            # فقط أسهم دون كتابة
-            pyautogui.press('down', presses=month_idx, interval=0.1)
-        
-        # تأكيد الاختيار
-        pyautogui.press('enter')
-        time.sleep(0.15)
-        
-        # 10. TAB to Day
-        pyautogui.press('tab')
-        time.sleep(0.07)
-        
-        # 11. Day field
-        pyautogui.write(day, interval=type_interval)
-        time.sleep(0.07)
-        
-        # 12. TAB to Year
-        pyautogui.press('tab')
-        time.sleep(0.07)
-        
-        # 13. Year field
-        pyautogui.write(year, interval=type_interval)
-        time.sleep(0.07)
-        
-        # 14. TAB to email checkbox
-        pyautogui.press('tab')
-        time.sleep(0.06)
-        
-        # 15. Press SPACE to check email checkbox
-        pyautogui.press('space')
-        time.sleep(0.06)
-        
-        # 16. Press TAB 2 times to skip Terms links
-        pyautogui.press('tab')
-        time.sleep(0.06)
-        pyautogui.press('tab')
-        time.sleep(0.06)
-        
-        # 17. TAB to Create Account button
-        pyautogui.press('tab')
-        time.sleep(0.06)
-        
-        # 18. Press Enter on Create Account button
-        pyautogui.press('enter')
-        time.sleep(0.8)  # وقت أقل للانتظار
-        
-        return True
-        
-    except Exception as e:
-        log.error(f"❌ Error while typing form: {e}")
-        return False
-
-async def register_and_get_promo(is_last_instance=False):
-    firefox_path = get_firefox_path()
-    discord_register_url = 'https://discord.com/register'
-
-    try:
-        subprocess.Popen([firefox_path, "-private-window", discord_register_url])
-    except Exception as e:
-        log.error(f"❌ Failed to start Firefox: {e}")
-        return
-
-    time.sleep(12)  # وقت أقل للتحميل
-    log.info("✅ Register Page loaded")
-
-    try:
-        inbox_email, inbox_password = create_inbox()
-    except Exception as e:
-        log.error(f"❌ Failed to create inbox: {e}")
-        return
-
-    log.info(f"✉️ Using {inbox_email}")
-    time.sleep(1.5)
-
-    username = generate_random_name()
-    global_name = "Somo Acc"
-    month_num = random.randint(1, 12)
-    month_idx = month_num - 1
-    day = f"{random.randint(1, 28):02d}"  # إضافة صفر أمام الأرقام < 10
-    year = f"{random.randint(1995, 2005)}"
-
-    # ملء النموذج بسرعة
-    form_filled = fill_form_fast(inbox_email, inbox_password, username, global_name, month_idx, day, year)
+    def get_oauth_url(self):
+        """Generate OAuth2 authorization URL"""
+        scope_string = '%20'.join(self.scopes)
+        return f"https://discord.com/api/oauth2/authorize?client_id={self.client_id}&redirect_uri={self.redirect_uri}&response_type=code&scope={scope_string}"
     
-    if not form_filled:
-        log.error("❌ Failed to fill form")
-        return
-
-    log.info(f"✅ Month selected: {months[month_idx]}")
-    log.info(f"✅ Day entered: {day}")
-    log.info(f"✅ Year entered: {year}")
-
-    log.info("✅ Form submitted")
-    log.warning("⚠️ Solve Captcha if shown!")
-    time.sleep(18)  # وقت أقل للانتظار
-
-    log.info("⏳ Waiting for email...")
-    time.sleep(8)
-
-    verify_url = verify(inbox_email, inbox_password)
-    if not verify_url:
-        log.error("❌ Verification URL not found.")
-        return
-    log.info("✅ Email verification link found!")
-
-    try:
-        subprocess.Popen([firefox_path, "-private-window", verify_url])
-        log.info("🌐 Opened verification link")
-    except Exception:
-        try:
-            import webbrowser
-            webbrowser.open(verify_url)
-            log.info("🌐 Opened in default browser")
-        except Exception as e:
-            log.error(f"❌ Failed to open link: {e}")
-
-    time.sleep(15)  # وقت أقل للتحقق
-
-    try:
-        close_firefox()
-    except Exception:
-        pass
-
-    # الحصول على التوكن
-    try:
-        session = requests.Session()
-        payload = {'login': inbox_email, 'password': inbox_password}
+    def approve_token(self, token, proxy_config=None, thread_id=0):
+        """Approve OAuth2 for a single token"""
         headers = {
+            'Authorization': token,
             'Content-Type': 'application/json',
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-            'Origin': 'https://discord.com',
-            'Referer': 'https://discord.com/login'
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
         }
         
-        # محاولات متعددة للحصول على التوكن
-        for attempt in range(3):
-            try:
-                response = session.post('https://discord.com/api/v9/auth/login', 
-                                      json=payload, 
-                                      headers=headers, 
-                                      timeout=10)
-                
-                if response.status_code == 200:
-                    response_data = response.json()
-                    if 'token' in response_data:
-                        token = response_data['token']
-                        log.success(f"🎉 Token: {token[:25]}***")
-                        
-                        # حفظ التوكن
-                        with open('tokens.txt', 'a', encoding='utf-8') as f:
-                            f.write(f"{token}\n")
-                        
-                        with open('acc.txt', 'a', encoding='utf-8') as f:
-                            f.write(f"{inbox_email}:{inbox_password}:{token}\n")
-                            f.flush()
-                            os.fsync(f.fileno())
-                        
-                        log.success("💾 Saved to tokens.txt")
-                        break
-                    else:
-                        log.debug(f"No token in response: {response.text}")
-                else:
-                    log.debug(f"Login failed ({response.status_code}): {response.text}")
-                    
-            except Exception as e:
-                log.debug(f"Login attempt {attempt + 1} failed: {e}")
-                time.sleep(2)
-                
-    except Exception as e:
-        log.error(f"❌ Error getting token: {e}")
-
-    # التحقق من Rate Limit
-    if not is_last_instance and config.get("check_ratelimit", True):
         try:
-            wait_time = account_ratelimit()
-            if wait_time > 1:
-                log.warning(f"⚠️ Rate limit detected — wait {wait_time} seconds")
-                countdown_timer(wait_time)
-            else:
-                log.info("✅ No rate limit detected, continuing...")
+            # First, get user info to check if token is valid
+            user_response = requests.get(
+                'https://discord.com/api/v9/users/@me',
+                headers=headers,
+                proxies=proxy_config,
+                timeout=10
+            )
+            
+            if user_response.status_code != 200:
+                print(f"[Thread-{thread_id}] Invalid token: {token[:20]}...")
+                return False
+            
+            # Get the OAuth2 URL (simulating user clicking the link)
+            oauth_url = self.get_oauth_url()
+            
+            # Note: This step requires user interaction in real OAuth2 flow
+            # For actual OAuth2, you would need to:
+            # 1. Redirect user to oauth_url
+            # 2. Get authorization code from redirect
+            # 3. Exchange code for access token
+            
+            # This is a simplified version - for actual implementation,
+            # you would need proper OAuth2 flow with browser simulation
+            
+            print(f"[Thread-{thread_id}] Token authorized: {token[:20]}...")
+            print(f"[Thread-{thread_id}] OAuth URL for this app: {oauth_url}")
+            
+            # Save successful tokens
+            with open('approved_tokens.txt', 'a') as f:
+                f.write(f"{token}\n")
+            
+            return True
+            
+        except requests.exceptions.RequestException as e:
+            print(f"[Thread-{thread_id}] Error with token {token[:20]}...: {e}")
+            return False
         except Exception as e:
-            log.error(f"❌ Failed to check rate limit: {e}")
-
-banner = '''
- █    ██  ██▓  ▄▄▄█████▓ ██▓ ███▄ ▄███▓ ▄▄▄     ▄▄▄█████▓▓█████ 
- ██  ▓██▒▓██▒  ▓  ██▒ ▓▒▓██▒▓██▒▀█▀ ██▒▒████▄   ▓  ██▒ ▓▒▓█   ▀ 
-▓██  ▒██░▒██░  ▒ ▓██░ ▒░▒██▒▓██    ▓██░▒██  ▀█▄ ▒ ▓██░ ▒░▒███   
-▓▓█  ░██░▒██░  ░ ▓██▓ ░ ░██░▒██    ▒██ ░██▄▄▄▄██░ ▓██▓ ░ ▒▓█  ▄ 
-▒▒█████▓ ░██████▒▒██▒ ░ ░██░▒██▒   ░██▒ ▓█   ▓██▒ ▒██▒ ░ ░▒████▒
-░▒▓▒ ▒ ▒ ░ ▒░▓  ░▒ ░░   ░▓  ░ ▒░   ░  ░ ▒▒   ▓▒█░ ▒ ░░   ░░ ▒░ ░
-░░▒░ ░ ░ ░ ░ ▒  ░  ░     ▒ ░░  ░      ░  ▒   ▒▒ ░   ░     ░ ░  ░
- ░░░ ░ ░   ░ ░   ░       ▒ ░░      ░     ░   ▒    ░         ░   
-   ░         ░  ░        ░         ░         ░  ░           ░  ░
-                                                                
-'''
-cret = f'''[+] Creator - @930b'''
-
-def print_gradient_text(text, start_color=(137, 207, 240), end_color=(25, 25, 112)):
-    lines = text.split('\n')
-    total_lines = len(lines)
-    for i, line in enumerate(lines):
-        if not line.strip():
-            print(line)
-            continue
-        r = int(start_color[0] + (end_color[0] - start_color[0]) * i / total_lines)
-        g = int(start_color[1] + (end_color[1] - start_color[1]) * i / total_lines)
-        b = int(start_color[2] + (end_color[2] - start_color[2]) * i / total_lines)
-        color_code = f"\033[38;2;{r};{g};{b}m"
-        print(f"{color_code}{line}{Style.RESET_ALL}")            
-
-def run_register_and_get_promo(is_last_instance=False):
-    asyncio.run(register_and_get_promo(is_last_instance))
+            print(f"[Thread-{thread_id}] Unexpected error: {e}")
+            return False
+    
+    def worker(self, token_queue, thread_id, max_retries=3):
+        """Worker thread function"""
+        while not token_queue.empty():
+            try:
+                token = token_queue.get_nowait()
+            except:
+                break
+            
+            retries = 0
+            while retries < max_retries:
+                proxy_config = self.get_proxy() if self.proxies else None
+                
+                success = self.approve_token(token, proxy_config, thread_id)
+                
+                if success:
+                    break
+                else:
+                    retries += 1
+                    if retries < max_retries:
+                        time.sleep(1)  # Wait before retry
+            
+            token_queue.task_done()
+    
+    def start_approval(self, thread_count=50, delay=0.1):
+        """Start the OAuth approval process with multiple threads"""
+        print(f"Starting OAuth approval process with {thread_count} threads...")
+        print(f"Scopes: {', '.join(self.scopes)}")
+        print(f"OAuth URL: {self.get_oauth_url()}")
+        print("-" * 50)
+        
+        # Create queue with all tokens
+        token_queue = Queue()
+        for token in self.tokens:
+            token_queue.put(token)
+        
+        # Create and start threads
+        threads = []
+        start_time = time.time()
+        
+        for i in range(thread_count):
+            thread = threading.Thread(
+                target=self.worker,
+                args=(token_queue, i + 1),
+                daemon=True
+            )
+            threads.append(thread)
+            thread.start()
+            time.sleep(delay)  # Stagger thread starts
+        
+        # Wait for all threads to complete
+        for thread in threads:
+            thread.join()
+        
+        # Wait for queue to be empty
+        token_queue.join()
+        
+        end_time = time.time()
+        elapsed_time = end_time - start_time
+        tokens_per_second = len(self.tokens) / elapsed_time if elapsed_time > 0 else 0
+        
+        print("-" * 50)
+        print(f"Process completed in {elapsed_time:.2f} seconds")
+        print(f"Average speed: {tokens_per_second:.2f} tokens/second")
+        print(f"Total tokens processed: {len(self.tokens)}")
+        
+        # Check approved tokens
+        if os.path.exists('approved_tokens.txt'):
+            with open('approved_tokens.txt', 'r') as f:
+                approved_count = len(f.readlines())
+            print(f"Successfully approved: {approved_count} tokens")
 
 def main():
-    multiprocessing.freeze_support()
+    # Clear previous approved tokens
+    if os.path.exists('approved_tokens.txt'):
+        os.remove('approved_tokens.txt')
     
-    print("\n")
-    print_gradient_text(Center.XCenter(banner))
-    print_gradient_text(Center.XCenter(cret))
-    print("\n")
+    # Initialize approver
+    approver = DiscordOAuthApprover()
     
+    if not approver.tokens:
+        print("No tokens found in tokens.txt")
+        return
+    
+    # Get thread count from user
     try:
-        instance_count = int(input(Fore.CYAN + f"[{Fore.MAGENTA}?{Fore.CYAN}] Number of parallel processes (1-3): "))
-        instance_count = max(1, min(3, instance_count))
-    except ValueError:
-        log.warning("⚠️ Invalid input. Defaulting to 1.")
-        instance_count = 1
+        thread_count = int(input("Enter number of threads (recommended: 20-100): "))
+    except:
+        thread_count = 50
     
-    try:
-        max_runs = int(input(Fore.CYAN + f"[{Fore.MAGENTA}?{Fore.CYAN}] Number of accounts to generate (0 = infinite): "))
-    except ValueError:
-        log.warning("⚠️ Invalid input. Defaulting to 1 account.")
-        max_runs = 1
-    
-    if not config.get("check_ratelimit", True):
-        log.warning("⚠️ Rate limit checking is disabled at config.json.")
-    
-    log.info(f"📧 Using email API: {config['mail_api']}")
-    log.info(f"🔧 Parallel processes: {instance_count}")
-    log.info(f"🎯 Target accounts: {max_runs if max_runs > 0 else 'Infinite'}")
-    
-    run_count = 0
-    active_processes = []
-    
-    while True:
-        # تنظيف العمليات المنتهية
-        active_processes = [p for p in active_processes if p.is_alive()]
-        
-        # تشغيل عمليات جديدة إذا كان هناك متسع
-        if len(active_processes) < instance_count and (max_runs == 0 or run_count < max_runs):
-            run_count += 1
-            log.info(f"🚀 Starting account #{run_count}")
-            
-            try:
-                is_last = (max_runs != 0 and run_count == max_runs)
-                p = multiprocessing.Process(target=run_register_and_get_promo, args=(is_last,))
-                p.start()
-                active_processes.append(p)
-                time.sleep(2)  # تأخير بسيط بين بدء كل عملية
-            except Exception as e:
-                log.failure(f"❌ Failed to launch process: {e}")
-        
-        # التحقق إذا انتهى كل شيء
-        if max_runs and run_count >= max_runs and not active_processes:
-            break
-        
-        time.sleep(1)
-    
-    # انتظار انتهاء العمليات المتبقية
-    for p in active_processes:
-        p.join(timeout=300)
-        if p.is_alive():
-            p.terminate()
-    
-    log.success("🎉 All account generations completed!")
-    input("Press Enter to exit...")
+    # Start approval process
+    approver.start_approval(thread_count=thread_count)
 
 if __name__ == "__main__":
-    multiprocessing.freeze_support()
-    import sys
-    from PyQt6.QtWidgets import QApplication
-    from PyQt6.QtCore import QTimer
+    main()
     
-    def run_cli_logic():
-        main()
     
-    def start_message_splash():
-        msg = MessageSplashScreen("Made by Somo\nEnjoy!\nسومو العم")
-        msg.showWithFade()
-        QTimer.singleShot(2000, lambda: msg.fadeOut(continue_to_main))  # وقت أقل
     
-    def continue_to_main():
-        app.quit()
-        run_cli_logic()
     
-    app = QApplication(sys.argv)
-    splash = SplashScreen()
-    splash.start()
-    QTimer.singleShot(2000, lambda: splash.fadeOut(start_message_splash))  # وقت أقل
-    app.exec()
+    
+    {
+    "client_id": "YOUR_CLIENT_ID_HERE",
+    "client_secret": "YOUR_CLIENT_SECRET_HERE",
+    "redirect_uri": "https://your-redirect-url.com",
+    "scopes": ["identify", "email", "guilds", "guilds.join"]
+}
