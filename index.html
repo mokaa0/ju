@@ -1,217 +1,306 @@
-import json
-import threading
-import requests
-import time
-import random
-from queue import Queue
-import os
-import sys
-from concurrent.futures import ThreadPoolExecutor, as_completed
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Original - Products</title>
 
-class DiscordOAuthApprover:
-    def __init__(self, config_path="config.json"):
-        # Load configuration
-        with open(config_path, 'r') as f:
-            config = json.load(f)
-        
-        self.client_id = config['client_id']
-        self.client_secret = config['client_secret']
-        self.redirect_uri = config['redirect_uri']
-        self.scopes = config['scopes']
-        
-        # Read tokens
-        with open('tokens.txt', 'r') as f:
-            self.tokens = [line.strip() for line in f.readlines() if line.strip()]
-        
-        # Read proxies
-        self.proxies = []
-        if os.path.exists('proxies.txt'):
-            with open('proxies.txt', 'r') as f:
-                self.proxies = [line.strip() for line in f.readlines() if line.strip()]
-        
-        print(f"Loaded {len(self.tokens)} tokens and {len(self.proxies)} proxies")
-    
-    def get_proxy(self):
-        """Get random proxy from list"""
-        if not self.proxies:
-            return None
-        
-        proxy = random.choice(self.proxies)
-        
-        # Format proxy correctly
-        if '@' in proxy or 'http' in proxy:
-            return {"http": proxy, "https": proxy}
-        else:
-            # Assume it's ip:port or ip:port:user:pass
-            parts = proxy.split(':')
-            if len(parts) == 4:
-                ip, port, user, password = parts
-                return {
-                    "http": f"http://{user}:{password}@{ip}:{port}",
-                    "https": f"http://{user}:{password}@{ip}:{port}"
-                }
-            elif len(parts) == 2:
-                ip, port = parts
-                return {"http": f"http://{ip}:{port}", "https": f"http://{ip}:{port}"}
-        
-        return None
-    
-    def get_oauth_url(self):
-        """Generate OAuth2 authorization URL"""
-        scope_string = '%20'.join(self.scopes)
-        return f"https://discord.com/api/oauth2/authorize?client_id={self.client_id}&redirect_uri={self.redirect_uri}&response_type=code&scope={scope_string}"
-    
-    def approve_token(self, token, proxy_config=None, thread_id=0):
-        """Approve OAuth2 for a single token"""
-        headers = {
-            'Authorization': token,
-            'Content-Type': 'application/json',
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-        }
-        
-        try:
-            # First, get user info to check if token is valid
-            user_response = requests.get(
-                'https://discord.com/api/v9/users/@me',
-                headers=headers,
-                proxies=proxy_config,
-                timeout=10
-            )
-            
-            if user_response.status_code != 200:
-                print(f"[Thread-{thread_id}] Invalid token: {token[:20]}...")
-                return False
-            
-            # Get the OAuth2 URL (simulating user clicking the link)
-            oauth_url = self.get_oauth_url()
-            
-            # Note: This step requires user interaction in real OAuth2 flow
-            # For actual OAuth2, you would need to:
-            # 1. Redirect user to oauth_url
-            # 2. Get authorization code from redirect
-            # 3. Exchange code for access token
-            
-            # This is a simplified version - for actual implementation,
-            # you would need proper OAuth2 flow with browser simulation
-            
-            print(f"[Thread-{thread_id}] Token authorized: {token[:20]}...")
-            print(f"[Thread-{thread_id}] OAuth URL for this app: {oauth_url}")
-            
-            # Save successful tokens
-            with open('approved_tokens.txt', 'a') as f:
-                f.write(f"{token}\n")
-            
-            return True
-            
-        except requests.exceptions.RequestException as e:
-            print(f"[Thread-{thread_id}] Error with token {token[:20]}...: {e}")
-            return False
-        except Exception as e:
-            print(f"[Thread-{thread_id}] Unexpected error: {e}")
-            return False
-    
-    def worker(self, token_queue, thread_id, max_retries=3):
-        """Worker thread function"""
-        while not token_queue.empty():
-            try:
-                token = token_queue.get_nowait()
-            except:
-                break
-            
-            retries = 0
-            while retries < max_retries:
-                proxy_config = self.get_proxy() if self.proxies else None
-                
-                success = self.approve_token(token, proxy_config, thread_id)
-                
-                if success:
-                    break
-                else:
-                    retries += 1
-                    if retries < max_retries:
-                        time.sleep(1)  # Wait before retry
-            
-            token_queue.task_done()
-    
-    def start_approval(self, thread_count=50, delay=0.1):
-        """Start the OAuth approval process with multiple threads"""
-        print(f"Starting OAuth approval process with {thread_count} threads...")
-        print(f"Scopes: {', '.join(self.scopes)}")
-        print(f"OAuth URL: {self.get_oauth_url()}")
-        print("-" * 50)
-        
-        # Create queue with all tokens
-        token_queue = Queue()
-        for token in self.tokens:
-            token_queue.put(token)
-        
-        # Create and start threads
-        threads = []
-        start_time = time.time()
-        
-        for i in range(thread_count):
-            thread = threading.Thread(
-                target=self.worker,
-                args=(token_queue, i + 1),
-                daemon=True
-            )
-            threads.append(thread)
-            thread.start()
-            time.sleep(delay)  # Stagger thread starts
-        
-        # Wait for all threads to complete
-        for thread in threads:
-            thread.join()
-        
-        # Wait for queue to be empty
-        token_queue.join()
-        
-        end_time = time.time()
-        elapsed_time = end_time - start_time
-        tokens_per_second = len(self.tokens) / elapsed_time if elapsed_time > 0 else 0
-        
-        print("-" * 50)
-        print(f"Process completed in {elapsed_time:.2f} seconds")
-        print(f"Average speed: {tokens_per_second:.2f} tokens/second")
-        print(f"Total tokens processed: {len(self.tokens)}")
-        
-        # Check approved tokens
-        if os.path.exists('approved_tokens.txt'):
-            with open('approved_tokens.txt', 'r') as f:
-                approved_count = len(f.readlines())
-            print(f"Successfully approved: {approved_count} tokens")
-
-def main():
-    # Clear previous approved tokens
-    if os.path.exists('approved_tokens.txt'):
-        os.remove('approved_tokens.txt')
-    
-    # Initialize approver
-    approver = DiscordOAuthApprover()
-    
-    if not approver.tokens:
-        print("No tokens found in tokens.txt")
-        return
-    
-    # Get thread count from user
-    try:
-        thread_count = int(input("Enter number of threads (recommended: 20-100): "))
-    except:
-        thread_count = 50
-    
-    # Start approval process
-    approver.start_approval(thread_count=thread_count)
-
-if __name__ == "__main__":
-    main()
-    
-    
-    
-    
-    
-    {
-    "client_id": "YOUR_CLIENT_ID_HERE",
-    "client_secret": "YOUR_CLIENT_SECRET_HERE",
-    "redirect_uri": "https://your-redirect-url.com",
-    "scopes": ["identify", "email", "guilds", "guilds.join"]
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box
 }
+
+:root{
+    --purple:#a020f0;
+    --purple-dark:#6a0dad;
+    --glow:rgba(160,32,240,.85)
+}
+
+body{
+    font-family:system-ui,sans-serif;
+    background:radial-gradient(circle at top,#2b1055,#0f0c29 60%);
+    color:white;
+    min-height:100vh
+}
+
+.header{
+    padding:18px;
+    text-align:center;
+    background:rgba(0,0,0,.4);
+    backdrop-filter:blur(10px);
+    position:sticky;
+    top:0;
+    z-index:99;
+    box-shadow:0 0 40px var(--glow)
+}
+
+.header h1{
+    font-size:34px;
+    letter-spacing:4px;
+    background:linear-gradient(45deg,var(--purple),#dcb0ff);
+    -webkit-background-clip:text;
+    -webkit-text-fill-color:transparent
+}
+
+.hero{
+    text-align:center;
+    padding:90px 20px
+}
+
+.hero h2{
+    font-size:44px;
+    margin-bottom:20px;
+    background:linear-gradient(45deg,var(--purple),#e0c3ff);
+    -webkit-background-clip:text;
+    -webkit-text-fill-color:transparent
+}
+
+.hero p{
+    color:#ccc;
+    font-size:18px
+}
+
+.view-products-btn{
+    margin-top:35px;
+    padding:18px 60px;
+    border:none;
+    border-radius:18px;
+    font-size:20px;
+    font-weight:800;
+    cursor:pointer;
+    background:white;
+    color:#1a1a2e;
+    transition:.4s
+}
+
+.view-products-btn:hover,
+.view-products-btn:active{
+    transform:scale(1.3);
+    box-shadow:0 0 80px var(--glow)
+}
+
+.products-section{
+    display:none;
+    padding:50px 20px;
+    max-width:1400px;
+    margin:auto
+}
+
+.products-section.active{
+    display:block
+}
+
+.products-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(330px,1fr));
+    gap:40px
+}
+
+.product-card{
+    position:relative;
+    background:linear-gradient(180deg,rgba(255,255,255,.12),rgba(255,255,255,.03));
+    border-radius:26px;
+    padding:32px;
+    border:1px solid rgba(255,255,255,.2);
+    backdrop-filter:blur(16px);
+    transition:.35s;
+    cursor:pointer;
+    overflow:hidden
+}
+
+.product-card::before{
+    content:"";
+    position:absolute;
+    inset:-2px;
+    background:linear-gradient(120deg,transparent,var(--purple),transparent);
+    opacity:0;
+    transition:.4s
+}
+
+.product-card:hover::before,
+.product-card:active::before,
+.product-card.touch::before{
+    opacity:1;
+    filter:blur(20px)
+}
+
+.product-card:hover,
+.product-card:active,
+.product-card.touch{
+    transform:translateY(-18px) scale(1.1);
+    box-shadow:0 0 120px var(--glow)
+}
+
+.product-card.expanded{
+    grid-column:1/-1;
+    transform:scale(1.12)
+}
+
+.product-preview{
+    height:190px;
+    border-radius:18px;
+    background:
+        linear-gradient(135deg,rgba(160,32,240,.35),rgba(106,13,173,.35)),
+        url("https://dummyimage.com/600x400/000/fff&text=Discord");
+    background-size:cover;
+    background-position:center;
+    margin-bottom:22px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-weight:700;
+    letter-spacing:2px
+}
+
+.product-badge{
+    position:absolute;
+    top:18px;
+    left:18px;
+    background:var(--purple);
+    padding:6px 16px;
+    border-radius:20px;
+    font-size:13px;
+    font-weight:800;
+    box-shadow:0 0 20px var(--glow)
+}
+
+.product-price{
+    font-size:40px;
+    font-weight:900;
+    margin:10px 0;
+    background:linear-gradient(45deg,#c77dff,#f3e8ff);
+    -webkit-background-clip:text;
+    -webkit-text-fill-color:transparent
+}
+
+.product-title{
+    font-size:22px;
+    margin-bottom:20px;
+    font-weight:700
+}
+
+.product-actions{
+    display:flex;
+    gap:14px;
+    align-items:center
+}
+
+.btn{
+    flex:1;
+    padding:14px;
+    border:none;
+    border-radius:14px;
+    font-size:16px;
+    font-weight:800;
+    cursor:pointer;
+    transition:.25s
+}
+
+.btn-add{
+    background:white;
+    color:black
+}
+
+.btn-add:hover,
+.btn-add:active{
+    transform:scale(1.2);
+    box-shadow:0 0 50px var(--glow)
+}
+
+.btn-remove{
+    background:#dc3545;
+    color:white
+}
+
+.quantity{
+    min-width:60px;
+    text-align:center;
+    font-size:18px;
+    font-weight:800
+}
+
+.back-btn{
+    margin-bottom:30px;
+    background:rgba(255,255,255,.12);
+    border:none;
+    color:white;
+    padding:14px 40px;
+    border-radius:14px;
+    cursor:pointer
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+    <h1>ORIGINAL</h1>
+</div>
+
+<div class="hero" id="hero">
+    <h2>The #1 Members Boosting Service</h2>
+    <p>Premium quality with insane animations</p>
+    <button class="view-products-btn" onclick="showProducts()">View Products</button>
+</div>
+
+<div class="products-section" id="products">
+    <button class="back-btn" onclick="showHero()">← Back</button>
+    <div class="products-grid" id="grid"></div>
+</div>
+
+<script>
+const productTypes=[
+    {count:50,type:"Auto"},
+    {count:75,type:"Online"},
+    {count:100,type:"Auto"},
+    {count:150,type:"Online"},
+    {count:200,type:"Auto"},
+    {count:250,type:"Online"},
+    {count:300,type:"Auto"},
+    {count:400,type:"Online"},
+    {count:500,type:"Auto"},
+    {count:600,type:"Online"},
+    {count:750,type:"Auto"},
+    {count:1000,type:"Online"},
+    {count:1500,type:"Auto"},
+    {count:2000,type:"Online"}
+]
+
+const hero=document.getElementById("hero")
+const productsSection=document.getElementById("products")
+const grid=document.getElementById("grid")
+
+function showProducts(){
+    hero.style.display="none"
+    productsSection.classList.add("active")
+}
+
+function showHero(){
+    hero.style.display="block"
+    productsSection.classList.remove("active")
+}
+
+productTypes.forEach((p,i)=>{
+    const price=(p.count*0.05*(p.type==="Online"?1.2:1)).toFixed(2)
+    grid.innerHTML+=`
+    <div class="product-card"
+        ontouchstart="this.classList.add('touch')"
+        ontouchend="this.classList.remove('touch')"
+        onclick="this.classList.toggle('expanded')">
+        <div class="product-badge">${p.type}</div>
+        <div class="product-preview">DISCORD PREVIEW</div>
+        <div class="product-price">$${price}</div>
+        <div class="product-title">${p.count} Members</div>
+        <div class="product-actions">
+            <button class="btn btn-remove">Remove</button>
+            <div class="quantity">0</div>
+            <button class="btn btn-add">Add</button>
+        </div>
+    </div>`
+})
+</script>
+
+</body>
+</html>
