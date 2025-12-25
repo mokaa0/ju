@@ -1,348 +1,127 @@
-import os
-import sys
+'''
+Credits to owner, fixes and updates made by DumbDanny. (dumb danny#9375)
+Credits for hCaptcha solver goes to https://chrome.google.com/webstore/detail/noptcha-recaptcha-hcaptch/dknlfmjaanfblgfdfebhijalfmhmjjjo
+'''
+
+import os, sys
+import warnings
+import time, requests
+from selenium import webdriver
+from selenium.webdriver.common.keys import Keys
+from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.by import By
 import time
-import json
-import requests
-from datetime import datetime
-from colorama import init, Fore, Style
+import random
+import string
+from colorama import Back, Fore
+from os import path
 
-init(autoreset=True)
+# added title and bit of a info section.
+print(f'''
+▀█▀ █▀█ █▄▀ █▀▀ █▄░█   █▀▀ █▀▀ █▄░█ █▀▀ █▀█ ▄▀█ ▀█▀ █▀█ █▀█
+░█░ █▄█ █░█ ██▄ █░▀█   █▄█ ██▄ █░▀█ ██▄ █▀▄ █▀█ ░█░ █▄█ █▀▄   Made By Damianek02, modified and updated by DumbDanny.
 
-class EpicGamesNitroRedeemer:
-    def __init__(self):
-        self.clear_console()
-        self.print_banner()
-        self.accounts_file = "mails.txt"
-        self.session = requests.Session()
-        self.session.headers.update({
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'Accept': 'application/json, text/plain, */*',
-            'Accept-Language': 'en-US,en;q=0.9',
-            'Content-Type': 'application/json',
-            'Origin': 'https://store.epicgames.com',
-            'Referer': 'https://store.epicgames.com/',
-        })
-    
-    def clear_console(self):
-        os.system('cls' if os.name == 'nt' else 'clear')
-    
-    def print_banner(self):
-        banner = f"""
-{Fore.CYAN}
-GAMEPASS-REDEEMER V1.0 ELITE VERSION *
-[+] Developed By : Zaaem | Doma
+''')
+print("Please note that sometimes the hCaptcha solver may need to have the 'auto open' feature enabled.")
+print("To fix this issue, click on the extension, and click 'auto open'.")
+print(' ')
 
-{Fore.YELLOW}{"~" * 50}{Style.RESET_ALL}
-"""
-        print(banner)
-    
-    def get_current_time(self):
-        return datetime.now().strftime("%H:%M:%S")
-    
-    def print_processing(self, email):
-        current_time = self.get_current_time()
-        print(f"[{Fore.YELLOW}{current_time}{Style.RESET_ALL}] - Processing | {email}")
-    
-    def print_success(self, email):
-        current_time = self.get_current_time()
-        print(f"[{Fore.YELLOW}{current_time}{Style.RESET_ALL}] - {Fore.GREEN}Successfully redeemed code | {email}")
-    
-    def print_error(self, message):
-        current_time = self.get_current_time()
-        print(f"[{Fore.YELLOW}{current_time}{Style.RESET_ALL}] - {Fore.RED}Error: {message}")
-    
-    def load_accounts(self):
-        if not os.path.exists(self.accounts_file):
-            self.print_error(f"{self.accounts_file} not found!")
-            print(f"{Fore.RED}Please create {self.accounts_file} with email:password format")
-            return []
-        
-        accounts = []
-        try:
-            with open(self.accounts_file, 'r', encoding='utf-8') as f:
-                for line in f:
-                    line = line.strip()
-                    if line and ':' in line:
-                        email, password = line.split(':', 1)
-                        accounts.append({
-                            'email': email.strip(),
-                            'password': password.strip()
-                        })
-            
-            print(f"{Fore.GREEN}[+] Loaded {len(accounts)} accounts from {self.accounts_file}")
-            return accounts
-        except Exception as e:
-            self.print_error(f"Loading accounts: {str(e)}")
-            return []
-    
-    def get_csrf_token(self):
-        try:
-            response = self.session.get('https://store.epicgames.com/graphql')
-            if response.status_code == 200:
-                for cookie in response.cookies:
-                    if 'csrf' in cookie.name.lower():
-                        return cookie.value
-            return None
-        except:
-            return None
-    
-    def login_to_epic_games(self, email, password):
-        try:
-            # First, get CSRF token
-            self.session.get('https://www.epicgames.com/id/api/csrf')
-            
-            # Get login page for cookies
-            self.session.get('https://www.epicgames.com/id/login')
-            
-            # Prepare login data
-            login_data = {
-                'email': email,
-                'password': password,
-                'rememberMe': True
-            }
-            
-            # Try to login
-            login_url = 'https://www.epicgames.com/id/api/login'
-            headers = {
-                'X-XSRF-TOKEN': self.get_csrf_token() or '',
-                'Content-Type': 'application/json'
-            }
-            
-            response = self.session.post(login_url, json=login_data, headers=headers)
-            
-            if response.status_code == 200:
-                return True
-            else:
-                return False
-                
-        except Exception as e:
-            self.print_error(f"Login failed: {str(e)}")
-            return False
-    
-    def search_nitro(self):
-        try:
-            # Try to search for Nitro games using Epic Games API
-            search_url = "https://store.epicgames.com/graphql"
-            
-            # GraphQL query for searching games
-            query = {
-                "query": """
-                query searchStoreQuery($allowCountries: String, $category: String, $count: Int, $country: String, $keywords: String, $locale: String, $sortBy: String, $sortDir: String, $start: Int, $tag: String) {
-                    Catalog {
-                        searchStore(
-                            allowCountries: $allowCountries
-                            category: $category
-                            count: $count
-                            country: $country
-                            keywords: $keywords
-                            locale: $locale
-                            sortBy: $sortBy
-                            sortDir: $sortDir
-                            start: $start
-                            tag: $tag
-                        ) {
-                            elements {
-                                title
-                                productSlug
-                                offerMappings {
-                                    pageSlug
-                                }
-                            }
-                        }
-                    }
-                }
-                """,
-                "variables": {
-                    "allowCountries": "US",
-                    "category": "games",
-                    "count": 20,
-                    "country": "US",
-                    "keywords": "Nitro",
-                    "locale": "en-US",
-                    "sortBy": "relevancy",
-                    "sortDir": "DESC",
-                    "start": 0,
-                    "tag": ""
-                }
-            }
-            
-            response = self.session.post(search_url, json=query)
-            
-            if response.status_code == 200:
-                data = response.json()
-                elements = data.get('data', {}).get('Catalog', {}).get('searchStore', {}).get('elements', [])
-                
-                if elements:
-                    return True
-                else:
-                    return False
-            else:
-                return False
-                
-        except Exception as e:
-            self.print_error(f"Search error: {str(e)}")
-            return False
-    
-    def redeem_nitro_code(self):
-        try:
-            # Try to redeem a Nitro code (this is a simplified example)
-            # In reality, you'd need specific offer IDs and proper redemption flow
-            
-            # First, check for available free Nitro offers
-            free_offers_url = "https://store.epicgames.com/graphql"
-            
-            query = {
-                "query": """
-                query getFreeGames($country: String!, $locale: String!) {
-                    Catalog {
-                        searchStore(
-                            category: "games/edition/base",
-                            count: 30,
-                            country: $country,
-                            keywords: "free",
-                            locale: $locale,
-                            sortBy: "currentPrice",
-                            sortDir: "ASC"
-                        ) {
-                            elements {
-                                title
-                                id
-                                namespace
-                                offerMappings {
-                                    pageSlug
-                                }
-                                price {
-                                    totalPrice {
-                                        discountPrice
-                                        originalPrice
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                """,
-                "variables": {
-                    "country": "US",
-                    "locale": "en-US"
-                }
-            }
-            
-            response = self.session.post(free_offers_url, json=query)
-            
-            if response.status_code == 200:
-                data = response.json()
-                elements = data.get('data', {}).get('Catalog', {}).get('searchStore', {}).get('elements', [])
-                
-                # Check if any Nitro-related free games exist
-                nitro_games = [game for game in elements if 'nitro' in game.get('title', '').lower()]
-                
-                if nitro_games:
-                    # Try to "purchase" the free game
-                    for game in nitro_games[:1]:  # Try first nitro game
-                        try:
-                            game_id = game.get('id')
-                            namespace = game.get('namespace')
-                            
-                            if game_id and namespace:
-                                # Attempt to make free purchase
-                                purchase_url = f"https://store.epicgames.com/purchase"
-                                # This is simplified - actual purchase requires complex API calls
-                                return True
-                        except:
-                            continue
-                
-                return False
-            else:
-                return False
-                
-        except Exception as e:
-            self.print_error(f"Redemption error: {str(e)}")
-            return False
-    
-    def process_account(self, account):
-        email = account['email']
-        password = account['password']
-        
-        self.print_processing(email)
-        
-        # Simulate processing time (similar to your screenshot)
-        time.sleep(2)
-        
-        # Try to login
-        if not self.login_to_epic_games(email, password):
-            self.print_error(f"Login failed for: {email}")
-            return False
-        
-        # Search for Nitro
-        if not self.search_nitro():
-            self.print_error(f"No Nitro found for: {email}")
-            return False
-        
-        # Try to redeem
-        if not self.redeem_nitro_code():
-            self.print_error(f"Redemption failed for: {email}")
-            return False
-        
-        # Success
-        self.print_success(email)
-        return True
-    
-    def run(self):
-        accounts = self.load_accounts()
-        
-        if not accounts:
-            self.print_error("No accounts to process. Exiting...")
-            time.sleep(3)
-            return
-        
-        print(f"\n{Fore.CYAN}[+] Starting redemption process...")
-        print(f"{Fore.YELLOW}[+] Total accounts: {len(accounts)}")
-        print(f"{Fore.YELLOW}[+] Press Ctrl+C to stop\n")
-        
-        successful = 0
-        failed = 0
-        
-        for i, account in enumerate(accounts, 1):
-            print(f"\n{Fore.CYAN}[+] Account {i}/{len(accounts)}")
-            
-            try:
-                if self.process_account(account):
-                    successful += 1
-                else:
-                    failed += 1
-                    
-                if i < len(accounts):
-                    time.sleep(1)  # Small delay between accounts
-                    
-            except KeyboardInterrupt:
-                print(f"\n{Fore.YELLOW}[!] Process interrupted by user")
-                break
-            except Exception as e:
-                self.print_error(f"Unexpected error: {str(e)}")
-                failed += 1
-        
-        print(f"\n{Fore.CYAN}[+] Process completed!")
-        print(f"{Fore.GREEN}[+] Successful: {successful}")
-        print(f"{Fore.RED}[+] Failed: {failed}")
-        print(f"{Fore.YELLOW}[+] Total processed: {successful + failed}")
 
-def main():
-    redeemer = EpicGamesNitroRedeemer()
-    
-    try:
-        redeemer.run()
-    except KeyboardInterrupt:
-        print(f"\n{Fore.YELLOW}[!] Program stopped by user")
-    except Exception as e:
-        print(f"{Fore.RED}[!] Fatal error: {str(e)}")
-    finally:
-        print(f"\n{Fore.CYAN}[+] Program finished")
+warnings.filterwarnings("ignore", category=DeprecationWarning) 
+
+file = open("users.txt", "a")
+file1 = open("tokens.txt", "a")
+
+
+
+
+def start():
+    def get_random_email(length):
+        letters = string.ascii_lowercase
+        result_str = ''.join(random.choice(letters) for i in range(length))
+        driver.find_element(By.XPATH, "//input[@name='email']").send_keys(result_str + '@wp2.pl') # Changed Method used to find the xpath to the newer, non deprecated method.
+        file.write("\n email: " + result_str +"@wp2.pl\n")
         
-        try:
-            input(f"{Fore.YELLOW}[+] Press Enter to exit...")
-        except:
+
+
+    def get_random_username(length):
+        letters = string.ascii_lowercase
+        result_str = ''.join(random.choice(letters) for i in range(length))
+        driver.find_element(By.XPATH, "//input[@name='username']").send_keys(result_str) # Changed Method used to find the xpath to the newer, non deprecated method.
+        file.write("username: " + result_str + "\n")
+
+
+    def get_random_password(length):
+        letters = string.ascii_lowercase
+        result_str = ''.join(random.choice(letters) for i in range(length))
+        driver.find_element(By.XPATH, "//input[@name='password']").send_keys("!" + result_str) # Changed Method used to find the xpath to the newer, non deprecated method.
+        file.write("password: " + "!" + result_str)
+        
+
+
+    def get_date(): # removed junk comments,updated methods to find elements and fixed patched xpaths.
+        driver.find_element(By.XPATH, "/html/body/div[1]/div[2]/div/div[1]/div/div/div/form/div/div/div[4]/div[1]/div[1]/div/div/div/div/div[1]/div[1]").click()
+        driver.find_element(By.ID, "react-select-2-option-0").click()
+
+        driver.find_element(By.XPATH, "/html/body/div[1]/div[2]/div/div[1]/div/div/div/form/div/div/div[4]/div[1]/div[2]/div/div/div/div/div[1]/div[1]").click()
+        driver.find_element(By.ID, "react-select-3-option-0").click()
+        
+        driver.find_element(By.XPATH, "/html/body/div[1]/div[2]/div/div[1]/div/div/div/form/div/div/div[4]/div[1]/div[3]/div/div/div/div/div[1]").click()
+        driver.find_element(By.ID, "react-select-4-option-17").click()
+
+
+    def get_checkbox():
+        driver.find_element(By.XPATH, "/html/body/div[1]/div[2]/div/div[1]/div/div/div/form/div/div/div[5]/label/input").click() # Changed Method used to find the xpath to the newer, non deprecated method and fixed patched checkbox method.
+
+
+    def get_button():
+        driver.find_element(By.XPATH, "//button[@type='submit']").click() # Changed Method used to find the xpath to the newer, non deprecated method.
+
+    def quit():
+        driver.quit()
+
+
+
+
+    # removed junk comments, added hcaptcha solver and removed language option.
+    option = webdriver.ChromeOptions()
+    option.add_argument("--mute-audio")
+    option.add_extension(os.getcwd() + '\solver.crx') # gets the directory of the hCap solver.
+    option.add_experimental_option("excludeSwitches", ["enable-logging"])
+    #option.add_argument("user-agent=Mozilla/5.0 (iPhone; CPU iPhone OS 15_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.5 Mobile/15E148 Safari/604.1")
+
+
+
+    service = Service(ChromeDriverManager().install())
+
+    time.sleep(2) # added time.sleep(2) to make *sure* that the page is loaded.
+    print(f'{Back.GREEN}  INFO  {Back.RESET} Generating Token.')
+    get_random_email(8)
+    get_random_username(8)
+    get_random_password(8)
+    get_date()
+    get_checkbox()
+    get_button()
+
+    # Trys to save token until its succesful.
+    token = None
+    while token is None:
+        token = driver.execute_script("""return (webpackChunkdiscord_app.push([[''],{},e=>{m=[];for(let c in e.c)m.push(e.c[c])}]),m).find(m=>m?.exports?.default?.getToken!==void 0).exports.default.getToken()""")
+        if token is None:
             pass
+        else:
+            print(f'{Back.GREEN}  INFO  {Back.RESET} Token Generated! {token}')
+            with open('tokens.txt', 'w') as tokens:
+                tokens.write('\n')
+                tokens.write(token)
+                tokens.close()
 
-if __name__ == "__main__":
-    main()
+
+
+
+amount = int(input('How Many Tokens Would you like to generate: '))
+
+for run in range(amount):
+    start()
+
