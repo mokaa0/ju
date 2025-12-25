@@ -1,611 +1,378 @@
-<!DOCTYPE html>
+import puppeteer from 'puppeteer-extra';
+import fs from 'fs-extra';
+import { execSync } from 'child_process';
+import axios from 'axios';
+import { randomBytes, pbkdf2Sync, createCipheriv } from 'crypto';
+import { uniqueNamesGenerator, adjectives, colors, animals} from 'unique-names-generator';
+import chalk from 'chalk';
+import crypto from 'crypto';
 
-<html lang="ar" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Original - Discord Members Boosting</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+const database = JSON.parse(fs.readFileSync('data.json', 'utf-8'));
+
+
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+const BRAVE_EXECUTABLE_PATH = 'C:\\Program Files\\BraveSoftware\\Brave-Browser\\Application\\brave.exe'; 
+
+
+
+// Plugins
+
+console.clear();  // Clears the terminal screen at the start
+function getRandomDelay(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+function centerText(text) {
+    const width = process.stdout.columns || 80; // Default to 80 if width is unknown
+    const padding = Math.max(0, Math.floor((width - text.length) / 2));
+    return " ".repeat(padding) + text;
+}
+async function readJsonFile() {
+    try {
+      const data = await fs.readFile('data.json', 'utf8');
+      return JSON.parse(data); // Return parsed object
+    } catch (err) {
+      throw err; // Throw error if read or parse fails
+    }
+  }
+const title = "Discord Token Generator By rabea";
+console.log(chalk.green.bold(centerText(title)));
+console.log("\n"); // Adds an empty line below the title
+
+await new Promise(resolve => setTimeout(resolve, 1000));
+async function humanizedMouseMoveAndClick(page, targetX, targetY) {
+    // Get the current mouse position
+    const startX = 0; // Start from the top-left corner
+    const startY = 0;
+  
+    // Move the mouse gradually to the target coordinates
+    await moveMouse(page, startX, startY, targetX, targetY);
+  
+    // Add a small delay before clicking
+    await new Promise((resolve) => setTimeout(resolve,(getRandomDelay(100, 300)))); // Random delay between 100ms and 300ms
+  
+    // Perform the click
+    await page.mouse.click(targetX, targetY);
+  }
+  
+  /**
+   * Helper function to move the mouse gradually
+   * @param {Page} page - Puppeteer page object
+   * @param {number} startX - Starting X coordinate
+   * @param {number} startY - Starting Y coordinate
+   * @param {number} targetX - Target X coordinate
+   * @param {number} targetY - Target Y coordinate
+   */
+  async function moveMouse(page, startX, startY, targetX, targetY) {
+    const steps = 20; // Number of steps to reach the target
+    const stepX = (targetX - startX) / steps;
+    const stepY = (targetY - startY) / steps;
+  
+    for (let i = 0; i < steps; i++) {
+      const currentX = startX + stepX * i;
+      const currentY = startY + stepY * i;
+  
+      // Move the mouse to the current position
+      await page.mouse.move(currentX, currentY);
+  
+      // Add a small random delay between steps
+      await new Promise((resolve) => setTimeout(resolve,(getRandomDelay(50, 150)))); // Random delay between 50ms and 150ms
+    }
+  }
+async function fill_input(page, selectorType, selector, info) {
+    let inputField;
+  
+    if (selectorType === 'css') {
+      // Use the CSS selector
+      inputField = await page.$(selector);
+    } else if (selectorType === 'xpath') {
+      // Use XPath
+      const elements = await page.$x(selector);
+      inputField = elements[0]; // Assuming the XPath matches a single element
+    }
+  
+    if (inputField) {
+      await inputField.focus();
+      await page.keyboard.type(info);
+    } else {
+      console.error(chalk.red.bold(Input field with ${selectorType} selector "${selector}" not found.));
+    }
+  }
+  
+function encode(data, password) {
+    const salt = randomBytes(16);
+    const key = pbkdf2Sync(password, salt, 100000, 32, 'sha256');
+    const iv = randomBytes(16);
+
+    const cipher = createCipheriv('aes-256-cbc', key, iv);
+
+    const blockSize = 16;
+    const padding = blockSize - (Buffer.byteLength(data) % blockSize);
+    const paddedData = Buffer.concat([Buffer.from(data), Buffer.alloc(padding, ' ')]);
+
+    const encrypted = Buffer.concat([cipher.update(paddedData), cipher.final()]);
+
+    return Buffer.concat([salt, iv, encrypted]).toString('base64');
+}
+function decryptText(encryptedText) {
+    const key = crypto.createHash("sha256").update("SuperRab1234@").digest();
+    const encryptedData = Buffer.from(encryptedText, "base64");
+    const iv = encryptedData.slice(0, 12);
+    const cipherText = encryptedData.slice(12);
+    
+    const decipher = crypto.createDecipheriv("aes-256-gcm", key, iv);
+    decipher.setAuthTag(cipherText.slice(-16));
+    
+    const decrypted = Buffer.concat([
+        decipher.update(cipherText.slice(0, -16)),
+        decipher.final()
+    ]);
+    
+    return decrypted.toString("utf8");
+}
+function getHWID() {
+    try {
+        const hwid = execSync('powershell -Command "(Get-WmiObject Win32_ComputerSystemProduct).UUID"')
+            .toString().trim();
+
+        if (!hwid) {
+            throw new Error("HWID retrieval returned empty value.");
         }
 
-    body {
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-        color: white;
-        min-height: 100vh;
-    }
+        console.log("     | " + chalk.green.bold("HWID:", hwid));
+                     
 
-    .header {
-        background: #2a2a3e;
-        padding: 15px 20px;
-        text-align: center;
-        position: sticky;
-        top: 0;
-        z-index: 100;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        return hwid;
+    } catch (error) {
+        console.error(chalk.red.bold("Error fetching HWID:", error));
+        process.exit(1);
     }
-
-    .header h1 {
-        font-size: 32px;
-        font-weight: 700;
-        background: linear-gradient(45deg, #ff6b35, #ff8c42, #ffa600);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-    }
-
-    .login-btn {
-        position: absolute;
-        right: 20px;
-        top: 50%;
-        transform: translateY(-50%);
-        background: #5865F2;
-        color: white;
-        padding: 10px 20px;
-        border-radius: 8px;
-        text-decoration: none;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        transition: all 0.2s;
-    }
-
-    .login-btn:hover {
-        background: #4752c4;
-        transform: translateY(-50%) scale(1.05);
-    }
-
-    .hero {
-        text-align: center;
-        padding: 60px 20px;
-    }
-
-    .hero h2 {
-        font-size: 42px;
-        margin-bottom: 20px;
-        background: linear-gradient(45deg, #ff6b35, #ffa600);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-        animation: fadeInUp 0.8s ease;
-    }
-
-    .hero p {
-        font-size: 18px;
-        color: #ccc;
-        margin-bottom: 30px;
-        animation: fadeInUp 1s ease;
-    }
-
-    .view-products-btn {
-        background: white;
-        color: #1a1a2e;
-        padding: 15px 40px;
-        border: none;
-        border-radius: 12px;
-        font-size: 18px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.3s;
-        animation: fadeInUp 1.2s ease;
-        box-shadow: 0 4px 15px rgba(255, 166, 0, 0.3);
-    }
-
-    .view-products-btn:hover {
-        transform: scale(1.05);
-        box-shadow: 0 6px 20px rgba(255, 166, 0, 0.5);
-    }
-
-    .customers {
-        text-align: center;
-        margin: 40px 0;
-        font-size: 24px;
-        animation: fadeIn 1.5s ease;
-    }
-
-    .customers strong {
-        color: #ffa600;
-        font-size: 32px;
-    }
-
-    .reviews-section {
-        overflow: hidden;
-        padding: 40px 0;
-        background: rgba(0,0,0,0.2);
-    }
-
-    .reviews-container {
-        display: flex;
-        animation: scroll 30s linear infinite;
-        gap: 20px;
-    }
-
-    .review-card {
-        min-width: 300px;
-        background: rgba(255, 255, 255, 0.1);
-        backdrop-filter: blur(10px);
-        padding: 20px;
-        border-radius: 12px;
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        transition: all 0.3s;
-    }
-
-    .review-card:hover {
-        transform: translateY(-5px);
-        border-color: #ffa600;
-    }
-
-    .review-header {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        margin-bottom: 10px;
-    }
-
-    .review-avatar {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        background: linear-gradient(45deg, #ff6b35, #ffa600);
-    }
-
-    .review-name {
-        font-weight: 600;
-    }
-
-    .review-stars {
-        color: #ffa600;
-        font-size: 18px;
-    }
-
-    @keyframes scroll {
-        0% { transform: translateX(0); }
-        100% { transform: translateX(-50%); }
-    }
-
-    @keyframes fadeIn {
-        from { opacity: 0; }
-        to { opacity: 1; }
-    }
-
-    @keyframes fadeInUp {
-        from { 
-            opacity: 0;
-            transform: translateY(20px);
-        }
-        to { 
-            opacity: 1;
-            transform: translateY(0);
+}
+async function Captcha_Solve(page, database) {
+    async function safeWaitForSelector(selector, timeout = 5000) {
+        try {
+            console.log(Waiting for selector: ${selector});
+            const element = await page.waitForSelector(selector, { timeout });
+            console.log(Found selector: ${selector});
+            return element;
+        } catch (error) {
+            console.error(Error waiting for selector ${selector}:, error);
+            return null; // Ensures function continues
         }
     }
 
-    .products-section {
-        display: none;
-        padding: 40px 20px;
-        max-width: 1400px;
-        margin: 0 auto;
+    // Helper function to click an element with retries
+    async function clickWithRetry(frame, selector, retries = 3, delay = 1000) {
+        for (let i = 0; i < retries; i++) {
+            try {
+                const element = await frame.waitForSelector(selector, { timeout: 5000 });
+                await element.evaluate(el => el.scrollIntoView()); // Ensure element is in view
+                await element.hover(); // Ensure element is not blocked
+                await element.click();
+                console.log(Clicked selector: ${selector});
+                return; // Success
+            } catch (error) {
+                console.warn(Attempt ${i + 1} failed for selector ${selector}:, error.message);
+                if (i === retries - 1) throw error; // Throw error on last attempt
+                await new Promise(resolve => setTimeout(resolve, delay)); // Wait before retrying
+            }
+        }
     }
 
-    .products-section.active {
-        display: block;
-        animation: fadeIn 0.5s ease;
+    const checkboxFrameEl = await safeWaitForSelector('iframe[title*="checkbox for hCaptcha"]');
+    if (checkboxFrameEl) {
+        const checkboxFrame = await checkboxFrameEl.contentFrame();
+        if (checkboxFrame) {
+            await new Promise(resolve => setTimeout(resolve, getRandomDelay(1500, 2000)));
+            await clickWithRetry(checkboxFrame, 'div[id="checkbox"]');
+        }
+    } else {
+        console.log("Skipping checkbox interaction...");
     }
 
-    .products-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-        gap: 30px;
-        margin-top: 40px;
+    console.log("Proceeding to the challenge iframe...");
+    // Step 2: Interact with the challenge iframe
+    const challengeFrameEl = await safeWaitForSelector('iframe[title*="hCaptcha challenge"]');
+    if (challengeFrameEl) {
+        const challengeFrame = await challengeFrameEl.contentFrame();
+        if (challengeFrame) {
+            await new Promise(resolve => setTimeout(resolve, getRandomDelay(1000, 1250)));
+            await clickWithRetry(challengeFrame, 'div[class="display-language button"]');
+            await page.keyboard.press('a');
+            await new Promise(resolve => setTimeout(resolve, getRandomDelay(500, 1250)));
+            const options = await challengeFrame.$$('div[class="option"]')
+            await options[3].click();
+            await new Promise(resolve => setTimeout(resolve, getRandomDelay(1000, 2300)));
+            while (true) {
+                try {
+                    const e1 = await challengeFrame.waitForSelector('div[id="menu-info"]', { timeout: 1000 })
+                    await e1.click();
+                    await new Promise(resolve => setTimeout(resolve, getRandomDelay(100, 300)));
+                    const e2 = await challengeFrame.waitForSelector('div[id="text_challenge"]', { timeout: 1000 })
+                    await e2.click();
+                    break
+                } catch {}}
+            await new Promise(resolve => setTimeout(resolve, 500));
+            while (true) {
+                try {
+                    const element = await challengeFrame.waitForSelector('div[class="challenge-text"]', { timeout: 5000 });
+                    const ask = element ? await element.evaluate(el => el.textContent.trim()) : null;
+
+                    // Determine the answer
+                    const answer = database.hasOwnProperty(ask) ? database[ask] : '??';
+
+                    await new Promise(resolve => setTimeout(resolve, getRandomDelay(100, 300)));
+                    const captchaInput = await challengeFrame.waitForSelector('[name="captcha"]', { timeout: 5000 });
+                    if (captchaInput) {
+                        await captchaInput.focus();
+                        await captchaInput.type(answer);
+                    }
+                    //await page.keyboard.press('Enter');
+
+                    // const targetX = 850;
+                    // const targetY = 505;
+                    // await page.mouse.click(targetX,targetY)
+                    //await humanizedMouseMoveAndClick(page,targetX,targetY)
+                    await new Promise(resolve => setTimeout(resolve, getRandomDelay(1000, 1500)));
+
+                } catch (error) {
+                    console.error("Error in solveCaptcha loop:", error);
+                    return; // Exit the function if an error occurs
+                }
+            }
+        }
+    } else {
+        console.log("Skipping challenge interaction...");
     }
-
-    .product-card {
-        background: rgba(255, 255, 255, 0.1);
-        backdrop-filter: blur(10px);
-        border-radius: 16px;
-        padding: 30px;
-        border: 2px solid rgba(255, 255, 255, 0.2);
-        transition: all 0.3s;
-        cursor: pointer;
-    }
-
-    .product-card:hover {
-        transform: translateY(-5px);
-        border-color: #ff6b35;
-        box-shadow: 0 10px 30px rgba(255, 107, 53, 0.3);
-    }
-
-    .product-card.expanded {
-        grid-column: 1 / -1;
-        transform: scale(1.02);
-        border-color: #ffa600;
-        box-shadow: 0 15px 40px rgba(255, 166, 0, 0.4);
-    }
-
-    .product-preview {
-        width: 100%;
-        height: 200px;
-        background: linear-gradient(135deg, rgba(255, 107, 53, 0.2), rgba(255, 166, 0, 0.2));
-        border-radius: 12px;
-        margin-bottom: 20px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 14px;
-        color: #aaa;
-        border: 1px solid rgba(255, 166, 0, 0.3);
-    }
-
-    .product-price {
-        font-size: 36px;
-        font-weight: 700;
-        color: #ffa600;
-        margin-bottom: 15px;
-    }
-
-    .product-title {
-        font-size: 20px;
-        margin-bottom: 20px;
-        font-weight: 600;
-    }
-
-    .product-actions {
-        display: flex;
-        gap: 15px;
-        align-items: center;
-    }
-
-    .btn {
-        padding: 12px 30px;
-        border: none;
-        border-radius: 8px;
-        font-size: 16px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.2s;
-    }
-
-    .btn-add {
-        background: white;
-        color: #1a1a2e;
-        flex: 1;
-    }
-
-    .btn-add:hover {
-        transform: scale(1.05);
-        box-shadow: 0 4px 15px rgba(255, 255, 255, 0.3);
-    }
-
-    .btn-remove {
-        background: #dc3545;
-        color: white;
-        flex: 1;
-    }
-
-    .btn-remove:hover {
-        background: #c82333;
-        transform: scale(1.05);
-    }
-
-    .quantity {
-        background: rgba(0,0,0,0.3);
-        padding: 12px 20px;
-        border-radius: 8px;
-        font-size: 18px;
-        font-weight: 600;
-        min-width: 50px;
-        text-align: center;
-    }
-
-    .back-btn {
-        background: rgba(255, 255, 255, 0.1);
-        color: white;
-        padding: 12px 30px;
-        border: none;
-        border-radius: 8px;
-        font-size: 16px;
-        cursor: pointer;
-        margin-bottom: 20px;
-        transition: all 0.2s;
-    }
-
-    .back-btn:hover {
-        background: rgba(255, 255, 255, 0.2);
-        transform: translateX(-5px);
-    }
-
-    .hero-section {
-        display: block;
-    }
-
-    .hero-section.hidden {
-        display: none;
-    }
-
-    .section-title {
-        text-align: center;
-        font-size: 36px;
-        margin-bottom: 20px;
-        background: linear-gradient(45deg, #ff6b35, #ffa600);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-    }
-
-    .features-section {
-        padding: 80px 20px;
-        max-width: 1200px;
-        margin: 0 auto;
-    }
-
-    .features-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-        gap: 40px;
-        margin-top: 40px;
-    }
-
-    .feature-card {
-        background: rgba(255, 255, 255, 0.05);
-        backdrop-filter: blur(10px);
-        padding: 40px 30px;
-        border-radius: 20px;
-        border: 2px solid rgba(255, 255, 255, 0.1);
-        text-align: center;
-        transition: all 0.3s;
-    }
-
-    .feature-card:hover {
-        transform: translateY(-10px);
-        border-color: #ffa600;
-        box-shadow: 0 15px 40px rgba(255, 166, 0, 0.3);
-    }
-
-    .feature-icon {
-        width: 80px;
-        height: 80px;
-        margin: 0 auto 25px;
-        background: linear-gradient(45deg, #ff6b35, #ffa600);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .feature-icon svg {
-        width: 40px;
-        height: 40px;
-    }
-
-    .feature-title {
-        font-size: 24px;
-        font-weight: 700;
-        margin-bottom: 15px;
-        color: #ffa600;
-    }
-
-    .feature-description {
-        font-size: 16px;
-        line-height: 1.6;
-        color: #ccc;
-    }
-
-    .footer {
-        text-align: center;
-        padding: 40px 20px;
-        background: rgba(0, 0, 0, 0.3);
-        margin-top: 60px;
-        color: #888;
-    }
-</style>
+    console.log("Captcha_Solve function completed.");
+}
 
 
-</head>
-<body>
-    <div class="header">
-        <h1>ORIGINAL</h1>
-        <a href="#" class="login-btn">
-            <svg width="24" height="24" viewBox="0 0 71 55" fill="currentColor">
-                <path d="M60.1045 4.8978C55.5792 2.8214 50.7265 1.2916 45.6527 0.41542C45.5603 0.39851 45.468 0.440769 45.4204 0.525289C44.7963 1.6353 44.105 3.0834 43.6209 4.2216C38.1637 3.4046 32.7345 3.4046 27.3892 4.2216C26.905 3.0581 26.1886 1.6353 25.5617 0.525289C25.5141 0.443589 25.4218 0.40133 25.3294 0.41542C20.2584 1.2888 15.4057 2.8186 10.8776 4.8978C10.8384 4.9147 10.8048 4.9429 10.7825 4.9795C1.57795 18.7309 -0.943561 32.1443 0.293408 45.3914C0.299005 45.4562 0.335386 45.5182 0.385761 45.5576C6.45866 50.0174 12.3413 52.7249 18.1147 54.5195C18.2071 54.5477 18.305 54.5139 18.3638 54.4378C19.7295 52.5728 20.9469 50.6063 21.9907 48.5383C22.0523 48.4172 21.9935 48.2735 21.8676 48.2256C19.9366 47.4931 18.0979 46.6 16.3292 45.5858C16.1893 45.5041 16.1781 45.304 16.3068 45.2082C16.679 44.9293 17.0513 44.6391 17.4067 44.3461C17.471 44.2926 17.5606 44.2813 17.6362 44.3151C29.2558 49.6202 41.8354 49.6202 53.3179 44.3151C53.3935 44.2785 53.4831 44.2898 53.5502 44.3433C53.9057 44.6363 54.2779 44.9293 54.6529 45.2082C54.7816 45.304 54.7732 45.5041 54.6333 45.5858C52.8646 46.6197 51.0259 47.4931 49.0921 48.2228C48.9662 48.2707 48.9102 48.4172 48.9718 48.5383C50.038 50.6034 51.2554 52.5699 52.5959 54.435C52.6519 54.5139 52.7526 54.5477 52.845 54.5195C58.6464 52.7249 64.529 50.0174 70.6019 45.5576C70.6551 45.5182 70.6887 45.459 70.6943 45.3942C72.1747 30.0791 68.2147 16.7757 60.1968 4.9823C60.1772 4.9429 60.1437 4.9147 60.1045 4.8978ZM23.7259 37.3253C20.2276 37.3253 17.3451 34.1136 17.3451 30.1693C17.3451 26.225 20.1717 23.0133 23.7259 23.0133C27.308 23.0133 30.1626 26.2532 30.1066 30.1693C30.1066 34.1136 27.28 37.3253 23.7259 37.3253ZM47.3178 37.3253C43.8196 37.3253 40.9371 34.1136 40.9371 30.1693C40.9371 26.225 43.7636 23.0133 47.3178 23.0133C50.9 23.0133 53.7545 26.2532 53.6986 30.1693C53.6986 34.1136 50.9 37.3253 47.3178 37.3253Z"/>
-            </svg>
-            Login
-        </a>
-    </div>
 
+async function getDiscordToken(,database) {
+    let browser;
+    try {
+        browser = await puppeteer.launch(BROWSER_CONFIG);
+        const page = await browser.newPage();
+        await page.evaluateOnNewDocument(() => {
+            Object.defineProperty(navigator, 'webdriver', { get: () => false });
+        });
+        const server_code = ["midjourney","ho","hos","support","minecraft","valorant","csgo","lol","ln","po","rocketleague","genshinimpact","osu","arena","terraria","memeology","rust","fivem","roblox","fortnite","marvel","honkai","destiny","overwatch","limewire","operagx","chrome","google","apple","newegg","machine"][Math.floor(Math.random() * 31)];
+        await page.goto(https://discord.com/invite/${server_code}, { waitUntil: 'networkidle2' });
 
-<div class="hero-section" id="heroSection">
-    <div class="hero">
-        <h2>The #1 Members Boosting Service</h2>
-        <p>Get your server boosted by high quality members with cheapest prices</p>
-        <button class="view-products-btn" onclick="showProducts()">View Products</button>
-    </div>
-
-    <div class="customers">
-        <strong>+10,000</strong> Happy Customers
-    </div>
-
-    <div class="reviews-section">
-        <div class="reviews-container" id="reviewsContainer"></div>
-    </div>
-
-    <div class="features-section">
-        <div class="features-grid">
-            <div class="feature-card">
-                <div class="feature-icon">
-                    <svg fill="white" viewBox="0 0 24 24">
-                        <rect x="2" y="5" width="20" height="14" rx="2" stroke="white" stroke-width="2" fill="none"/>
-                        <line x1="2" y1="10" x2="22" y2="10" stroke="white" stroke-width="2"/>
-                    </svg>
-                </div>
-                <h3 class="feature-title">Paypal Accepted</h3>
-                <p class="feature-description">We believe that warranty is an essential thing for all users, and we know your anxiety about the first purchase. You do not want it to be made through encrypted currencies that cannot be tracked, so Original provides you with this feature: You will pay via PayPal so you can trust our site and will never be removed.</p>
-            </div>
-
-            <div class="feature-card">
-                <div class="feature-icon">
-                    <svg fill="white" viewBox="0 0 24 24">
-                        <circle cx="12" cy="8" r="4" fill="white"/>
-                        <path d="M12 14c-6 0-8 3-8 5v2h16v-2c0-2-2-5-8-5z" fill="white"/>
-                    </svg>
-                </div>
-                <h3 class="feature-title">Long Time</h3>
-                <p class="feature-description">We also believe that the customer should pay in a way that he likes and warranty it. We also believe that the warranty is an essential thing in our products. Therefore, we provide warranty services of up to 2 months to our members, and for our services, Original is considered the ideal choice for a long time.</p>
-            </div>
-
-            <div class="feature-card">
-                <div class="feature-icon">
-                    <svg fill="white" viewBox="0 0 24 24">
-                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" fill="white"/>
-                    </svg>
-                </div>
-                <h3 class="feature-title">24/7 Support</h3>
-                <p class="feature-description">We take pride in providing continuous technical support for you. Our dedicated team is always here to assist you, ensuring that your needs are met promptly and professionally. Your satisfaction is our top priority, and we strive to deliver exceptional and courteous service to all our valued customers.</p>
-            </div>
-        </div>
-    </div>
-
-    <div class="footer">
-        <p>&copy; 2026 Original Auto. All rights reserved.</p>
-    </div>
-</div>
-
-<div class="products-section" id="productsSection">
-    <button class="back-btn" onclick="showHero()">← Back</button>
-    <h2 class="section-title">HOT PRODUCTS</h2>
-    <div class="products-grid" id="productsGrid"></div>
-</div>
-
-<script>
-    const reviewNames = [
-        'Ahmed', 'Sara', 'Mohammed', 'Layla', 'Omar', 'Fatima', 'Ali', 'Noor',
-        'Khaled', 'Hiba', 'Youssef', 'Amira', 'Hassan', 'Maryam', 'Zaid', 'Rana',
-        'Tariq', 'Yasmin', 'Bilal', 'Dina', 'Mustafa', 'Reem', 'Saeed', 'Lina'
-    ];
-
-    const reviewTexts = [
-        'Excellent service! Very fast delivery',
-        'Best prices I found online',
-        'High quality members, highly recommended',
-        'Amazing support team',
-        'Got exactly what I ordered',
-        'Will definitely buy again',
-        'Very professional service',
-        'Great experience overall',
-        'Fast and reliable',
-        'Highly recommend to everyone'
-    ];
-
-    function generateReviews() {
-        const container = document.getElementById('reviewsContainer');
-        const reviews = [];
+     
+            Object.defineProperty(window, 'localStorage', getLocalStoragePropertyDescriptor());
+            window.localStorage.setItem('', '"${}"');
+        ;
+        await page.evaluate();
+        await page.reload();
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        const username = uniqueNamesGenerator({ dictionaries: [adjectives, colors, animals], length: 2});
         
-        for (let i = 0; i < 40; i++) {
-            const review = `
-                <div class="review-card">
-                    <div class="review-header">
-                        <div class="review-avatar"></div>
-                        <div>
-                            <div class="review-name">${reviewNames[Math.floor(Math.random() * reviewNames.length)]}</div>
-                            <div class="review-stars">★★★★★</div>
-                        </div>
-                    </div>
-                    <p>${reviewTexts[Math.floor(Math.random() * reviewTexts.length)]}</p>
-                </div>
-            `;
-            reviews.push(review);
-        }
+        console.log(     | ${chalk.green.bold("Generated Name:")} ${chalk.green.bold(username)});
+
         
-        container.innerHTML = reviews.join('') + reviews.join('');
-    }
+        // Find the input field and type the generated name into it
+        await fill_input(page, 'css', 'input[name="global_name"]', username);
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        try {
+            await page.waitForSelector('button[type="submit"]', { timeout: 10000 });
+            await page.click('button[type="submit"]');
+            // console.log('Register button clicked successfully.');
+        } catch (error) {
+            console.error(chalk.red.bold('Error clicking the register button:', error.message));
+        }            
+        //await Captcha_Solve(page,database);
+        const client = await page.target().createCDPSession();
+        await client.send('Network.enable');
 
-    const productTypes = [
-        { count: 100, type: 'Auto' }, { count: 50, type: 'Auto' }, { count: 100, type: 'Online' },
-        { count: 50, type: 'Online' }, { count: 200, type: 'Auto' }, { count: 150, type: 'Online' },
-        { count: 500, type: 'Auto' }, { count: 300, type: 'Online' }, { count: 75, type: 'Auto' },
-        { count: 250, type: 'Online' }, { count: 400, type: 'Auto' }, { count: 600, type: 'Online' },
-        { count: 1000, type: 'Auto' }, { count: 800, type: 'Online' }, { count: 120, type: 'Auto' },
-        { count: 350, type: 'Online' }, { count: 450, type: 'Auto' }, { count: 700, type: 'Online' },
-        { count: 900, type: 'Auto' }, { count: 1500, type: 'Online' }, { count: 175, type: 'Auto' },
-        { count: 225, type: 'Online' }, { count: 550, type: 'Auto' }, { count: 650, type: 'Online' },
-        { count: 2000, type: 'Auto' }, { count: 1200, type: 'Online' }, { count: 85, type: 'Auto' },
-        { count: 95, type: 'Online' }, { count: 135, type: 'Auto' }, { count: 165, type: 'Online' },
-        { count: 275, type: 'Auto' }, { count: 325, type: 'Online' }, { count: 425, type: 'Auto' },
-        { count: 475, type: 'Online' }, { count: 525, type: 'Auto' }, { count: 575, type: 'Online' },
-        { count: 725, type: 'Auto' }, { count: 775, type: 'Online' }, { count: 825, type: 'Auto' },
-        { count: 875, type: 'Online' }, { count: 950, type: 'Auto' }, { count: 1100, type: 'Online' },
-        { count: 1250, type: 'Auto' }, { count: 1350, type: 'Online' }, { count: 1450, type: 'Auto' },
-        { count: 1550, type: 'Online' }, { count: 1650, type: 'Auto' }, { count: 1750, type: 'Online' },
-        { count: 1850, type: 'Auto' }, { count: 1950, type: 'Online' }, { count: 2500, type: 'Auto' },
-        { count: 3000, type: 'Online' }, { count: 3500, type: 'Auto' }, { count: 4000, type: 'Online' },
-        { count: 4500, type: 'Auto' }, { count: 5000, type: 'Online' }, { count: 60, type: 'Auto' },
-        { count: 70, type: 'Online' }, { count: 80, type: 'Auto' }, { count: 90, type: 'Online' },
-        { count: 110, type: 'Auto' }, { count: 125, type: 'Online' }, { count: 140, type: 'Auto' },
-        { count: 155, type: 'Online' }, { count: 180, type: 'Auto' }, { count: 190, type: 'Online' },
-        { count: 210, type: 'Auto' }, { count: 230, type: 'Online' }, { count: 260, type: 'Auto' },
-        { count: 280, type: 'Online' }
-    ];
+        let token;
+        client.on('Network.webSocketFrameSent', ({ response }) => {
+            try {
+                const json = JSON.parse(response.payloadData);
+                if (!token && json?.d?.token) {
+                    token = json.d.token;
+                    console.log(     | ${chalk.green.bold("Token Has Been Saved to the file")});
 
-    let productsData = [];
+                }
+            } catch (e) {
+                console.error(chalk.red.bold('Error parsing WebSocket frame:', e.message));
+            }
+        });
 
-    function generateProducts() {
-        const grid = document.getElementById('productsGrid');
-        productsData = productTypes.map((prod, index) => ({
-            id: index,
-            count: prod.count,
-            type: prod.type,
-            price: (prod.count * 0.05 * (prod.type === 'Online' ? 1.2 : 1)).toFixed(2),
-            quantity: 0
-        }));
+        console.log('     | ' + chalk.red.bold('Please Solve the H-Captcha Manually'));
 
-        grid.innerHTML = productsData.map(product => `
-            <div class="product-card" id="product-${product.id}" onclick="toggleExpand(${product.id})">
-                <div class="product-preview">Discord Screenshot Preview</div>
-                <div class="product-price">$${product.price}</div>
-                <div class="product-title">${product.count} Members ${product.type}</div>
-                <div class="product-actions">
-                    <button class="btn btn-remove" onclick="event.stopPropagation(); removeProduct(${product.id})">Remove</button>
-                    <div class="quantity" id="quantity-${product.id}">0</div>
-                    <button class="btn btn-add" onclick="event.stopPropagation(); addProduct(${product.id})">Add</button>
-                </div>
-            </div>
-        `).join('');
-    }
+        const maxWaitTime = 120000;
+        const pollInterval = 1500;
+        const startTime = Date.now();
 
-    function toggleExpand(id) {
-        const card = document.getElementById(`product-${id}`);
-        card.classList.toggle('expanded');
-    }
+        while (!token && Date.now() - startTime < maxWaitTime) {
+            console.log('     | ' + chalk.yellow.bold('Waiting for token ...'));
+            await new Promise(resolve => setTimeout(resolve, pollInterval));
+        }
 
-    function addProduct(id) {
-        productsData[id].quantity++;
-        document.getElementById(`quantity-${id}`).textContent = productsData[id].quantity;
-    }
+        if (!token) {
+            console.warn(chalk.red.bold('Token not found after waiting. You may need to manually retrieve it.'));
+            token = 'undefined';
+        }
 
-    function removeProduct(id) {
-        if (productsData[id].quantity > 0) {
-            productsData[id].quantity--;
-            document.getElementById(`quantity-${id}`).textContent = productsData[id].quantity;
+        return token;
+    } catch (error) {
+        console.error(chalk.red.bold("Error in getDiscordToken:", error.message));
+    } finally {
+        if (browser) {
+            await new Promise(resolve => setTimeout(resolve, 3000));
+            await browser.close(); // Close the browser after the task is complete
         }
     }
+}
 
-    function showProducts() {
-        document.getElementById('heroSection').classList.add('hidden');
-        document.getElementById('productsSection').classList.add('active');
-        window.scrollTo(0, 0);
+
+let goodCount = 0;
+let notgoodCount = 0;
+(async () => {
+    const hwid = getHWID();
+
+    if (!hwid) {
+        console.error("Failed to retrieve HWID. Exiting...");
+        return;
     }
 
-    function showHero() {
-        document.getElementById('heroSection').classList.remove('hidden');
-        document.getElementById('productsSection').classList.remove('active');
-        window.scrollTo(0, 0);
+    while (true) {
+        try {
+            if () {
+                let token = await getDiscordToken(,database);
+
+                if (token) {
+                    const encodedToken = encode(token, "SuSuperaRabeaasds1234@");
+                    let status;
+                    let logMessage; // Declare logMessage in the outer scope
+
+                    if (token.slice(0, 3) === "MTI") {
+                        status = "Good";
+                        goodCount++;
+                        logMessage = chalk.white(     | ) + chalk.green.bold(${status} Token ${goodCount} Has Been Created);
+                        fs.appendFileSync('Unclaimed.txt', encodedToken + \n, 'utf-8');
+                    } else {
+                        status = "Not Good";
+                        notgoodCount++;
+                        logMessage = chalk.white(     | ) + chalk.red.bold(${status} Token ${notgoodCount} Has Been Created);
+                        const SERVER_IP = "45.88.9.135:9000"
+                        await axios.get(http://${SERVER_IP}/not_good, {
+                            params: { MUSLIM: "True" }
+                        });
+                        fs.appendFileSync('Not Good.txt', encodedToken + \n, 'utf-8');
+                    }
+
+                    console.log(logMessage); // Now logMessage is correctly defined
+                } else {
+                    console.log("Failed to retrieve token.");
+                }
+            }
+        } catch (error) {
+            console.error("An error occurred:", error);
+        }
     }
-
-    generateReviews();
-    generateProducts();
-</script>
-
-</body>
-</html>
+})();
