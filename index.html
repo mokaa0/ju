@@ -1,1 +1,276 @@
-https://spacea.kesug.com/
+import os
+import sys
+import time
+import json
+import random
+import requests
+from datetime import datetime
+from colorama import init, Fore, Style
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import TimeoutException, NoSuchElementException
+
+init(autoreset=True)
+
+class EpicGamesNitroRedeemer:
+    def __init__(self):
+        self.clear_console()
+        self.print_banner()
+        self.accounts_file = "mails.txt"
+        self.driver = None
+        self.session = requests.Session()
+        self.session.headers.update({
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        })
+        
+    def clear_console(self):
+        os.system('cls' if os.name == 'nt' else 'clear')
+    
+    def print_banner(self):
+        banner = f"""
+{Fore.CYAN}
+  ______          _      _____ _                 
+ |  ____|        | |    / ____| |                
+ | |__ __ _ _ __ | |_  | |    | | ___  __ _ _ __ 
+ |  __/ _` | '_ \| __| | |    | |/ _ \/ _` | '__|
+ | | | (_| | | | | |_  | |____| |  __/ (_| | |   
+ |_|  \__,_|_| |_|\__|  \_____|_|\___|\__,_|_|   
+                                                 
+        Epic Games Nitro Code Redeemer
+{Fore.YELLOW}==================================================
+{Style.RESET_ALL}
+"""
+        print(banner)
+    
+    def load_accounts(self):
+        if not os.path.exists(self.accounts_file):
+            print(f"{Fore.RED}Error: {self.accounts_file} not found!")
+            print(f"Please create {self.accounts_file} with email:password format")
+            return []
+        
+        accounts = []
+        try:
+            with open(self.accounts_file, 'r', encoding='utf-8') as f:
+                for line in f:
+                    line = line.strip()
+                    if line and ':' in line:
+                        email, password = line.split(':', 1)
+                        accounts.append({
+                            'email': email.strip(),
+                            'password': password.strip()
+                        })
+            
+            print(f"{Fore.GREEN}Loaded {len(accounts)} accounts from {self.accounts_file}")
+            return accounts
+        except Exception as e:
+            print(f"{Fore.RED}Error loading accounts: {str(e)}")
+            return []
+    
+    def setup_driver(self):
+        options = webdriver.ChromeOptions()
+        options.add_argument('--disable-blink-features=AutomationControlled')
+        options.add_experimental_option("excludeSwitches", ["enable-automation"])
+        options.add_experimental_option('useAutomationExtension', False)
+        options.add_argument('--disable-notifications')
+        options.add_argument('--disable-popup-blocking')
+        
+        try:
+            self.driver = webdriver.Chrome(options=options)
+            self.driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
+            return True
+        except Exception as e:
+            print(f"{Fore.RED}Error setting up Chrome driver: {str(e)}")
+            print(f"{Fore.YELLOW}Please make sure you have Chrome installed and chromedriver in PATH")
+            return False
+    
+    def login_to_epic_games(self, email, password):
+        try:
+            print(f"{Fore.CYAN}Logging in to account: {email}")
+            
+            self.driver.get("https://www.epicgames.com/id/login")
+            time.sleep(3)
+            
+            email_field = WebDriverWait(self.driver, 10).until(
+                EC.presence_of_element_located((By.ID, "email"))
+            )
+            email_field.clear()
+            email_field.send_keys(email)
+            
+            password_field = self.driver.find_element(By.ID, "password")
+            password_field.clear()
+            password_field.send_keys(password)
+            
+            login_button = self.driver.find_element(By.ID, "login")
+            login_button.click()
+            
+            time.sleep(5)
+            
+            try:
+                WebDriverWait(self.driver, 10).until(
+                    EC.presence_of_element_located((By.CLASS_NAME, "user"))
+                )
+                print(f"{Fore.GREEN}Login successful for: {email}")
+                return True
+            except:
+                print(f"{Fore.RED}Login failed for: {email}")
+                return False
+                
+        except Exception as e:
+            print(f"{Fore.RED}Login error for {email}: {str(e)}")
+            return False
+    
+    def search_and_redeem_nitro(self, email):
+        try:
+            print(f"{Fore.CYAN}Searching for Epic Games store...")
+            
+            self.driver.get("https://store.epicgames.com/en-US/")
+            time.sleep(3)
+            
+            search_box = WebDriverWait(self.driver, 10).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, "input[data-testid='search-input']"))
+            )
+            
+            print(f"{Fore.CYAN}Typing 'Nitro' in search...")
+            search_box.clear()
+            search_box.send_keys("Nitro")
+            search_box.send_keys(Keys.RETURN)
+            
+            time.sleep(3)
+            
+            print(f"{Fore.CYAN}Looking for redeem/get button...")
+            
+            time.sleep(2)
+            
+            try:
+                get_buttons = self.driver.find_elements(By.XPATH, "//button[contains(., 'Get') or contains(., 'GET') or contains(., 'get')]")
+                if get_buttons:
+                    print(f"{Fore.CYAN}Found {len(get_buttons)} 'Get' buttons")
+                    
+                    for btn in get_buttons[:3]:
+                        try:
+                            btn.click()
+                            print(f"{Fore.GREEN}Clicked Get button")
+                            time.sleep(2)
+                            
+                            try:
+                                confirm_buttons = self.driver.find_elements(By.XPATH, "//button[contains(., 'Place Order') or contains(., 'Confirm')]")
+                                for confirm_btn in confirm_buttons:
+                                    try:
+                                        confirm_btn.click()
+                                        print(f"{Fore.GREEN}Confirmed purchase")
+                                        time.sleep(2)
+                                    except:
+                                        continue
+                            except:
+                                pass
+                                
+                        except:
+                            continue
+                    
+                    return True
+                else:
+                    print(f"{Fore.YELLOW}No 'Get' buttons found on search results")
+                    return False
+                    
+            except Exception as e:
+                print(f"{Fore.YELLOW}Error finding buttons: {str(e)}")
+                return False
+                
+        except Exception as e:
+            print(f"{Fore.RED}Search error: {str(e)}")
+            return False
+    
+    def process_account(self, account):
+        email = account['email']
+        password = account['password']
+        
+        print(f"\n{Fore.MAGENTA}Processing account: {email}")
+        print(f"{Fore.YELLOW}Time started: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        
+        if not self.setup_driver():
+            return False
+        
+        try:
+            if not self.login_to_epic_games(email, password):
+                return False
+            
+            if self.search_and_redeem_nitro(email):
+                current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                print(f"{Fore.YELLOW}[{current_time}] {Fore.GREEN}Successfully redeemed code | {email}")
+                return True
+            else:
+                print(f"{Fore.RED}Failed to redeem code for: {email}")
+                return False
+                
+        finally:
+            if self.driver:
+                self.driver.quit()
+                self.driver = None
+    
+    def run(self):
+        accounts = self.load_accounts()
+        
+        if not accounts:
+            print(f"{Fore.RED}No accounts to process. Exiting...")
+            time.sleep(3)
+            return
+        
+        print(f"\n{Fore.CYAN}Starting redemption process...")
+        print(f"{Fore.YELLOW}Total accounts: {len(accounts)}")
+        print(f"{Fore.YELLOW}Press Ctrl+C to stop\n")
+        
+        successful = 0
+        failed = 0
+        
+        for i, account in enumerate(accounts, 1):
+            print(f"\n{Fore.CYAN}Account {i}/{len(accounts)}")
+            
+            try:
+                if self.process_account(account):
+                    successful += 1
+                else:
+                    failed += 1
+                    
+                if i < len(accounts):
+                    print(f"{Fore.YELLOW}Waiting 3 seconds before next account...")
+                    time.sleep(3)
+                    
+            except KeyboardInterrupt:
+                print(f"\n{Fore.YELLOW}Process interrupted by user")
+                break
+            except Exception as e:
+                print(f"{Fore.RED}Unexpected error: {str(e)}")
+                failed += 1
+        
+        print(f"\n{Fore.CYAN}Process completed!")
+        print(f"{Fore.GREEN}Successful: {successful}")
+        print(f"{Fore.RED}Failed: {failed}")
+        print(f"{Fore.YELLOW}Total processed: {successful + failed}")
+        
+        if self.driver:
+            self.driver.quit()
+
+def main():
+    print(f"{Fore.YELLOW}Starting Epic Games Nitro Redeemer...")
+    
+    redeemer = EpicGamesNitroRedeemer()
+    
+    try:
+        redeemer.run()
+    except KeyboardInterrupt:
+        print(f"\n{Fore.YELLOW}Program stopped by user")
+    except Exception as e:
+        print(f"{Fore.RED}Fatal error: {str(e)}")
+    finally:
+        print(f"\n{Fore.CYAN}Program finished")
+        
+        try:
+            input(f"{Fore.YELLOW}Press Enter to exit...")
+        except:
+            pass
+
+if __name__ == "__main__":
+    main()
