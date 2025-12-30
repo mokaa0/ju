@@ -190,7 +190,7 @@ class DiscordAccountCreator:
             
             try:
                 self.driver = webdriver.Chrome(options=chrome_options)
-                self.wait = WebDriverWait(self.driver, 15)
+                self.wait = WebDriverWait(self.driver, 20)  # زيادة وقت الانتظار
                 # Remove webdriver痕迹
                 self.driver.execute_cdp_cmd('Page.addScriptToEvaluateOnNewDocument', {
                     'source': '''
@@ -478,22 +478,51 @@ class DiscordAccountCreator:
                 return False
             
             # Open Discord registration page
+            print(Fore.CYAN + "[ + ] Opening Discord registration page...")
             self.driver.get("https://discord.com/register")
-            time.sleep(3)
+            time.sleep(5)  # زيادة وقت الانتظار للتحميل
             
             print(Fore.CYAN + "[ + ] Page loaded, starting form filling...")
             
-            # Fill email quickly
+            # Fill email quickly - باستخدام طرق متعددة للعثور على الحقل
             try:
+                # محاولة 1: البحث بالـ XPATH المباشر
                 email_field = self.wait.until(
                     EC.presence_of_element_located((By.XPATH, "//input[@type='email']"))
                 )
                 self.type_text_fast(email_field, self.current_email, delay=0.01)
+                print(Fore.GREEN + "[ + ] Email filled successfully")
                 time.sleep(0.2)
             except Exception as e:
-                print(Fore.RED + f"[ ! ] Could not fill email: {e}")
-                self.driver.quit()
-                return False
+                # محاولة 2: البحث بـ name
+                try:
+                    email_field = self.driver.find_element(By.NAME, "email")
+                    self.type_text_fast(email_field, self.current_email, delay=0.01)
+                    print(Fore.GREEN + "[ + ] Email filled (by name)")
+                    time.sleep(0.2)
+                except:
+                    # محاولة 3: البحث بـ CSS selector
+                    try:
+                        email_field = self.driver.find_element(By.CSS_SELECTOR, "input[type='email']")
+                        self.type_text_fast(email_field, self.current_email, delay=0.01)
+                        print(Fore.GREEN + "[ + ] Email filled (by CSS)")
+                        time.sleep(0.2)
+                    except:
+                        # محاولة 4: استخدام JavaScript لإدخال البريد
+                        try:
+                            self.driver.execute_script("""
+                                var inputs = document.querySelectorAll('input[type="email"]');
+                                if(inputs.length > 0) {
+                                    inputs[0].value = arguments[0];
+                                    inputs[0].dispatchEvent(new Event('input', {bubbles: true}));
+                                }
+                            """, self.current_email)
+                            print(Fore.GREEN + "[ + ] Email filled (JavaScript)")
+                            time.sleep(0.2)
+                        except Exception as e:
+                            print(Fore.RED + f"[ ! ] Could not fill email: {str(e)[:100]}")
+                            self.driver.quit()
+                            return False
             
             # Fill display name
             try:
@@ -501,7 +530,12 @@ class DiscordAccountCreator:
                 self.type_text_fast(display_name_field, self.current_displayname, delay=0.01)
                 time.sleep(0.2)
             except:
-                pass
+                try:
+                    display_name_field = self.driver.find_element(By.CSS_SELECTOR, "input[name='global_name']")
+                    self.type_text_fast(display_name_field, self.current_displayname, delay=0.01)
+                    time.sleep(0.2)
+                except:
+                    print(Fore.YELLOW + "[ ! ] Could not find display name field, skipping...")
             
             # Fill username
             try:
@@ -509,9 +543,14 @@ class DiscordAccountCreator:
                 self.type_text_fast(username_field, self.current_username, delay=0.01)
                 time.sleep(0.2)
             except Exception as e:
-                print(Fore.RED + f"[ ! ] Could not fill username: {e}")
-                self.driver.quit()
-                return False
+                try:
+                    username_field = self.driver.find_element(By.CSS_SELECTOR, "input[name='username']")
+                    self.type_text_fast(username_field, self.current_username, delay=0.01)
+                    time.sleep(0.2)
+                except:
+                    print(Fore.RED + f"[ ! ] Could not fill username: {str(e)[:100]}")
+                    self.driver.quit()
+                    return False
             
             # Fill password
             try:
@@ -519,9 +558,14 @@ class DiscordAccountCreator:
                 self.type_text_fast(password_field, self.current_password, delay=0.01)
                 time.sleep(0.2)
             except Exception as e:
-                print(Fore.RED + f"[ ! ] Could not fill password: {e}")
-                self.driver.quit()
-                return False
+                try:
+                    password_field = self.driver.find_element(By.CSS_SELECTOR, "input[type='password']")
+                    self.type_text_fast(password_field, self.current_password, delay=0.01)
+                    time.sleep(0.2)
+                except:
+                    print(Fore.RED + f"[ ! ] Could not fill password: {str(e)[:100]}")
+                    self.driver.quit()
+                    return False
             
             # Select birth date quickly
             year, month, day = self.generate_random_date()
