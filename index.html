@@ -190,7 +190,7 @@ class DiscordAccountCreator:
             
             try:
                 self.driver = webdriver.Chrome(options=chrome_options)
-                self.wait = WebDriverWait(self.driver, 20)  # زيادة وقت الانتظار
+                self.wait = WebDriverWait(self.driver, 20)
                 # Remove webdriver痕迹
                 self.driver.execute_cdp_cmd('Page.addScriptToEvaluateOnNewDocument', {
                     'source': '''
@@ -480,13 +480,12 @@ class DiscordAccountCreator:
             # Open Discord registration page
             print(Fore.CYAN + "[ + ] Opening Discord registration page...")
             self.driver.get("https://discord.com/register")
-            time.sleep(5)  # زيادة وقت الانتظار للتحميل
+            time.sleep(5)
             
             print(Fore.CYAN + "[ + ] Page loaded, starting form filling...")
             
-            # Fill email quickly - باستخدام طرق متعددة للعثور على الحقل
+            # Fill email quickly
             try:
-                # محاولة 1: البحث بالـ XPATH المباشر
                 email_field = self.wait.until(
                     EC.presence_of_element_located((By.XPATH, "//input[@type='email']"))
                 )
@@ -494,21 +493,18 @@ class DiscordAccountCreator:
                 print(Fore.GREEN + "[ + ] Email filled successfully")
                 time.sleep(0.2)
             except Exception as e:
-                # محاولة 2: البحث بـ name
                 try:
                     email_field = self.driver.find_element(By.NAME, "email")
                     self.type_text_fast(email_field, self.current_email, delay=0.01)
                     print(Fore.GREEN + "[ + ] Email filled (by name)")
                     time.sleep(0.2)
                 except:
-                    # محاولة 3: البحث بـ CSS selector
                     try:
                         email_field = self.driver.find_element(By.CSS_SELECTOR, "input[type='email']")
                         self.type_text_fast(email_field, self.current_email, delay=0.01)
                         print(Fore.GREEN + "[ + ] Email filled (by CSS)")
                         time.sleep(0.2)
                     except:
-                        # محاولة 4: استخدام JavaScript لإدخال البريد
                         try:
                             self.driver.execute_script("""
                                 var inputs = document.querySelectorAll('input[type="email"]');
@@ -601,29 +597,6 @@ class DiscordAccountCreator:
             
             time.sleep(0.5)
             
-            # Wait for CAPTCHA
-            print(rainbow_text("\n[ ! ] Please Solve the captcha"))
-            
-            captcha_timeout = 30
-            start_time = time.time()
-            
-            while time.time() - start_time < captcha_timeout:
-                remaining = int(captcha_timeout - (time.time() - start_time))
-                print(Fore.YELLOW + f"\r[ ! ] Waiting for CAPTCHA... {remaining}s remaining | Press Enter when solved", end="")
-                
-                try:
-                    import msvcrt
-                    if msvcrt.kbhit():
-                        if msvcrt.getch() == b'\r':
-                            break
-                except:
-                    pass
-                
-                time.sleep(0.5)
-            
-            print("\n" + rainbow_text("[ + ] Captcha Solved"))
-            time.sleep(1)
-            
             # Click Terms of Service
             try:
                 tos_xpaths = [
@@ -662,20 +635,30 @@ class DiscordAccountCreator:
             
             time.sleep(0.5)
             
-            # Click Create Account button - باستخدام الطريقة الجديدة
-            print(Fore.CYAN + "[ + ] Clicking Create Account button...")
+            # ⚡ **الآن يضغط على زر Create Account مباشرة - قبل الكابتشا**
+            print(Fore.CYAN + "[ + ] Clicking Create Account button NOW (before CAPTCHA)...")
             
             if not self.click_create_account_button_fixed():
                 print(Fore.RED + "[ ! ] Failed to click Create Account button")
                 self.driver.quit()
                 return False
             
+            time.sleep(2)
+            
+            print(Fore.GREEN + "[ + ] Create Account button clicked! Now CAPTCHA will appear...")
+            
+            # 🔴 **الآن ينتظر لحل الكابتشا بعد الضغط على الزر**
+            print(rainbow_text("\n[ ! ] CAPTCHA will appear now - Please Solve it"))
+            print(Fore.YELLOW + "After solving CAPTCHA, press Enter to continue...")
+            
+            # انتظار المستخدم لحل الكابتشا
+            input(Fore.CYAN + "\n[ + ] Press Enter after solving CAPTCHA: ")
+            
+            print("\n" + rainbow_text("[ ✓ ] CAPTCHA Solved! Continuing..."))
+            time.sleep(2)
+            
+            # انتظر تحميل الصفحة بعد حل الكابتشا
             time.sleep(3)
-            
-            print(Fore.GREEN + "[ + ] Account creation submitted!")
-            
-            # انتظر تحميل الصفحة التالية
-            time.sleep(5)
             
             # محاولة استخراج التوكن
             print(Fore.CYAN + "[ + ] Attempting to extract Discord token...")
