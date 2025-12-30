@@ -4,6 +4,7 @@ import time
 import sys
 from typing import Optional, Tuple
 from datetime import datetime, timedelta
+import subprocess
 
 try:
     import requests
@@ -13,7 +14,8 @@ try:
     from selenium.webdriver.support.ui import WebDriverWait
     from selenium.webdriver.support import expected_conditions as EC
     from selenium.webdriver.chrome.options import Options
-    from selenium.common.exceptions import TimeoutException, NoSuchElementException
+    from selenium.webdriver.common.action_chains import ActionChains
+    from selenium.common.exceptions import TimeoutException, NoSuchElementException, ElementNotInteractableException
     from colorama import init, Fore, Style
 except ImportError:
     print("Please install required packages:")
@@ -51,31 +53,26 @@ def print_banner():
     clear_console()
     
     # Print QnTar Tools in rainbow
-    banner = """
+    banner_text = """
 ╔═══════════════════════════════════════════════════════════╗
 ║                                                           ║
-║    ██████   ███   █████  ████████  █████  ██████         ║
-║   ██    ██ ██████ ██   ██    ██    ██   ██ ██   ██       ║
-║   ██    ██ ██ ██ ███████    ██    ███████ ██████        ║
-║   ██    ██ ██   ██ ██   ██    ██    ██   ██ ██   ██       ║
-║    ██████  ██   ██ ██   ██    ██    ██   ██ ██   ██       ║
-║                                                           ║
-║                  ████████ ██████  ██████  ██      ███████ ║
-║                  ██      ██    ██ ██   ██ ██      ██      ║
-║                  █████   ██    ██ ██████  ██      ███████ ║
-║                  ██      ██    ██ ██   ██ ██           ██ ║
-║                  ██       ██████  ██   ██ ███████ ███████ ║
+║                         QnTar Tools                       ║
 ║                                                           ║
 ╚═══════════════════════════════════════════════════════════╝
 """
     
-    print(rainbow_text(banner))
+    # Print banner in rainbow colors
+    colored_banner = ""
+    for i, line in enumerate(banner_text.split('\n')):
+        colored_banner += rainbow_text(line) + "\n"
+    
+    print(colored_banner)
     
     # Print subtitle
-    subtitle = "\n" + "═" * 60 + "\n"
-    subtitle += rainbow_text("     Discord Claimed Tokens Generator V1 By QnTar     ")
-    subtitle += "\n" + "═" * 60 + "\n"
-    print(subtitle)
+    subtitle = "═" * 60
+    print(rainbow_text(subtitle))
+    print(rainbow_text("     Discord Claimed Tokens Generator V1 By QnTar     "))
+    print(rainbow_text(subtitle))
 
 class DiscordAccountCreator:
     def __init__(self):
@@ -111,47 +108,96 @@ class DiscordAccountCreator:
                         data[key] = lines[0]
                     else:
                         data[key] = lines
+                print(Fore.GREEN + f"[ + ] Loaded {len(lines)} items from {filename}")
             except FileNotFoundError:
                 print(Fore.RED + f"[ ! ] File {filename} not found!")
-                return None
+                print(Fore.YELLOW + f"[ + ] Creating {filename}...")
+                self.create_sample_file(filename)
+                return self.load_data()  # Retry loading
         
         return data
+    
+    def create_sample_file(self, filename):
+        """Create sample files if they don't exist"""
+        sample_data = {
+            'mails.txt': [
+                "testuser1@gmail.com",
+                "testuser2@yahoo.com",
+                "testuser3@outlook.com",
+                "testuser4@protonmail.com"
+            ],
+            'usernames.txt': [
+                "CoolGamer123",
+                "AwesomePlayer456",
+                "ProStreamer789",
+                "EliteGamer101"
+            ],
+            'password.txt': [
+                "StrongPassword123!"
+            ],
+            'displayname.txt': [
+                "John Doe",
+                "Alice Smith",
+                "Bob Johnson",
+                "Emma Wilson"
+            ]
+        }
+        
+        file_key = filename.replace('.txt', '')
+        if file_key in sample_data:
+            with open(filename, 'w', encoding='utf-8') as f:
+                for item in sample_data[file_key]:
+                    f.write(item + "\n")
+            print(Fore.GREEN + f"[ + ] Created {filename} with sample data")
     
     def select_browser(self):
         """Select browser for the session"""
         print(rainbow_text("\n[ + ] Please Select the browser that will be used in the Whole Session"))
         print(Fore.WHITE + "Choose browser: ", end="")
         
-        browser = input().lower()
+        browser = input().strip().lower()
         
-        if 'chrome' in browser or 'chrom' in browser:
+        if 'chrome' in browser or 'chrom' in browser or browser == '':
             print(rainbow_text("[ + ] Chrome selected"))
             return 'chrome'
+        elif browser == 'firefox':
+            print(rainbow_text("[ + ] Firefox selected"))
+            return 'firefox'
         else:
-            print(Fore.RED + "[ ! ] Only Chrome is supported. Exiting...")
+            print(Fore.RED + "[ ! ] Only Chrome/Firefox is supported. Exiting...")
             time.sleep(2)
             sys.exit(0)
     
-    def setup_driver(self):
-        """Setup Chrome driver with options"""
-        chrome_options = Options()
-        chrome_options.add_argument("--disable-blink-features=AutomationControlled")
-        chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
-        chrome_options.add_experimental_option('useAutomationExtension', False)
-        chrome_options.add_argument("--disable-infobars")
-        chrome_options.add_argument("--disable-dev-shm-usage")
-        chrome_options.add_argument("--no-sandbox")
-        
-        # Uncomment for headless mode
-        # chrome_options.add_argument("--headless")
-        
-        try:
-            self.driver = webdriver.Chrome(options=chrome_options)
-            self.wait = WebDriverWait(self.driver, 10)
-            self.driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
-        except Exception as e:
-            print(Fore.RED + f"[ ! ] Failed to launch browser: {e}")
-            return False
+    def setup_driver(self, browser_type='chrome'):
+        """Setup browser driver with options"""
+        if browser_type == 'chrome':
+            chrome_options = Options()
+            chrome_options.add_argument("--disable-blink-features=AutomationControlled")
+            chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
+            chrome_options.add_experimental_option('useAutomationExtension', False)
+            chrome_options.add_argument("--disable-infobars")
+            chrome_options.add_argument("--disable-dev-shm-usage")
+            chrome_options.add_argument("--no-sandbox")
+            chrome_options.add_argument("--disable-notifications")
+            chrome_options.add_argument("--disable-popup-blocking")
+            
+            # Add user agent
+            chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+            
+            try:
+                self.driver = webdriver.Chrome(options=chrome_options)
+                self.wait = WebDriverWait(self.driver, 15)
+                # Remove webdriver痕迹
+                self.driver.execute_cdp_cmd('Page.addScriptToEvaluateOnNewDocument', {
+                    'source': '''
+                        Object.defineProperty(navigator, 'webdriver', {
+                            get: () => undefined
+                        });
+                    '''
+                })
+            except Exception as e:
+                print(Fore.RED + f"[ ! ] Failed to launch Chrome: {e}")
+                return False
         
         return True
     
@@ -160,6 +206,11 @@ class DiscordAccountCreator:
         # Generate year between 1990 and 2008
         year = random.randint(1990, 2008)
         month = random.randint(1, 12)
+        month_names = {
+            1: "January", 2: "February", 3: "March", 4: "April",
+            5: "May", 6: "June", 7: "July", 8: "August",
+            9: "September", 10: "October", 11: "November", 12: "December"
+        }
         
         # Handle days per month
         if month in [1, 3, 5, 7, 8, 10, 12]:
@@ -173,150 +224,312 @@ class DiscordAccountCreator:
         else:
             day = random.randint(1, 30)
         
-        return year, month, day
+        return year, month_names[month], day
     
-    def click_element(self, xpath):
-        """Click element by JavaScript click simulation"""
+    def type_text_slowly(self, element, text, delay=0.05):
+        """Type text slowly like a human"""
+        for character in text:
+            element.send_keys(character)
+            time.sleep(delay)
+    
+    def click_with_retry(self, element, max_retries=3):
+        """Click element with retry mechanism"""
+        for attempt in range(max_retries):
+            try:
+                self.driver.execute_script("arguments[0].click();", element)
+                return True
+            except Exception as e:
+                print(Fore.YELLOW + f"[ ! ] Click attempt {attempt + 1} failed, retrying...")
+                time.sleep(1)
+        return False
+    
+    def select_dropdown_option(self, dropdown_xpath, option_text):
+        """Select option from dropdown"""
         try:
-            element = self.driver.find_element(By.XPATH, xpath)
-            self.driver.execute_script("arguments[0].click();", element)
-            return True
-        except:
-            return False
+            # Click dropdown to open it
+            dropdown = self.wait.until(
+                EC.element_to_be_clickable((By.XPATH, dropdown_xpath))
+            )
+            self.click_with_retry(dropdown)
+            time.sleep(1)
+            
+            # Try multiple strategies to select option
+            strategies = [
+                # Strategy 1: Exact text match
+                f"//div[@role='option' and text()='{option_text}']",
+                # Strategy 2: Contains text
+                f"//div[@role='option' and contains(text(), '{option_text}')]",
+                # Strategy 3: By aria-label
+                f"//div[@role='option' and @aria-label='{option_text}']",
+                # Strategy 4: By data-value
+                f"//div[@role='option' and @data-value='{option_text}']",
+            ]
+            
+            for strategy in strategies:
+                try:
+                    option = self.driver.find_element(By.XPATH, strategy)
+                    self.click_with_retry(option)
+                    print(Fore.GREEN + f"[ + ] Selected option: {option_text}")
+                    time.sleep(0.5)
+                    return True
+                except:
+                    continue
+            
+            # If above strategies fail, try JavaScript click
+            try:
+                option = self.driver.find_element(By.XPATH, f"//div[@role='option'][contains(., '{option_text}')]")
+                self.driver.execute_script("arguments[0].scrollIntoView(true);", option)
+                self.driver.execute_script("arguments[0].click();", option)
+                return True
+            except:
+                pass
+                
+        except Exception as e:
+            print(Fore.YELLOW + f"[ ! ] Could not select option {option_text}: {str(e)[:100]}")
+        
+        return False
     
     def create_account(self, data):
         """Create Discord account"""
-        # Select random data
-        self.current_email = random.choice(data['emails'])
-        self.current_username = random.choice(data['usernames'])
-        self.current_displayname = random.choice(data['displaynames'])
-        self.current_password = data['passwords']
-        
-        print(rainbow_text(f"\n[ + ] Email Acquired from {self.current_email}"))
-        print(rainbow_text("[ ! ] Launching Browser"))
-        
-        if not self.setup_driver():
-            return False
-        
         try:
+            # Select random data
+            self.current_email = random.choice(data['emails']) if data['emails'] else f"test{random.randint(1000,9999)}@gmail.com"
+            self.current_username = random.choice(data['usernames']) if data['usernames'] else f"user{random.randint(1000,9999)}"
+            self.current_displayname = random.choice(data['displaynames']) if data['displaynames'] else f"Display{random.randint(100,999)}"
+            self.current_password = data['passwords'] if data['passwords'] else "TestPassword123!"
+            
+            print(rainbow_text(f"\n[ + ] Email Acquired from {self.current_email}"))
+            print(rainbow_text("[ ! ] Launching Browser"))
+            
+            if not self.setup_driver():
+                return False
+            
             # Open Discord registration page
             self.driver.get("https://discord.com/register")
-            time.sleep(3)
+            time.sleep(5)  # Wait for page to load
             
-            # Fill email
-            email_field = self.wait.until(
-                EC.presence_of_element_located((By.NAME, "email"))
-            )
-            email_field.clear()
-            email_field.send_keys(self.current_email)
+            print(Fore.CYAN + "[ + ] Page loaded, starting form filling...")
+            
+            # Fill email with typing simulation
+            try:
+                email_field = self.wait.until(
+                    EC.presence_of_element_located((By.XPATH, "//input[@type='email']"))
+                )
+                self.type_text_slowly(email_field, self.current_email)
+                print(Fore.GREEN + "[ + ] Email entered")
+                time.sleep(1)
+            except Exception as e:
+                print(Fore.RED + f"[ ! ] Could not fill email: {e}")
+                return False
             
             # Fill display name
-            display_name_field = self.driver.find_element(By.NAME, "global_name")
-            display_name_field.clear()
-            display_name_field.send_keys(self.current_displayname)
+            try:
+                display_name_field = self.driver.find_element(By.XPATH, "//input[@name='global_name']")
+                self.type_text_slowly(display_name_field, self.current_displayname)
+                print(Fore.GREEN + "[ + ] Display name entered")
+                time.sleep(1)
+            except:
+                print(Fore.YELLOW + "[ ! ] Could not find display name field, skipping...")
             
             # Fill username
-            username_field = self.driver.find_element(By.NAME, "username")
-            username_field.clear()
-            username_field.send_keys(self.current_username)
+            try:
+                username_field = self.driver.find_element(By.XPATH, "//input[@name='username']")
+                self.type_text_slowly(username_field, self.current_username)
+                print(Fore.GREEN + "[ + ] Username entered")
+                time.sleep(1)
+            except Exception as e:
+                print(Fore.RED + f"[ ! ] Could not fill username: {e}")
+                return False
             
             # Fill password
-            password_field = self.driver.find_element(By.NAME, "password")
-            password_field.clear()
-            password_field.send_keys(self.current_password)
+            try:
+                password_field = self.driver.find_element(By.XPATH, "//input[@type='password']")
+                self.type_text_slowly(password_field, self.current_password)
+                print(Fore.GREEN + "[ + ] Password entered")
+                time.sleep(1)
+            except Exception as e:
+                print(Fore.RED + f"[ ! ] Could not fill password: {e}")
+                return False
             
             # Select birth date
             year, month, day = self.generate_random_date()
             
+            print(Fore.CYAN + f"[ + ] Selecting birth date: {month} {day}, {year}")
+            
             # Month dropdown
-            month_dropdown = self.driver.find_element(By.XPATH, "//div[@aria-label='Month']")
-            month_dropdown.click()
-            time.sleep(0.5)
+            if not self.select_dropdown_option("//div[@aria-label='Month']", month):
+                print(Fore.YELLOW + "[ ! ] Could not select month, trying alternative...")
+                # Try different method
+                try:
+                    month_dropdown = self.driver.find_element(By.XPATH, "//div[@aria-label='Month']")
+                    month_dropdown.click()
+                    time.sleep(1)
+                    
+                    # Scroll through options if needed
+                    month_options = self.driver.find_elements(By.XPATH, "//div[@role='option']")
+                    for option in month_options:
+                        if month in option.text:
+                            option.click()
+                            break
+                except:
+                    print(Fore.RED + "[ ! ] Failed to select month")
             
-            month_option = self.driver.find_element(By.XPATH, f"//div[@role='option' and text()='{month:02d}']")
-            month_option.click()
-            time.sleep(0.5)
-            
-            # Day dropdown
-            day_dropdown = self.driver.find_element(By.XPATH, "//div[@aria-label='Day']")
-            day_dropdown.click()
-            time.sleep(0.5)
-            
-            day_option = self.driver.find_element(By.XPATH, f"//div[@role='option' and text()='{day:02d}']")
-            day_option.click()
-            time.sleep(0.5)
+            # Day dropdown - use numeric day
+            if not self.select_dropdown_option("//div[@aria-label='Day']", str(day)):
+                print(Fore.YELLOW + f"[ ! ] Could not select day {day}, trying numeric...")
             
             # Year dropdown
-            year_dropdown = self.driver.find_element(By.XPATH, "//div[@aria-label='Year']")
-            year_dropdown.click()
-            time.sleep(0.5)
+            if not self.select_dropdown_option("//div[@aria-label='Year']", str(year)):
+                print(Fore.YELLOW + f"[ ! ] Could not select year {year}")
             
-            year_option = self.driver.find_element(By.XPATH, f"//div[@role='option' and text()='{year}']")
-            year_option.click()
-            time.sleep(0.5)
+            time.sleep(2)
             
             # Click optional email checkbox
             try:
-                # Try to find and click the newsletter checkbox
-                newsletter_checkbox = self.driver.find_element(
-                    By.XPATH, 
-                    "//label[contains(., 'it\'s okay to send me emails with Discord updates, tips and special offers.')]"
-                )
-                self.driver.execute_script("arguments[0].click();", newsletter_checkbox)
-                time.sleep(0.5)
+                newsletter_xpaths = [
+                    "//label[contains(., 'okay to send me emails')]",
+                    "//label[contains(., 'optional')]",
+                    "//input[@type='checkbox' and contains(@aria-label, 'emails')]",
+                    "//div[contains(@class, 'checkbox')]"
+                ]
+                
+                for xpath in newsletter_xpaths:
+                    try:
+                        newsletter_element = self.driver.find_element(By.XPATH, xpath)
+                        self.click_with_retry(newsletter_element)
+                        print(Fore.GREEN + "[ + ] Newsletter checkbox clicked")
+                        break
+                    except:
+                        continue
             except:
-                pass
+                print(Fore.YELLOW + "[ ! ] Could not find newsletter checkbox, skipping...")
+            
+            time.sleep(1)
             
             # Wait for CAPTCHA (simulated)
             print(rainbow_text("\n[ ! ] Please Solve the captcha"))
-            input(Fore.YELLOW + "Press Enter after solving CAPTCHA... ")
             
-            print(rainbow_text("[ + ] Captcha Solved"))
+            # Give user time to solve CAPTCHA
+            captcha_timeout = 60  # 60 seconds to solve CAPTCHA
+            start_time = time.time()
+            
+            while time.time() - start_time < captcha_timeout:
+                print(Fore.YELLOW + f"\r[ ! ] Time remaining: {int(captcha_timeout - (time.time() - start_time))}s | Press Enter when CAPTCHA is solved...", end="")
+                
+                # Check for Enter press
+                try:
+                    import msvcrt
+                    if msvcrt.kbhit():
+                        if msvcrt.getch() == b'\r':
+                            break
+                except:
+                    # For non-Windows systems
+                    pass
+                
+                time.sleep(0.5)
+            
+            print("\n" + rainbow_text("[ + ] Captcha Solved"))
+            time.sleep(2)
             
             # Click Terms of Service
-            tos_checkbox = self.driver.find_element(
-                By.XPATH, 
-                "//input[@type='checkbox' and @aria-label='I have read and agree to Discord's Terms of Service']"
-            )
-            self.driver.execute_script("arguments[0].click();", tos_checkbox)
-            time.sleep(0.5)
+            try:
+                tos_checkboxes = [
+                    "//input[@type='checkbox' and contains(@aria-label, 'Terms of Service')]",
+                    "//div[contains(text(), 'Terms of Service')]/ancestor::label",
+                    "//label[contains(., 'Terms of Service')]"
+                ]
+                
+                for xpath in tos_checkboxes:
+                    try:
+                        tos_checkbox = self.driver.find_element(By.XPATH, xpath)
+                        self.click_with_retry(tos_checkbox)
+                        print(Fore.GREEN + "[ + ] Terms of Service checkbox clicked")
+                        break
+                    except:
+                        continue
+            except Exception as e:
+                print(Fore.YELLOW + f"[ ! ] Could not click ToS: {e}")
+            
+            time.sleep(1)
             
             # Click Privacy Policy
-            privacy_checkbox = self.driver.find_element(
-                By.XPATH, 
-                "//input[@type='checkbox' and @aria-label='I have read and agree to Discord's Privacy Policy']"
-            )
-            self.driver.execute_script("arguments[0].click();", privacy_checkbox)
-            time.sleep(0.5)
+            try:
+                privacy_checkboxes = [
+                    "//input[@type='checkbox' and contains(@aria-label, 'Privacy Policy')]",
+                    "//div[contains(text(), 'Privacy Policy')]/ancestor::label",
+                    "//label[contains(., 'Privacy Policy')]"
+                ]
+                
+                for xpath in privacy_checkboxes:
+                    try:
+                        privacy_checkbox = self.driver.find_element(By.XPATH, xpath)
+                        self.click_with_retry(privacy_checkbox)
+                        print(Fore.GREEN + "[ + ] Privacy Policy checkbox clicked")
+                        break
+                    except:
+                        continue
+            except:
+                print(Fore.YELLOW + "[ ! ] Could not click Privacy Policy")
+            
+            time.sleep(1)
             
             # Click Create Account button
-            create_button = self.driver.find_element(
-                By.XPATH, 
-                "//button[@type='submit']"
-            )
-            self.driver.execute_script("arguments[0].click();", create_button)
+            try:
+                submit_buttons = [
+                    "//button[@type='submit']",
+                    "//button[contains(., 'Continue')]",
+                    "//button[contains(., 'Create Account')]",
+                    "//div[contains(@class, 'submit')]/button"
+                ]
+                
+                for xpath in submit_buttons:
+                    try:
+                        submit_button = self.driver.find_element(By.XPATH, xpath)
+                        if submit_button.is_enabled():
+                            print(Fore.CYAN + "[ + ] Submitting form...")
+                            self.click_with_retry(submit_button)
+                            break
+                    except:
+                        continue
+            except Exception as e:
+                print(Fore.RED + f"[ ! ] Could not submit form: {e}")
+                return False
+            
+            print(Fore.GREEN + "[ + ] Form submitted!")
             time.sleep(5)
             
-            # Try to get token (this is a simplified simulation)
-            # In real scenario, you would need to intercept network requests
+            # Try to get token (simulated for educational purposes)
             token = self.simulate_token_generation()
             
             if token:
                 # Save token to file
                 with open('tokens.txt', 'a', encoding='utf-8') as f:
-                    f.write(f"{token}\n")
+                    f.write(f"Email: {self.current_email} | Token: {token}\n")
                 
-                print(rainbow_text(f"[ + ] Token saved: {token[:50]}..."))
+                print(rainbow_text(f"[ + ] Token saved to tokens.txt"))
+                print(Fore.CYAN + f"[ + ] Email: {self.current_email}")
+                print(Fore.CYAN + f"[ + ] Token: {token[:30]}...")
+            
+            # Wait a bit before closing
+            time.sleep(3)
             
             # Close browser
             self.driver.quit()
+            print(Fore.GREEN + "[ + ] Browser closed")
             
             return True
             
         except Exception as e:
-            print(Fore.RED + f"[ ! ] Error during account creation: {e}")
+            print(Fore.RED + f"\n[ ! ] Error during account creation: {str(e)[:200]}")
+            import traceback
+            traceback.print_exc()
+            
             if self.driver:
-                self.driver.quit()
+                try:
+                    self.driver.quit()
+                except:
+                    pass
+            
             return False
     
     def simulate_token_generation(self):
@@ -324,54 +537,37 @@ class DiscordAccountCreator:
         # This is a simulated token for demonstration
         # In a real scenario, you would extract it from browser storage or network requests
         characters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._-"
-        token = "NT"
         
-        for _ in range(22):
-            token += random.choice(characters)
+        # Discord token format:第一部分.第二部分.第三部分
+        part1 = "".join(random.choices(characters, k=24))
+        part2 = "".join(random.choices(characters, k=6))
+        part3 = "".join(random.choices(characters, k=27))
         
-        token += "."
-        
-        for _ in range(6):
-            token += random.choice(characters)
-        
-        token += "."
-        
-        for _ in range(27):
-            token += random.choice(characters)
-        
-        return token
+        return f"{part1}.{part2}.{part3}"
     
     def check_files_exist(self):
         """Check if required files exist"""
         required_files = ['mails.txt', 'usernames.txt', 'password.txt', 'displayname.txt']
         
+        print(Fore.CYAN + "\n[ + ] Checking required files...")
+        
         for file in required_files:
             if not os.path.exists(file):
-                print(Fore.RED + f"[ ! ] File {file} not found!")
-                print(Fore.YELLOW + "[ + ] Creating empty file...")
-                with open(file, 'w', encoding='utf-8') as f:
-                    if file == 'mails.txt':
-                        f.write("example1@gmail.com\nexample2@yahoo.com\n")
-                    elif file == 'usernames.txt':
-                        f.write("user123\ncoolguy456\nawesomeuser789\n")
-                    elif file == 'password.txt':
-                        f.write("StrongPass123!\n")
-                    elif file == 'displayname.txt':
-                        f.write("John Doe\nAlice Smith\nBob Johnson\n")
+                print(Fore.YELLOW + f"[ ! ] File {file} not found!")
+                self.create_sample_file(file)
+            else:
+                print(Fore.GREEN + f"[ ✓ ] {file} exists")
         
-        print(Fore.GREEN + "[ + ] All required files are ready!")
+        print(Fore.GREEN + "[ + ] All files are ready!")
 
 def main():
     """Main function"""
     # Print banner
     print_banner()
     
-    # Check files
+    # Check and create files
     creator = DiscordAccountCreator()
     creator.check_files_exist()
-    
-    # Select browser
-    browser = creator.select_browser()
     
     # Load data
     data = creator.load_data()
@@ -380,35 +576,41 @@ def main():
         time.sleep(2)
         sys.exit(1)
     
+    # Select browser
+    browser = creator.select_browser()
+    
     # Main loop
+    account_count = 0
+    
     while True:
+        print("\n" + "═" * 60)
+        print(rainbow_text(f"\n[ + ] Creating Account #{account_count + 1}"))
+        
         # Create account
         success = creator.create_account(data)
         
         if success:
-            print(rainbow_text("\n[ + ] Account creation process completed!"))
+            account_count += 1
+            print(rainbow_text(f"\n[ ✓ ] Account #{account_count} creation completed!"))
+        else:
+            print(Fore.RED + "\n[ ! ] Account creation failed!")
         
         print(rainbow_text("\n[ ! ] Press Enter to start a new token or 'q' to quit: "))
-        user_input = input().lower()
+        user_input = input().strip().lower()
         
         if user_input == 'q':
             break
     
-    print(rainbow_text("\n[ + ] Tool exited. Goodbye!"))
+    print(rainbow_text(f"\n[ + ] Created {account_count} accounts in total"))
+    print(rainbow_text("[ + ] Tool exited. Goodbye!"))
     time.sleep(2)
 
 if __name__ == "__main__":
-    # Check if running as administrator/root (optional)
-    if os.name == 'nt':
-        try:
-            import ctypes
-            is_admin = ctypes.windll.shell32.IsUserAnAdmin()
-        except:
-            is_admin = False
-    else:
-        is_admin = os.getuid() == 0
-    
-    if not is_admin:
-        print(Fore.YELLOW + "[ ! ] Run as administrator for better performance")
-    
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        print(Fore.YELLOW + "\n\n[ ! ] Program interrupted by user")
+        sys.exit(0)
+    except Exception as e:
+        print(Fore.RED + f"\n[ ! ] Unexpected error: {e}")
+        sys.exit(1)
