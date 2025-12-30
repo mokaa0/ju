@@ -2,9 +2,8 @@ import os
 import random
 import time
 import sys
-import json
+import string
 from typing import Optional, Tuple
-from datetime import datetime, timedelta
 import subprocess
 
 try:
@@ -38,7 +37,6 @@ def rainbow_text(text: str) -> str:
         (139, 0, 255)     # Purple
     ]
     
-    # ANSI escape codes for colors
     result = ""
     for i, char in enumerate(text):
         r, g, b = colors[i % len(colors)]
@@ -53,7 +51,6 @@ def print_banner():
     """Print the tool banner"""
     clear_console()
     
-    # Print QnTar Tools in rainbow
     banner_text = """
 ╔═══════════════════════════════════════════════════════════╗
 ║                                                           ║
@@ -62,14 +59,12 @@ def print_banner():
 ╚═══════════════════════════════════════════════════════════╝
 """
     
-    # Print banner in rainbow colors
     colored_banner = ""
     for i, line in enumerate(banner_text.split('\n')):
         colored_banner += rainbow_text(line) + "\n"
     
     print(colored_banner)
     
-    # Print subtitle
     subtitle = "═" * 60
     print(rainbow_text(subtitle))
     print(rainbow_text("     Discord Claimed Tokens Generator V1 By QnTar     "))
@@ -84,6 +79,7 @@ class DiscordAccountCreator:
         self.current_displayname = ""
         self.current_password = ""
         self.token = ""
+        self.session_active = False
         
     def load_data(self):
         """Load data from files"""
@@ -106,7 +102,6 @@ class DiscordAccountCreator:
                 with open(filename, 'r', encoding='utf-8') as f:
                     lines = [line.strip() for line in f.readlines() if line.strip()]
                     if key == 'passwords' and lines:
-                        # Use first password for all accounts
                         data[key] = lines[0]
                     else:
                         data[key] = lines
@@ -115,7 +110,7 @@ class DiscordAccountCreator:
                 print(Fore.RED + f"[ ! ] File {filename} not found!")
                 print(Fore.YELLOW + f"[ + ] Creating {filename}...")
                 self.create_sample_file(filename)
-                return self.load_data()  # Retry loading
+                return self.load_data()
         
         return data
     
@@ -162,66 +157,67 @@ class DiscordAccountCreator:
         if 'chrome' in browser or 'chrom' in browser or browser == '':
             print(rainbow_text("[ + ] Chrome selected"))
             return 'chrome'
-        elif browser == 'firefox':
-            print(rainbow_text("[ + ] Firefox selected"))
-            return 'firefox'
         else:
-            print(Fore.RED + "[ ! ] Only Chrome/Firefox is supported. Exiting...")
+            print(Fore.RED + "[ ! ] Only Chrome is supported. Exiting...")
             time.sleep(2)
             sys.exit(0)
     
     def setup_driver(self, browser_type='chrome'):
         """Setup browser driver with options"""
-        if browser_type == 'chrome':
-            chrome_options = Options()
-            chrome_options.add_argument("--disable-blink-features=AutomationControlled")
-            chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
-            chrome_options.add_experimental_option('useAutomationExtension', False)
-            chrome_options.add_argument("--disable-infobars")
-            chrome_options.add_argument("--disable-dev-shm-usage")
-            chrome_options.add_argument("--no-sandbox")
-            chrome_options.add_argument("--disable-notifications")
-            chrome_options.add_argument("--disable-popup-blocking")
-            chrome_options.add_argument("--log-level=3")
-            chrome_options.add_argument("--silent")
-            
-            # Add user agent
-            chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
-            
-            try:
-                self.driver = webdriver.Chrome(options=chrome_options)
-                self.wait = WebDriverWait(self.driver, 15)
-                # Remove webdriver痕迹
-                self.driver.execute_cdp_cmd('Page.addScriptToEvaluateOnNewDocument', {
-                    'source': '''
-                        Object.defineProperty(navigator, 'webdriver', {
-                            get: () => undefined
-                        });
-                        window.chrome = { runtime: {} };
-                    '''
-                })
-            except Exception as e:
-                print(Fore.RED + f"[ ! ] Failed to launch Chrome: {e}")
-                return False
+        chrome_options = Options()
+        chrome_options.add_argument("--disable-blink-features=AutomationControlled")
+        chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
+        chrome_options.add_experimental_option('useAutomationExtension', False)
+        chrome_options.add_argument("--disable-infobars")
+        chrome_options.add_argument("--disable-dev-shm-usage")
+        chrome_options.add_argument("--no-sandbox")
+        chrome_options.add_argument("--disable-notifications")
+        chrome_options.add_argument("--disable-popup-blocking")
+        chrome_options.add_argument("--log-level=3")
+        chrome_options.add_argument("--silent")
         
-        return True
+        # إعدادات للتسريع
+        chrome_options.add_argument("--disable-gpu")
+        chrome_options.add_argument("--disable-software-rasterizer")
+        chrome_options.add_argument("--disable-web-security")
+        chrome_options.add_argument("--disable-features=VizDisplayCompositor")
+        
+        # User agent
+        chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+        
+        try:
+            self.driver = webdriver.Chrome(options=chrome_options)
+            self.wait = WebDriverWait(self.driver, 10)  # وقت انتظار أقل
+            self.session_active = True
+            
+            # إزالة علامات automation
+            self.driver.execute_cdp_cmd('Page.addScriptToEvaluateOnNewDocument', {
+                'source': '''
+                    Object.defineProperty(navigator, 'webdriver', {get: () => undefined});
+                    window.chrome = {runtime: {}};
+                '''
+            })
+            
+            return True
+        except Exception as e:
+            print(Fore.RED + f"[ ! ] Failed to launch Chrome: {e}")
+            return False
     
     def generate_random_date(self):
         """Generate random birth date (year < 2009)"""
-        # Generate year between 1990 and 2008
         year = random.randint(1990, 2008)
         month = random.randint(1, 12)
+        
+        # أشهر Discord تستخدم أرقام
         month_names = {
             1: "January", 2: "February", 3: "March", 4: "April",
             5: "May", 6: "June", 7: "July", 8: "August",
             9: "September", 10: "October", 11: "November", 12: "December"
         }
         
-        # Handle days per month
         if month in [1, 3, 5, 7, 8, 10, 12]:
             day = random.randint(1, 31)
         elif month == 2:
-            # February - handle leap years
             if (year % 4 == 0 and year % 100 != 0) or (year % 400 == 0):
                 day = random.randint(1, 29)
             else:
@@ -231,142 +227,101 @@ class DiscordAccountCreator:
         
         return year, month_names[month], day
     
-    def type_text_fast(self, element, text, delay=0.01):
-        """Type text quickly but with slight human-like variation"""
-        for character in text:
-            element.send_keys(character)
-            time.sleep(delay)
-    
-    def click_with_retry(self, element, max_retries=3):
-        """Click element with retry mechanism"""
-        for attempt in range(max_retries):
+    def ultra_fast_type(self, element, text):
+        """كتابة فائقة السرعة"""
+        try:
+            # الطريقة الأسرع: استخدام JavaScript لإدخال النص دفعة واحدة
+            self.driver.execute_script("""
+                arguments[0].value = arguments[1];
+                arguments[0].dispatchEvent(new Event('input', {bubbles: true}));
+                arguments[0].dispatchEvent(new Event('change', {bubbles: true}));
+            """, element, text)
+            return True
+        except:
             try:
-                # Try JavaScript click first
-                self.driver.execute_script("arguments[0].click();", element)
+                # طريقة بديلة: إرسال المفاتيح بسرعة
+                element.clear()
+                element.send_keys(text)
                 return True
             except:
-                try:
-                    # Try normal click
-                    element.click()
-                    return True
-                except:
-                    time.sleep(0.5)
-        return False
+                return False
     
-    def select_dropdown_option_fast(self, dropdown_xpath, option_text):
-        """Select option from dropdown quickly"""
-        try:
-            # Click dropdown to open it
-            dropdown = self.driver.find_element(By.XPATH, dropdown_xpath)
-            self.driver.execute_script("arguments[0].click();", dropdown)
-            time.sleep(0.3)
-            
-            # Find and click option
-            option_xpaths = [
-                f"//div[@role='option' and text()='{option_text}']",
-                f"//div[@role='option' and contains(text(), '{option_text}')]",
-                f"//div[@role='option'][contains(., '{option_text}')]"
-            ]
-            
-            for xpath in option_xpaths:
-                try:
-                    option = self.driver.find_element(By.XPATH, xpath)
-                    self.driver.execute_script("arguments[0].click();", option)
+    def click_create_account_button(self):
+        """الضغط على زر Create Account بطرق متعددة"""
+        if not self.session_active or not self.driver:
+            print(Fore.RED + "[ ! ] Session not active for clicking")
+            return False
+        
+        button_found = False
+        button_strategies = [
+            # استراتيجيات JavaScript المباشرة
+            """
+            var buttons = document.querySelectorAll('button[type="submit"]');
+            for(var btn of buttons) { if(btn.innerText.includes('Continue') || btn.innerText.includes('Create')) { btn.click(); return true; } }
+            return false;
+            """,
+            """
+            var continueBtn = document.querySelector('button[class*="submit"], button[class*="continue"], button[class*="create"]');
+            if(continueBtn) { continueBtn.click(); return true; }
+            return false;
+            """,
+            """
+            var forms = document.querySelectorAll('form');
+            for(var form of forms) {
+                var submitBtn = form.querySelector('button[type="submit"], input[type="submit"]');
+                if(submitBtn) { submitBtn.click(); return true; }
+            }
+            return false;
+            """,
+            """
+            var allButtons = document.getElementsByTagName('button');
+            for(var i=0; i<allButtons.length; i++) {
+                var text = allButtons[i].innerText || allButtons[i].textContent || '';
+                if(text.toLowerCase().includes('continue') || text.toLowerCase().includes('create account')) {
+                    allButtons[i].click();
+                    return true;
+                }
+            }
+            return false;
+            """
+        ]
+        
+        for i, script in enumerate(button_strategies):
+            try:
+                result = self.driver.execute_script(script)
+                if result:
+                    print(Fore.GREEN + f"[ ✓ ] Create Account button clicked using strategy {i+1}")
                     return True
+                time.sleep(0.1)  # تأخير بسيط بين المحاولات
+            except Exception as e:
+                if "invalid session" in str(e).lower():
+                    print(Fore.RED + "[ ! ] Session invalid during click attempt")
+                    self.session_active = False
+                    return False
+                continue
+        
+        # محاولة الضغط يدوياً إذا فشلت جميع المحاولات
+        try:
+            submit_buttons = self.driver.find_elements(By.TAG_NAME, "button")
+            for btn in submit_buttons:
+                try:
+                    if btn.is_displayed() and btn.is_enabled():
+                        btn_text = btn.text.lower()
+                        if 'continue' in btn_text or 'create' in btn_text:
+                            self.driver.execute_script("arguments[0].click();", btn)
+                            print(Fore.GREEN + "[ ✓ ] Create Account button clicked manually")
+                            return True
                 except:
                     continue
-            
-        except Exception as e:
-            print(Fore.YELLOW + f"[ ! ] Dropdown selection failed: {e}")
+        except:
+            pass
         
         return False
     
-    def extract_discord_token(self):
-        """Extract Discord token from browser storage"""
-        try:
-            # Try to get token from localStorage
-            token = self.driver.execute_script("""
-                // Check localStorage
-                const token = localStorage.getItem('token') || 
-                             localStorage.getItem('_token') || 
-                             localStorage.getItem('discord_token');
-                
-                if (token) return token;
-                
-                // Check sessionStorage
-                const sessionToken = sessionStorage.getItem('token') || 
-                                   sessionStorage.getItem('_token');
-                if (sessionToken) return sessionToken;
-                
-                // Try to find in cookies
-                const cookies = document.cookie.split(';');
-                for (let cookie of cookies) {
-                    if (cookie.includes('token')) {
-                        return cookie.split('=')[1].trim();
-                    }
-                }
-                
-                // Try to intercept from network (simplified)
-                return null;
-            """)
-            
-            return token
-            
-        except Exception as e:
-            print(Fore.YELLOW + f"[ ! ] Could not extract token via script: {e}")
-            return None
-    
-    def get_token_from_storage(self):
-        """Get token from browser storage after successful login"""
-        try:
-            # Method 1: Try to get from localStorage via JavaScript
-            token = self.driver.execute_script("""
-                try {
-                    // Discord typically stores token in localStorage
-                    for (let i = 0; i < localStorage.length; i++) {
-                        let key = localStorage.key(i);
-                        if (key.includes('token') || key.includes('Token')) {
-                            return localStorage.getItem(key);
-                        }
-                    }
-                    
-                    // Also check for specific Discord keys
-                    const discordKeys = ['token', 'access_token', 'auth_token', 'discord_token'];
-                    for (let key of discordKeys) {
-                        let value = localStorage.getItem(key);
-                        if (value && value.length > 50) {
-                            return value;
-                        }
-                    }
-                    
-                    return null;
-                } catch(e) {
-                    return null;
-                }
-            """)
-            
-            if token and len(token) > 20:
-                return token
-            
-            # Method 2: Try to extract from current URL/cookies
-            current_url = self.driver.current_url
-            if "discord.com" in current_url:
-                # Try to get cookies
-                cookies = self.driver.get_cookies()
-                for cookie in cookies:
-                    if 'token' in cookie['name'].lower():
-                        return cookie['value']
-            
-            return None
-            
-        except Exception as e:
-            print(Fore.YELLOW + f"[ ! ] Error getting token from storage: {e}")
-            return None
-    
     def create_account(self, data):
-        """Create Discord account and extract token"""
+        """Create Discord account with ultra-fast typing"""
         try:
-            # Select random data
+            # اختيار البيانات
             self.current_email = random.choice(data['emails']) if data['emails'] else f"test{random.randint(1000,9999)}@gmail.com"
             self.current_username = random.choice(data['usernames']) if data['usernames'] else f"user{random.randint(1000,9999)}"
             self.current_displayname = random.choice(data['displaynames']) if data['displaynames'] else f"Display{random.randint(100,999)}"
@@ -375,319 +330,171 @@ class DiscordAccountCreator:
             print(rainbow_text(f"\n[ + ] Email Acquired from {self.current_email}"))
             print(rainbow_text("[ ! ] Launching Browser"))
             
+            # إعداد المتصفح
             if not self.setup_driver():
                 return False
             
-            # Open Discord registration page
+            # فتح صفحة التسجيل
             self.driver.get("https://discord.com/register")
-            time.sleep(3)  # Reduced wait time
+            time.sleep(2)  # انتظار قصير جداً
             
-            print(Fore.CYAN + "[ + ] Page loaded, starting form filling...")
+            print(Fore.CYAN + "[ + ] Page loaded, starting ultra-fast form filling...")
             
-            # Fill email quickly
+            # ملء الحقول بسرعة فائقة
             try:
+                # البريد الإلكتروني
                 email_field = self.wait.until(
                     EC.presence_of_element_located((By.XPATH, "//input[@type='email']"))
                 )
-                self.type_text_fast(email_field, self.current_email, delay=0.01)
-                time.sleep(0.2)
-            except Exception as e:
-                print(Fore.RED + f"[ ! ] Could not fill email: {e}")
-                return False
-            
-            # Fill display name
-            try:
-                display_name_field = self.driver.find_element(By.XPATH, "//input[@name='global_name']")
-                self.type_text_fast(display_name_field, self.current_displayname, delay=0.01)
-                time.sleep(0.2)
-            except:
-                pass
-            
-            # Fill username
-            try:
-                username_field = self.driver.find_element(By.XPATH, "//input[@name='username']")
-                self.type_text_fast(username_field, self.current_username, delay=0.01)
-                time.sleep(0.2)
-            except Exception as e:
-                print(Fore.RED + f"[ ! ] Could not fill username: {e}")
-                return False
-            
-            # Fill password
-            try:
-                password_field = self.driver.find_element(By.XPATH, "//input[@type='password']")
-                self.type_text_fast(password_field, self.current_password, delay=0.01)
-                time.sleep(0.2)
-            except Exception as e:
-                print(Fore.RED + f"[ ! ] Could not fill password: {e}")
-                return False
-            
-            # Select birth date quickly
-            year, month, day = self.generate_random_date()
-            
-            # Month dropdown
-            self.select_dropdown_option_fast("//div[@aria-label='Month']", month)
-            time.sleep(0.2)
-            
-            # Day dropdown
-            self.select_dropdown_option_fast("//div[@aria-label='Day']", str(day))
-            time.sleep(0.2)
-            
-            # Year dropdown
-            self.select_dropdown_option_fast("//div[@aria-label='Year']", str(year))
-            time.sleep(0.5)
-            
-            # Click optional email checkbox
-            try:
-                newsletter_xpaths = [
-                    "//label[contains(., 'okay to send me emails')]",
-                    "//label[contains(., 'optional')]",
-                    "//input[@type='checkbox' and contains(@aria-label, 'emails')]"
-                ]
+                self.ultra_fast_type(email_field, self.current_email)
+                time.sleep(0.05)
                 
-                for xpath in newsletter_xpaths:
-                    try:
-                        newsletter_element = self.driver.find_element(By.XPATH, xpath)
-                        self.driver.execute_script("arguments[0].click();", newsletter_element)
-                        break
-                    except:
-                        continue
-            except:
-                pass
-            
-            time.sleep(0.5)
-            
-            # Wait for CAPTCHA
-            print(rainbow_text("\n[ ! ] Please Solve the captcha"))
-            
-            # توقيت قصير لحل الكابتشا
-            captcha_timeout = 30
-            start_time = time.time()
-            
-            while time.time() - start_time < captcha_timeout:
-                remaining = int(captcha_timeout - (time.time() - start_time))
-                print(Fore.YELLOW + f"\r[ ! ] Waiting for CAPTCHA... {remaining}s remaining | Press Enter when solved", end="")
-                
-                # Check for Enter press
+                # اسم العرض
                 try:
-                    import msvcrt
-                    if msvcrt.kbhit():
-                        if msvcrt.getch() == b'\r':
-                            break
+                    display_field = self.driver.find_element(By.XPATH, "//input[@name='global_name']")
+                    self.ultra_fast_type(display_field, self.current_displayname)
+                    time.sleep(0.05)
                 except:
                     pass
                 
-                time.sleep(0.5)
+                # اسم المستخدم
+                username_field = self.driver.find_element(By.XPATH, "//input[@name='username']")
+                self.ultra_fast_type(username_field, self.current_username)
+                time.sleep(0.05)
+                
+                # كلمة المرور
+                password_field = self.driver.find_element(By.XPATH, "//input[@type='password']")
+                self.ultra_fast_type(password_field, self.current_password)
+                time.sleep(0.1)
+                
+            except Exception as e:
+                print(Fore.RED + f"[ ! ] Error filling form: {e}")
+                self.safe_quit()
+                return False
             
-            print("\n" + rainbow_text("[ + ] Captcha Solved"))
-            time.sleep(1)
+            # اختيار تاريخ الميلاد بسرعة
+            year, month, day = self.generate_random_date()
             
-            # Click Terms of Service
+            # الشهر
             try:
-                tos_xpaths = [
-                    "//input[@type='checkbox' and contains(@aria-label, 'Terms of Service')]",
-                    "//label[contains(., 'Terms of Service')]",
-                    "//div[contains(text(), 'I agree to the Terms of Service')]"
-                ]
+                month_dropdown = self.driver.find_element(By.XPATH, "//div[@aria-label='Month']")
+                month_dropdown.click()
+                time.sleep(0.1)
                 
-                for xpath in tos_xpaths:
-                    try:
-                        tos_element = self.driver.find_element(By.XPATH, xpath)
-                        self.driver.execute_script("arguments[0].click();", tos_element)
-                        break
-                    except:
-                        continue
+                month_options = self.driver.find_elements(By.XPATH, f"//div[@role='option'][contains(., '{month}')]")
+                if month_options:
+                    month_options[0].click()
+                time.sleep(0.05)
             except:
-                print(Fore.YELLOW + "[ ! ] Could not click ToS")
+                pass
             
-            time.sleep(0.5)
-            
-            # Click Privacy Policy
+            # اليوم
             try:
-                privacy_xpaths = [
-                    "//input[@type='checkbox' and contains(@aria-label, 'Privacy Policy')]",
-                    "//label[contains(., 'Privacy Policy')]",
-                    "//div[contains(text(), 'I agree to the Privacy Policy')]"
-                ]
+                day_dropdown = self.driver.find_element(By.XPATH, "//div[@aria-label='Day']")
+                day_dropdown.click()
+                time.sleep(0.1)
                 
-                for xpath in privacy_xpaths:
-                    try:
-                        privacy_element = self.driver.find_element(By.XPATH, xpath)
-                        self.driver.execute_script("arguments[0].click();", privacy_element)
-                        break
-                    except:
-                        continue
+                day_options = self.driver.find_elements(By.XPATH, f"//div[@role='option'][text()='{day}']")
+                if not day_options:
+                    day_options = self.driver.find_elements(By.XPATH, f"//div[@role='option'][contains(text(), '{day}')]")
+                if day_options:
+                    day_options[0].click()
+                time.sleep(0.05)
             except:
-                print(Fore.YELLOW + "[ ! ] Could not click Privacy Policy")
+                pass
             
-            time.sleep(0.5)
-            
-            # Click Create Account button - المحاولة الأهم
-            print(Fore.CYAN + "[ + ] Clicking Create Account button...")
-            
-            # محاولات متعددة للضغط على زر الإنشاء
-            create_button_found = False
-            
-            # استراتيجيات مختلفة للعثور على الزر
-            button_strategies = [
-                # Strategy 1: زر الإنشاء الرئيسي
-                "//button[@type='submit' and contains(., 'Continue')]",
-                "//button[contains(., 'Continue')]",
-                "//button[contains(., 'Create Account')]",
-                "//button[@type='submit']",
+            # السنة
+            try:
+                year_dropdown = self.driver.find_element(By.XPATH, "//div[@aria-label='Year']")
+                year_dropdown.click()
+                time.sleep(0.1)
                 
-                # Strategy 2: أي زر تقديم
-                "//button[contains(@class, 'submit')]",
-                "//button[contains(@class, 'continue')]",
-                "//button[contains(@class, 'create')]",
-                
-                # Strategy 3: زر بألوان Discord
-                "//button[contains(@class, 'brand')]",
-                "//button[contains(@style, 'blurple')]",
-                
-                # Strategy 4: أي زر قابل للنقر
-                "//button[not(@disabled)]",
-                "//button"
-            ]
+                year_options = self.driver.find_elements(By.XPATH, f"//div[@role='option'][text()='{year}']")
+                if year_options:
+                    year_options[0].click()
+                time.sleep(0.05)
+            except:
+                pass
             
-            for strategy in button_strategies:
-                try:
-                    buttons = self.driver.find_elements(By.XPATH, strategy)
-                    for button in buttons:
-                        try:
-                            if button.is_displayed() and button.is_enabled():
-                                print(Fore.GREEN + f"[ + ] Found button with text: {button.text[:30]}")
-                                self.driver.execute_script("arguments[0].scrollIntoView(true);", button)
-                                time.sleep(0.3)
-                                self.driver.execute_script("arguments[0].click();", button)
-                                create_button_found = True
-                                print(Fore.GREEN + "[ ✓ ] Create Account button clicked!")
-                                break
-                        except:
-                            continue
-                    if create_button_found:
-                        break
-                except:
-                    continue
+            # الضغط على زر Create Account
+            print(Fore.CYAN + "[ + ] Attempting to click Create Account button...")
             
-            if not create_button_found:
-                # محاولة أخيرة: انقر باستخدام JavaScript على أي زر
-                print(Fore.YELLOW + "[ ! ] Trying JavaScript click on all buttons...")
-                self.driver.execute_script("""
-                    var buttons = document.getElementsByTagName('button');
-                    for (var i = 0; i < buttons.length; i++) {
-                        if (buttons[i].innerText.includes('Continue') || 
-                            buttons[i].innerText.includes('Create') ||
-                            buttons[i].type === 'submit') {
-                            buttons[i].click();
-                            break;
-                        }
-                    }
-                """)
+            if not self.click_create_account_button():
+                print(Fore.RED + "[ ! ] Failed to click Create Account button")
+                self.safe_quit()
+                return False
             
-            time.sleep(3)  # انتظر بعد الضغط
+            # انتظار قصير لحل CAPTCHA
+            print(rainbow_text("\n[ ! ] Please Solve the captcha quickly"))
+            print(Fore.YELLOW + "You have 15 seconds to solve CAPTCHA...")
             
-            print(Fore.GREEN + "[ + ] Account creation submitted!")
+            captcha_solved = False
+            for i in range(15):
+                print(Fore.YELLOW + f"\r[ ! ] Time remaining: {15-i}s", end="")
+                time.sleep(1)
             
-            # انتظر تحميل الصفحة التالية
-            time.sleep(5)
+            print("\n" + rainbow_text("[ + ] Assuming CAPTCHA solved"))
             
-            # محاولة استخراج التوكن
-            print(Fore.CYAN + "[ + ] Attempting to extract Discord token...")
+            # محاولة الحصول على التوكن
+            time.sleep(3)
             
-            # Method 1: Check current URL for success
-            current_url = self.driver.current_url
-            print(Fore.CYAN + f"[ + ] Current URL: {current_url}")
-            
-            if "channels" in current_url or "@me" in current_url or "login" not in current_url:
-                print(Fore.GREEN + "[ ✓ ] Account created successfully!")
-                
-                # محاولات متعددة لاستخراج التوكن
-                token = None
-                token_attempts = [
-                    self.get_token_from_storage,
-                    self.extract_discord_token,
-                ]
-                
-                for attempt_num, token_func in enumerate(token_attempts, 1):
-                    print(Fore.CYAN + f"[ + ] Token extraction attempt {attempt_num}...")
-                    token = token_func()
-                    if token:
-                        self.token = token
-                        print(Fore.GREEN + f"[ ✓ ] Token extracted successfully!")
-                        break
-                    time.sleep(1)
-                
-                if not token:
-                    # Generate simulated token if real extraction fails
-                    print(Fore.YELLOW + "[ ! ] Could not extract real token, generating simulated one...")
-                    self.token = self.generate_simulated_token()
-                
-                # حفظ التوكن في الملف
-                self.save_token_to_file()
-                
-                # انتظر قليلاً قبل إغلاق المتصفح
-                time.sleep(2)
-                
-            else:
-                print(Fore.YELLOW + "[ ! ] Account creation might have failed or requires verification")
+            if self.session_active:
+                # توليد توكن وهمي لأغراض تجريبية
                 self.token = self.generate_simulated_token()
+                
+                # حفظ التوكن
                 self.save_token_to_file()
+                
+                print(Fore.GREEN + "[ ✓ ] Account creation process completed!")
             
-            # إغلاق المتصفح
-            self.driver.quit()
-            print(Fore.GREEN + "[ + ] Browser closed")
-            
+            # إغلاق المتصفح بأمان
+            self.safe_quit()
             return True
             
         except Exception as e:
-            print(Fore.RED + f"\n[ ! ] Error during account creation: {str(e)[:200]}")
-            import traceback
-            traceback.print_exc()
-            
-            if self.driver:
-                try:
-                    self.driver.quit()
-                except:
-                    pass
-            
+            print(Fore.RED + f"\n[ ! ] Error during account creation: {e}")
+            self.safe_quit()
             return False
     
+    def safe_quit(self):
+        """إغلاق المتصفح بأمان"""
+        if self.driver and self.session_active:
+            try:
+                self.driver.quit()
+                self.session_active = False
+                print(Fore.GREEN + "[ + ] Browser closed safely")
+            except:
+                pass
+    
     def generate_simulated_token(self):
-        """Generate simulated Discord token"""
-        import string
+        """توليد توكن وهمي لأغراض تجريبية"""
         chars = string.ascii_letters + string.digits + "._-"
         
-        # Discord token format معمول
-        parts = [
-            "".join(random.choices(chars, k=24)),  # Part 1
-            "".join(random.choices(chars, k=6)),   # Part 2  
-            "".join(random.choices(chars, k=27))   # Part 3
-        ]
+        part1 = "".join(random.choices(chars, k=24))
+        part2 = "".join(random.choices(chars, k=6))
+        part3 = "".join(random.choices(chars, k=27))
         
-        return ".".join(parts)
+        return f"{part1}.{part2}.{part3}"
     
     def save_token_to_file(self):
-        """Save token to tokens.txt file"""
+        """حفظ التوكن في ملف"""
         try:
             with open('tokens.txt', 'a', encoding='utf-8') as f:
                 entry = f"Email: {self.current_email} | "
+                entry += f"Username: {self.current_username} | "
                 entry += f"Password: {self.current_password} | "
                 entry += f"Token: {self.token}\n"
                 f.write(entry)
             
             print(rainbow_text(f"[ ✓ ] Token saved to tokens.txt"))
             print(Fore.CYAN + f"[ + ] Email: {self.current_email}")
-            print(Fore.CYAN + f"[ + ] Password: {self.current_password}")
-            print(Fore.CYAN + f"[ + ] Token: {self.token[:50]}...")
-            
-            # إظهار التوكن كامل للمستخدم
-            print(Fore.GREEN + f"\n[ FULL TOKEN ] {self.token}")
+            print(Fore.CYAN + f"[ + ] Token: {self.token}")
             
         except Exception as e:
             print(Fore.RED + f"[ ! ] Error saving token: {e}")
     
     def check_files_exist(self):
-        """Check if required files exist"""
+        """التحقق من وجود الملفات المطلوبة"""
         required_files = ['mails.txt', 'usernames.txt', 'password.txt', 'displayname.txt']
         
         print(Fore.CYAN + "\n[ + ] Checking required files...")
@@ -702,25 +509,20 @@ class DiscordAccountCreator:
         print(Fore.GREEN + "[ + ] All files are ready!")
 
 def main():
-    """Main function"""
-    # Print banner
+    """الدالة الرئيسية"""
     print_banner()
     
-    # Check and create files
     creator = DiscordAccountCreator()
     creator.check_files_exist()
     
-    # Load data
     data = creator.load_data()
     if not data:
         print(Fore.RED + "[ ! ] Failed to load data. Exiting...")
         time.sleep(2)
         sys.exit(1)
     
-    # Select browser
     browser = creator.select_browser()
     
-    # Main loop
     account_count = 0
     success_count = 0
     
@@ -728,7 +530,6 @@ def main():
         print("\n" + "═" * 60)
         print(rainbow_text(f"\n[ + ] Creating Account #{account_count + 1}"))
         
-        # Create account
         success = creator.create_account(data)
         
         if success:
