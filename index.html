@@ -1,1 +1,80 @@
+import customtkinter as ctk
+from tkinter import ttk
 
+ctk.set_appearance_mode("dark")
+ctk.set_default_color_theme("dark-blue")
+
+app = ctk.CTk()
+app.title("Discord Token Checker - by RANKTW")
+app.geometry("900x520")
+app.resizable(False, False)
+
+# ===== Header =====
+header = ctk.CTkFrame(app, height=60)
+header.pack(fill="x", padx=10, pady=10)
+
+title = ctk.CTkLabel(
+    header,
+    text="Discord Token Checker  •  Work: 5  Locked: 0  Invalid: 996",
+    font=("Arial", 16, "bold")
+)
+title.pack(side="left", padx=20)
+
+input_btn = ctk.CTkButton(header, text="Input Tokens", width=120)
+input_btn.pack(side="right", padx=20)
+
+# ===== Main Frame =====
+main = ctk.CTkFrame(app)
+main.pack(fill="both", expand=True, padx=10, pady=5)
+
+# ===== Left Panel =====
+left = ctk.CTkFrame(main, width=220)
+left.pack(side="left", fill="y", padx=10, pady=10)
+
+ctk.CTkLabel(left, text="Outputs", font=("Arial", 14, "bold")).pack(anchor="w", padx=10, pady=5)
+
+def checkbox(text):
+    return ctk.CTkCheckBox(left, text=text)
+
+checkbox("Work").pack(anchor="w", padx=10, pady=5)
+checkbox("Locked").pack(anchor="w", padx=10, pady=5)
+checkbox("Invalid").pack(anchor="w", padx=10, pady=5)
+
+ctk.CTkButton(left, text="Custom Filter").pack(fill="x", padx=10, pady=10)
+ctk.CTkButton(left, text="Advanced Settings").pack(fill="x", padx=10)
+
+# ===== Table Area =====
+right = ctk.CTkFrame(main)
+right.pack(side="right", fill="both", expand=True, padx=10, pady=10)
+
+columns = ("Discrim", "Username", "Created Date", "Verified", "Info", "Token")
+
+table = ttk.Treeview(right, columns=columns, show="headings", height=12)
+
+for col in columns:
+    table.heading(col, text=col)
+    table.column(col, width=120, anchor="center")
+
+table.pack(fill="both", expand=True)
+
+# Sample rows (شكل فقط)
+sample_data = [
+    ("0", "Humility", "Jul 28, 2025", "Email ✔", "", "MTM5OT..."),
+    ("0", "Mycernius", "Jul 28, 2025", "Email ✔", "", "MTM5OT..."),
+    ("0", "wfqwfz", "Jul 28, 2025", "Email ✔", "", "MTM5OT...")
+]
+
+for row in sample_data:
+    table.insert("", "end", values=row)
+
+# ===== Bottom =====
+bottom = ctk.CTkFrame(app, height=60)
+bottom.pack(fill="x", padx=10, pady=10)
+
+check_btn = ctk.CTkButton(bottom, text="Check", height=35)
+check_btn.pack(side="left", padx=20)
+
+table_btn = ctk.CTkButton(bottom, text="Table", height=35)
+table_btn.pack(side="right", padx=20)
+
+app.mainloop()
