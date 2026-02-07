@@ -1,80 +1,150 @@
 import customtkinter as ctk
-from tkinter import ttk
+from tkinter import filedialog
+from pymongo import MongoClient
+from dotenv import load_dotenv
+import os
+import requests
+import threading
+import time
+
+# ================= CONFIG =================
+PASSWORD = "teamcore079873393575£!?@&£;:/"
+
+load_dotenv()
+MONGO_URI = os.getenv("MONGO_URI")
+DB_NAME = os.getenv("DB_NAME")
+COLLECTION = os.getenv("COLLECTION")
+HOST_URL = os.getenv("HOST_URL")
+
+client = MongoClient(MONGO_URI)
+db = client[DB_NAME]
+col = db[COLLECTION]
 
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("dark-blue")
 
+# ================= APP =================
 app = ctk.CTk()
-app.title("Discord Token Checker - by RANKTW")
-app.geometry("900x520")
-app.resizable(False, False)
+app.geometry("1000x600")
+app.title("Host Controller")
 
-# ===== Header =====
-header = ctk.CTkFrame(app, height=60)
-header.pack(fill="x", padx=10, pady=10)
+# ================= LOG BOX =================
+def log(msg, color="white"):
+    colors = {
+        "green": "#00ff88",
+        "red": "#ff5555",
+        "yellow": "#ffaa00",
+        "white": "#ffffff"
+    }
+    log_box.configure(state="normal")
+    log_box.insert("end", msg + "\n")
+    start = log_box.index("end-2l")
+    end = log_box.index("end-1l")
+    log_box.tag_add(color, start, end)
+    log_box.tag_config(color, foreground=colors.get(color, "#ffffff"))
+    log_box.configure(state="disabled")
+    log_box.see("end")
 
-title = ctk.CTkLabel(
-    header,
-    text="Discord Token Checker  •  Work: 5  Locked: 0  Invalid: 996",
-    font=("Arial", 16, "bold")
+# ================= LOGIN =================
+def login():
+    if password_entry.get() == PASSWORD:
+        login_frame.pack_forget()
+        main_frame.pack(fill="both", expand=True)
+        log("Login successful", "green")
+    else:
+        log("Wrong password", "red")
+
+login_frame = ctk.CTkFrame(app)
+login_frame.pack(fill="both", expand=True)
+
+password_entry = ctk.CTkEntry(
+    login_frame,
+    show="*",
+    width=300,
+    placeholder_text="Enter Password"
 )
-title.pack(side="left", padx=20)
+password_entry.pack(pady=20)
 
-input_btn = ctk.CTkButton(header, text="Input Tokens", width=120)
-input_btn.pack(side="right", padx=20)
+login_btn = ctk.CTkButton(login_frame, text="Login", command=login)
+login_btn.pack()
 
-# ===== Main Frame =====
-main = ctk.CTkFrame(app)
-main.pack(fill="both", expand=True, padx=10, pady=5)
+# ================= MAIN FRAME =================
+main_frame = ctk.CTkFrame(app)
 
-# ===== Left Panel =====
-left = ctk.CTkFrame(main, width=220)
-left.pack(side="left", fill="y", padx=10, pady=10)
+# -------- Input File --------
+def load_file():
+    file = filedialog.askopenfilename(filetypes=[("Text Files", "*.txt")])
+    if not file:
+        return
 
-ctk.CTkLabel(left, text="Outputs", font=("Arial", 14, "bold")).pack(anchor="w", padx=10, pady=5)
+    with open(file, "r", encoding="utf-8") as f:
+        lines = [line.strip() for line in f if line.strip()]
 
-def checkbox(text):
-    return ctk.CTkCheckBox(left, text=text)
+    for line in lines:
+        col.insert_one({"token": line})
 
-checkbox("Work").pack(anchor="w", padx=10, pady=5)
-checkbox("Locked").pack(anchor="w", padx=10, pady=5)
-checkbox("Invalid").pack(anchor="w", padx=10, pady=5)
+    log(f"Saved {len(lines)} tokens to MongoDB", "green")
 
-ctk.CTkButton(left, text="Custom Filter").pack(fill="x", padx=10, pady=10)
-ctk.CTkButton(left, text="Advanced Settings").pack(fill="x", padx=10)
+file_btn = ctk.CTkButton(main_frame, text="Input File", command=load_file)
+file_btn.pack(pady=10)
 
-# ===== Table Area =====
-right = ctk.CTkFrame(main)
-right.pack(side="right", fill="both", expand=True, padx=10, pady=10)
+# -------- Host Control --------
+running = False
 
-columns = ("Discrim", "Username", "Created Date", "Verified", "Info", "Token")
+def start_host():
+    global running
+    try:
+        requests.post(f"{HOST_URL}/start", timeout=5)
+        running = True
+        log("Start command sent", "green")
+        threading.Thread(target=listen_logs, daemon=True).start()
+    except:
+        log("Failed to connect to host", "red")
 
-table = ttk.Treeview(right, columns=columns, show="headings", height=12)
+def stop_host():
+    global running
+    try:
+        requests.post(f"{HOST_URL}/stop", timeout=5)
+        running = False
+        log("Stop command sent", "red")
+    except:
+        log("Failed to connect to host", "red")
 
-for col in columns:
-    table.heading(col, text=col)
-    table.column(col, width=120, anchor="center")
+def restart_host():
+    try:
+        requests.post(f"{HOST_URL}/restart", timeout=5)
+        log("Restart command sent", "yellow")
+    except:
+        log("Failed to connect to host", "red")
 
-table.pack(fill="both", expand=True)
+btn_frame = ctk.CTkFrame(main_frame)
+btn_frame.pack(pady=10)
 
-# Sample rows (شكل فقط)
-sample_data = [
-    ("0", "Humility", "Jul 28, 2025", "Email ✔", "", "MTM5OT..."),
-    ("0", "Mycernius", "Jul 28, 2025", "Email ✔", "", "MTM5OT..."),
-    ("0", "wfqwfz", "Jul 28, 2025", "Email ✔", "", "MTM5OT...")
-]
+ctk.CTkButton(btn_frame, text="Start", fg_color="green", command=start_host)\
+    .pack(side="left", padx=10)
 
-for row in sample_data:
-    table.insert("", "end", values=row)
+ctk.CTkButton(btn_frame, text="Restart", fg_color="orange", command=restart_host)\
+    .pack(side="left", padx=10)
 
-# ===== Bottom =====
-bottom = ctk.CTkFrame(app, height=60)
-bottom.pack(fill="x", padx=10, pady=10)
+ctk.CTkButton(btn_frame, text="Stop", fg_color="red", command=stop_host)\
+    .pack(side="left", padx=10)
 
-check_btn = ctk.CTkButton(bottom, text="Check", height=35)
-check_btn.pack(side="left", padx=20)
+# -------- Log View --------
+log_box = ctk.CTkTextbox(main_frame, height=350)
+log_box.pack(fill="both", expand=True, padx=10, pady=10)
+log_box.configure(state="disabled")
 
-table_btn = ctk.CTkButton(bottom, text="Table", height=35)
-table_btn.pack(side="right", padx=20)
+# ================= HOST LOG LISTENER =================
+def listen_logs():
+    while running:
+        try:
+            r = requests.get(f"{HOST_URL}/logs", timeout=5)
+            if r.status_code == 200:
+                logs = r.json()
+                for item in logs:
+                    log(item.get("msg", ""), item.get("color", "white"))
+        except:
+            pass
+        time.sleep(1)
 
 app.mainloop()
