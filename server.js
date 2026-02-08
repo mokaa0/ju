@@ -1,129 +1,180 @@
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_opengl.h>
+#include <SDL2/SDL_mixer.h>
+#include <cmath>
+#include <vector>
 
-Dreams are the maps of the soul.
-Keep moving forward, لاَ تَسْتَلِمْ.
-Every heartbeat tells a story.
-Between shadows and light.
-قَلْبٌ مُتَوَقِّدٌ وَرُوحٌ صَامِتَة.
-Nothing is permanent, embrace change.
-Lost in the quiet of my mind.
-اَللُّحُظَاتُ الصَّغِيرَةُ تُصْنَعُ السَّعَادَة.
-The horizon is never too far.
-Whispers of the past linger.
-قَدْرٌ يَأْتِي وَيَمْضِي.
-Every step leads somewhere new.
-Hidden thoughts, visible scars.
-اَلصَّبْرُ نَصِيفُ النَّجَاحِ.
-Floating through the waves of time.
-Hearts remember what minds forget.
-قَلْبٌ وَاقِفٌ بَيْنَ الحُبِّ وَالأَمَل.
-The wind carries old secrets.
-Let the silence speak.
-أَمَلٌ يَنْبُتُ فِي كُلِّ زَاوِيَةٍ.
-Dreams are never too late.
-Walking where no one dares.
-قَصَّةٌ كُلُّهَا أَمَلٌ وَحُبٌّ.
-Nothing lasts, everything evolves.
-Shadows fade when you shine.
-قَلْبٌ صَافٍ، رُوحٌ حُرَّة.
-The night teaches patience.
-Every ending births a beginning.
-أَحْلَامِي تَسْتَمِرُّ دَائِمًا.
-Seek beauty in ordinary places.
-Soft minds hold strong hearts.
-قَدَرِي يَهْدِينِي وَيَحْمِينِي.
-Dreams are the wings of reality.
-In silence, I find strength.
-اَلْحَيَاةُ تُعَلِّمُنَا دَائِمًا.
-Stars remind us to keep walking.
-Every moment matters.
-قَلْبٌ يَسْتَمِرُّ فِي اَلأَمَلِ.
-Hold on to what you love.
-The past shapes, the future awaits.
-أَلرُّوحُ تَسْعَى لِلْحُرِّيَّةِ.
-Life is a puzzle of small pieces.
-Some truths are louder than words.
-قَلْبِي يَهْتَزُّ لِكُلِّ مَا هُوَ جَمِيل.
-Lessons hide in everyday moments.
-Keep chasing, never stop.
-اَلأَحْلَامُ تُنَادِينَا دَائِمًا.
-The quiet mind sees clearly.
-Shadows bring perspective.
-قَلْبٌ يَتَعَلَّمُ مِنَ الخَطَأ.
-Every scar is a medal.
-Walk softly, but carry strength.
-اَلرُّوحُ الحُرَّةُ لاَ تُقَيَّدُ.
-Seek light in dark corners.
-Dreams whisper softly.
-قَلْبِي يَحْمِلُ أَمَلًا كَبِيرًا.
-Time flows differently for dreamers.
-Every path has its lesson.
-اَلحَيَاةُ بَسِيطَةٌ إِذَا فَهِمْتَهَا.
-Moments fade, but memories remain.
-The sky reflects my thoughts.
-قَلْبٌ وَرُوحٌ مُتَفَائِلَة.
-Hope grows silently.
-Each choice shapes destiny.
-اَلصَّمْتُ أَعْمَقُ مِنَ أَلْفِ كَلِمَة.
-Shine in your own way.
-Every rain brings flowers.
-قَلْبِي لاَ يَخَافُ الْغَد.
-Patience reveals the truth.
-Even small lights guide.
-اَلرُّوحُ تَسْتَمِرُّ فِي اَلنُّور.
-Dreams are bridges to reality.
-Cherish fleeting moments.
-قَدَرِي يَهْدِي رُوحِي إِلَى الطُّمَأْنِينَة.
-The ocean mirrors my soul.
-Every wave teaches something.
-اَلحَيَاةُ كَالرِّيَاحِ، تَأْخُذُ وَتُعْطِي.
-Mountains stand while time passes.
-The night is full of wisdom.
-قَلْبِي يَبْحَثُ عَنْ السَّلَام.
-Stars shine for those who see.
-Every dream deserves a chance.
-اَلرُّوحُ تَطِيرُ بِالأَمَلِ.
-Silence is louder than chaos.
-The journey is more than the destination.
-قَلْبِي يَعْتَمِدُ عَلَى النَّجَاح.
-Light guides the wandering soul.
-Every fall teaches balance.
-اَلحَيَاةُ كَالسَّفَرِ، اِسْتَمِرّْ.
-Time heals, memories stay.
-The mind whispers secrets.
-قَلْبٌ صَامِتٌ يَحْمِلُ أَلأَمَلَ.
-Dreams bloom in quiet places.
-Between yesterday and tomorrow.
-اَلأَمَلُ يَنْبُتُ فِي كُلِّ وَقْت.
-Hold fast to your visions.
-Life bends, but doesn’t break.
-قَلْبِي يَسْعَى إِلَى الطُّمَأْنِينَة.
-Learn from the small things.
-Even shadows need light.
-اَلرُّوحُ لاَ تُكْسَرُ.
-Chase what sets your heart on fire.
-Every sunrise brings hope.
-قَلْبٌ يُحِبُّ بِصِدْقٍ.
-Moments define who we are.
-Time flows, memories linger.
-اَلأَحْلَامُ تُحْيِي الرُّوح.
-Walk where your heart leads.
-Even silence has meaning.
-قَلْبِي يَهْتَفُ لِكُلِّ جَمِيل.
-Seek what you cannot see.
-The past teaches quietly.
-اَلحَيَاةُ دَرْسٌ مُسْتَمِرٌّ.
-Let the stars guide you.
-Every cloud has silver lining.
-قَلْبِي يَسْعَى لِلأَمَلِ الدَّائِم.
-Dreams never ask permission.
-Hope is a quiet flame.
-اَلرُّوحُ تَسْتَمِرُّ فِي اَلنُّورِ.
-The sky waits for the bold.
-Patience grows stronger than force.
-قَلْبٌ يُؤْمِنُ بِالطُّمَأْنِينَة.
-Listen to the quiet moments.
-Every tear waters the soul.
-اَلحَيَاةُ جَمِيلَةٌ لِمَنْ يَعِيشُهَا.
-Walk softly through your days.
-Even the smallest light shines.
-قَلْبِي يُحِبُّ كُلَّ يَوْمٍ جَدِيد.
+float camZ = 5;
+float camRot = 0;
+
+bool knifeOpen = false;
+float bladeAngle = 0;
+
+Mix_Chunk* knifeSound = nullptr;
+
+struct Enemy {
+    float x, z;
+};
+
+std::vector<Enemy> enemies = {
+    { -3, -5 },
+    { 2, -8 },
+    { 5, -4 }
+};
+
+void drawCube(float w, float h, float d) {
+    glBegin(GL_QUADS);
+
+    // Front
+    glVertex3f(-w, 0, d);
+    glVertex3f(w, 0, d);
+    glVertex3f(w, h, d);
+    glVertex3f(-w, h, d);
+
+    // Back
+    glVertex3f(-w, 0, -d);
+    glVertex3f(w, 0, -d);
+    glVertex3f(w, h, -d);
+    glVertex3f(-w, h, -d);
+
+    glEnd();
+}
+
+void drawHuman() {
+    // Body
+    glColor3f(0.2f, 0.6f, 0.8f);
+    drawCube(0.2f, 0.8f, 0.15f);
+
+    // Head
+    glPushMatrix();
+    glTranslatef(0, 0.9f, 0);
+    glColor3f(1.0f, 0.8f, 0.6f);
+    drawCube(0.15f, 0.2f, 0.15f);
+
+    // Hair
+    glTranslatef(0, 0.15f, 0);
+    glColor3f(0.1f, 0.1f, 0.1f);
+    drawCube(0.16f, 0.05f, 0.16f);
+    glPopMatrix();
+}
+
+void drawEnemies() {
+    for (auto& e : enemies) {
+        glPushMatrix();
+        glTranslatef(e.x, -1, e.z);
+        drawHuman();
+        glPopMatrix();
+    }
+}
+
+void drawStreet() {
+    glColor3f(0.3f, 0.3f, 0.3f);
+    for (int x = -20; x < 20; x += 3) {
+        for (int z = -20; z < 20; z += 3) {
+            glPushMatrix();
+            glTranslatef(x, -1.5f, z);
+            drawCube(1, 0.1f, 1);
+            glPopMatrix();
+        }
+    }
+}
+
+void drawKnife() {
+    glPushMatrix();
+    glLoadIdentity();
+    glTranslatef(0.4f, -0.4f, -1);
+
+    // Handle
+    glColor3f(0.3f, 0.2f, 0.1f);
+    glBegin(GL_QUADS);
+    glVertex3f(-0.1f, -0.05f, 0);
+    glVertex3f(0.1f, -0.05f, 0);
+    glVertex3f(0.1f, 0.05f, 0);
+    glVertex3f(-0.1f, 0.05f, 0);
+    glEnd();
+
+    // Blade
+    glRotatef(bladeAngle, 0, 1, 0);
+    glColor3f(0.8f, 0.8f, 0.8f);
+    glBegin(GL_TRIANGLES);
+    glVertex3f(0, 0, 0);
+    glVertex3f(0.6f, 0.04f, 0);
+    glVertex3f(0.6f, -0.04f, 0);
+    glEnd();
+
+    glPopMatrix();
+}
+
+int main() {
+    SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO);
+    Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048);
+
+    knifeSound = Mix_LoadWAV("knife.wav");
+
+    SDL_Window* window = SDL_CreateWindow(
+        "FPS Knife Fight",
+        SDL_WINDOWPOS_CENTERED,
+        SDL_WINDOWPOS_CENTERED,
+        800, 600,
+        SDL_WINDOW_OPENGL
+    );
+
+    SDL_GLContext glContext = SDL_GL_CreateContext(window);
+    SDL_SetRelativeMouseMode(SDL_TRUE);
+
+    glEnable(GL_DEPTH_TEST);
+
+    bool running = true;
+    SDL_Event e;
+
+    while (running) {
+        while (SDL_PollEvent(&e)) {
+            if (e.type == SDL_QUIT)
+                running = false;
+
+            if (e.type == SDL_MOUSEMOTION)
+                camRot += e.motion.xrel * 0.1f;
+
+            if (e.type == SDL_KEYDOWN && e.key.keysym.sym == SDLK_f) {
+                knifeOpen = !knifeOpen;
+                Mix_PlayChannel(-1, knifeSound, 0);
+            }
+        }
+
+        if (knifeOpen && bladeAngle < 90) bladeAngle += 5;
+        if (!knifeOpen && bladeAngle > 0) bladeAngle -= 5;
+
+        glClearColor(0.1f, 0.1f, 0.15f, 1);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        glMatrixMode(GL_PROJECTION);
+        glLoadIdentity();
+        gluPerspective(70, 800.0 / 600.0, 0.1, 100);
+
+        glMatrixMode(GL_MODELVIEW);
+        glLoadIdentity();
+
+        glRotatef(camRot, 0, 1, 0);
+        glTranslatef(0, 0, -camZ);
+
+        drawStreet();
+        drawEnemies();
+        drawKnife();
+
+        SDL_GL_SwapWindow(window);
+        SDL_Delay(16);
+    }
+
+    Mix_FreeChunk(knifeSound);
+    Mix_CloseAudio();
+    SDL_Quit();
+    return 0;
+}
+
+
+
+sudo apt install libsdl2-dev libsdl2-mixer-dev libgl1-mesa-dev libglu1-mesa-dev
+
+
+g++ main.cpp -lSDL2 -lSDL2_mixer -lGL -lGLU -o game
+./game
