@@ -1,144 +1,42 @@
 Microsoft Windows [Version 10.0.19045.6466]
 (c) Microsoft Corporation. All rights reserved.
 
-C:\Users\user\Desktop\Discord Token Email verification>py email.py
-Traceback (most recent call last):
-  File "C:\Users\user\Desktop\Discord Token Email verification\email.py", line 7, in <module>
-    import requests
-  File "C:\Users\user\AppData\Local\Programs\Python\Python311\Lib\site-packages\requests\__init__.py", line 43, in <module>
-    import urllib3
-  File "C:\Users\user\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\__init__.py", line 11, in <module>
-    from . import exceptions
-  File "C:\Users\user\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\exceptions.py", line 3, in <module>
-    from .packages.six.moves.http_client import IncompleteRead as httplib_IncompleteRead
-  File "C:\Users\user\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\packages\six.py", line 234, in create_module
-    return self.load_module(spec.name)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\user\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\packages\six.py", line 209, in load_module
-    mod = mod._resolve()
-          ^^^^^^^^^^^^^^
-  File "C:\Users\user\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\packages\six.py", line 118, in _resolve
-    return _import_module(self.mod)
-           ^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\user\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\packages\six.py", line 87, in _import_module
-    __import__(name)
-  File "C:\Users\user\AppData\Local\Programs\Python\Python311\Lib\http\client.py", line 71, in <module>
-    import email.parser
-  File "C:\Users\user\Desktop\Discord Token Email verification\email.py", line 10, in <module>
-    import nodriver as nd
-  File "C:\Users\user\AppData\Local\Programs\Python\Python311\Lib\site-packages\nodriver\__init__.py", line 1, in <module>
-    from nodriver import cdp
-  File "C:\Users\user\AppData\Local\Programs\Python\Python311\Lib\site-packages\nodriver\cdp\__init__.py", line 6, in <module>
-    from . import (accessibility, animation, audits, autofill, background_service,
-  File "C:\Users\user\AppData\Local\Programs\Python\Python311\Lib\site-packages\nodriver\cdp\accessibility.py", line 14, in <module>
-    from . import dom, page, runtime
-  File "C:\Users\user\AppData\Local\Programs\Python\Python311\Lib\site-packages\nodriver\cdp\dom.py", line 14, in <module>
-    from deprecated.sphinx import deprecated  # type: ignore
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\user\AppData\Local\Programs\Python\Python311\Lib\site-packages\deprecated\__init__.py", line 15, in <module>
-    from deprecated.classic import deprecated
-  File "C:\Users\user\AppData\Local\Programs\Python\Python311\Lib\site-packages\deprecated\classic.py", line 15, in <module>
-    import wrapt
-  File "C:\Users\user\AppData\Local\Programs\Python\Python311\Lib\site-packages\wrapt\__init__.py", line 17, in <module>
-    from .importer import (
-  File "C:\Users\user\AppData\Local\Programs\Python\Python311\Lib\site-packages\wrapt\importer.py", line 6, in <module>
-    import importlib.metadata
-  File "C:\Users\user\AppData\Local\Programs\Python\Python311\Lib\importlib\metadata\__init__.py", line 17, in <module>
-    from . import _adapters, _meta
-  File "C:\Users\user\AppData\Local\Programs\Python\Python311\Lib\importlib\metadata\_adapters.py", line 3, in <module>
-    import email.message
-ModuleNotFoundError: No module named 'email.message'; 'email' is not a package
+C:\Users\user\Desktop\Discord Token Email verification>verify_email.py
+[19:25:15] [SYSTEM] ==================================================
+[19:25:15] [SYSTEM] Discord Account Claimer Tool v2.0
+[19:25:15] [SYSTEM] ==================================================
+[19:25:15] [SUCCESS] Loaded 1 tokens from tokens.txt
+[19:25:15] [SUCCESS] Found 1 tokens to process
 
-C:\Users\user\Desktop\Discord Token Email verification>pip install email
-Collecting email
-  Downloading email-4.0.2.tar.gz (1.2 MB)
-     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.2/1.2 MB 3.0 MB/s  0:00:00
-  Installing build dependencies ... done
-  Getting requirements to build wheel ... error
-  error: subprocess-exited-with-error
-
-  × Getting requirements to build wheel did not run successfully.
-  │ exit code: 1
-  ╰─> [23 lines of output]
-      Traceback (most recent call last):
-        File "C:\Users\user\AppData\Local\Programs\Python\Python311\Lib\site-packages\pip\_vendor\pyproject_hooks\_in_process\_in_process.py", line 389, in <module>
-          main()
-        File "C:\Users\user\AppData\Local\Programs\Python\Python311\Lib\site-packages\pip\_vendor\pyproject_hooks\_in_process\_in_process.py", line 373, in main
-          json_out["return_val"] = hook(**hook_input["kwargs"])
-                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-        File "C:\Users\user\AppData\Local\Programs\Python\Python311\Lib\site-packages\pip\_vendor\pyproject_hooks\_in_process\_in_process.py", line 143, in get_requires_for_build_wheel
-          return hook(config_settings)
-                 ^^^^^^^^^^^^^^^^^^^^^
-        File "C:\Users\user\AppData\Local\Temp\pip-build-env-xp6nvhwa\overlay\Lib\site-packages\setuptools\build_meta.py", line 333, in get_requires_for_build_wheel
-          return self._get_build_requires(config_settings, requirements=[])
-                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-        File "C:\Users\user\AppData\Local\Temp\pip-build-env-xp6nvhwa\overlay\Lib\site-packages\setuptools\build_meta.py", line 301, in _get_build_requires
-          self.run_setup()
-        File "C:\Users\user\AppData\Local\Temp\pip-build-env-xp6nvhwa\overlay\Lib\site-packages\setuptools\build_meta.py", line 520, in run_setup
-          super().run_setup(setup_script=setup_script)
-        File "C:\Users\user\AppData\Local\Temp\pip-build-env-xp6nvhwa\overlay\Lib\site-packages\setuptools\build_meta.py", line 317, in run_setup
-          exec(code, locals())
-        File "<string>", line 3, in <module>
-        File "C:\Users\user\AppData\Local\Temp\pip-install-67mpxmrk\email_1c291ce77549439987309563c727b6aa\ez_setup.py", line 91
-          except pkg_resources.VersionConflict, e:
-                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-      SyntaxError: multiple exception types must be parenthesized
-      [end of output]
-
-  note: This error originates from a subprocess, and is likely not a problem with pip.
-
-[notice] A new release of pip is available: 25.3 -> 26.0.1
-[notice] To update, run: python.exe -m pip install --upgrade pip
-ERROR: Failed to build 'email' when getting requirements to build wheel
-
-C:\Users\user\Desktop\Discord Token Email verification>py email.py
-Traceback (most recent call last):
-  File "C:\Users\user\Desktop\Discord Token Email verification\email.py", line 7, in <module>
-    import requests
-  File "C:\Users\user\AppData\Local\Programs\Python\Python311\Lib\site-packages\requests\__init__.py", line 43, in <module>
-    import urllib3
-  File "C:\Users\user\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\__init__.py", line 11, in <module>
-    from . import exceptions
-  File "C:\Users\user\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\exceptions.py", line 3, in <module>
-    from .packages.six.moves.http_client import IncompleteRead as httplib_IncompleteRead
-  File "C:\Users\user\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\packages\six.py", line 234, in create_module
-    return self.load_module(spec.name)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\user\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\packages\six.py", line 209, in load_module
-    mod = mod._resolve()
-          ^^^^^^^^^^^^^^
-  File "C:\Users\user\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\packages\six.py", line 118, in _resolve
-    return _import_module(self.mod)
-           ^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\user\AppData\Local\Programs\Python\Python311\Lib\site-packages\urllib3\packages\six.py", line 87, in _import_module
-    __import__(name)
-  File "C:\Users\user\AppData\Local\Programs\Python\Python311\Lib\http\client.py", line 71, in <module>
-    import email.parser
-  File "C:\Users\user\Desktop\Discord Token Email verification\email.py", line 10, in <module>
-    import nodriver as nd
-  File "C:\Users\user\AppData\Local\Programs\Python\Python311\Lib\site-packages\nodriver\__init__.py", line 1, in <module>
-    from nodriver import cdp
-  File "C:\Users\user\AppData\Local\Programs\Python\Python311\Lib\site-packages\nodriver\cdp\__init__.py", line 6, in <module>
-    from . import (accessibility, animation, audits, autofill, background_service,
-  File "C:\Users\user\AppData\Local\Programs\Python\Python311\Lib\site-packages\nodriver\cdp\accessibility.py", line 14, in <module>
-    from . import dom, page, runtime
-  File "C:\Users\user\AppData\Local\Programs\Python\Python311\Lib\site-packages\nodriver\cdp\dom.py", line 14, in <module>
-    from deprecated.sphinx import deprecated  # type: ignore
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\user\AppData\Local\Programs\Python\Python311\Lib\site-packages\deprecated\__init__.py", line 15, in <module>
-    from deprecated.classic import deprecated
-  File "C:\Users\user\AppData\Local\Programs\Python\Python311\Lib\site-packages\deprecated\classic.py", line 15, in <module>
-    import wrapt
-  File "C:\Users\user\AppData\Local\Programs\Python\Python311\Lib\site-packages\wrapt\__init__.py", line 17, in <module>
-    from .importer import (
-  File "C:\Users\user\AppData\Local\Programs\Python\Python311\Lib\site-packages\wrapt\importer.py", line 6, in <module>
-    import importlib.metadata
-  File "C:\Users\user\AppData\Local\Programs\Python\Python311\Lib\importlib\metadata\__init__.py", line 17, in <module>
-    from . import _adapters, _meta
-  File "C:\Users\user\AppData\Local\Programs\Python\Python311\Lib\importlib\metadata\_adapters.py", line 3, in <module>
-    import email.message
-ModuleNotFoundError: No module named 'email.message'; 'email' is not a package
-
-C:\Users\user\Desktop\Discord Token Email verification>aaa
-
-C:\Users\user\Desktop\Discord Token Email verification>
+[19:25:15] [INFO] Processing token 1/1
+[19:25:15] [INFO] Token: MTQ4NDU4MjIzNTY2NjUxODI1MA.Gfr...
+[19:25:15] [INFO] Buying email for this token...
+[19:25:15] [INFO] Sending request to API: https://api.zeus-x.ru/purchase
+[19:25:15] [INFO] Parameters: {'apikey': 'bf68c360f5634f0b96a4bfc20ae08a64', 'accountcode': 'HOTMAIL', 'quantity': 1}
+[19:25:15] [INFO] API Response Status: 200
+[19:25:15] [INFO] API Response Data: {
+  "Code": 0,
+  "Message": "YOU HAVE SUCCESSFULLY PURCHASED",
+  "Data": {
+    "PurchaseId": "aad79b4039884be9a3bbe271cd1fa3b7",
+    "Product": "Hotmail New",
+    "Quantity": 1,
+    "UnitPrice": 0.002,
+    "SubTotal": 0.002,
+    "Discount": 0.0,
+    "Total": 0.002,
+    "Accounts": [
+      {
+        "Email": "axqectxkwp875@hotmail.com",
+        "Password": "J0HmVmnkE9",
+        "RefreshToken": "M.C518_BAY.0.U.-CkFSUQBo99A4oR31Es2WzhC8z01ItpiX6j5!!29cvzfxXl1aDCDWa8ZntWAvbl*c2sax0JRMHCRYehezppGO9bcAK7yjD71DRZLdpyRe0UXi5FdnzNbIjobiahdSnKgXoy50ZKZ6KCS!YvjzBbx!d*xmwR!AHdZE!TEwdyT19vCr6FX6HN9aZyd8ncEK9rsp1RguIbyrJvMDzTyPtsI9led!d*b0iTg!ZDbNyXefOyvc2RbHlS31SwTY5fY5!YVe!hIot57NKvxjz9txzreM97OHs6eCHTtYO*!g430aWyuu7818GhFDxkrRaOmr8KqBJgrD2IZZqGpF9!QJsfPo4b3wXz6MNHaxxgLrnXceByd5RK*E!yhok0Ky5rnE8TBiUbVyoTMahjPpN5qiejNC6uE$",
+        "AccessToken": "",
+        "R_Expire": null,
+        "ClientId": "8b4ba9dd-3ea5-4e5f-86f1-ddba2230dcf2"
+      }
+    ]
+  }
+}
+[19:25:15] [ERROR] Unknown response format: {'Code': 0, 'Message': 'YOU HAVE SUCCESSFULLY PURCHASED', 'Data': {'PurchaseId': 'aad79b4039884be9a3bbe271cd1fa3b7', 'Product': 'Hotmail New', 'Quantity': 1, 'UnitPrice': 0.002, 'SubTotal': 0.002, 'Discount': 0.0, 'Total': 0.002, 'Accounts': [{'Email': 'axqectxkwp875@hotmail.com', 'Password': 'J0HmVmnkE9', 'RefreshToken': 'M.C518_BAY.0.U.-CkFSUQBo99A4oR31Es2WzhC8z01ItpiX6j5!!29cvzfxXl1aDCDWa8ZntWAvbl*c2sax0JRMHCRYehezppGO9bcAK7yjD71DRZLdpyRe0UXi5FdnzNbIjobiahdSnKgXoy50ZKZ6KCS!YvjzBbx!d*xmwR!AHdZE!TEwdyT19vCr6FX6HN9aZyd8ncEK9rsp1RguIbyrJvMDzTyPtsI9led!d*b0iTg!ZDbNyXefOyvc2RbHlS31SwTY5fY5!YVe!hIot57NKvxjz9txzreM97OHs6eCHTtYO*!g430aWyuu7818GhFDxkrRaOmr8KqBJgrD2IZZqGpF9!QJsfPo4b3wXz6MNHaxxgLrnXceByd5RK*E!yhok0Ky5rnE8TBiUbVyoTMahjPpN5qiejNC6uE$', 'AccessToken': '', 'R_Expire': None, 'ClientId': '8b4ba9dd-3ea5-4e5f-86f1-ddba2230dcf2'}]}}
+[19:25:15] [ERROR] Failed to buy email, attempting with manual input...
+[19:25:15] [INPUT] Please enter email manually (or press Enter to skip):
