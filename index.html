@@ -1,70 +1,126 @@
-Microsoft Windows [Version 10.0.19045.6466]
-(c) Microsoft Corporation. All rights reserved.
+import sys
+import time
+import os
+import threading
+from colorama import init, Fore, Style
 
-C:\Users\user\Desktop\Discord Token Email verification>verify_email.py
-[19:30:35] [SYSTEM] ==================================================
-[19:30:35] [SYSTEM] Discord Account Claimer Tool v2.0
-[19:30:35] [SYSTEM] ==================================================
-[19:30:35] [SUCCESS] Loaded 1 tokens from tokens.txt
-[19:30:35] [SUCCESS] Found 1 tokens to process
+init()
 
-[19:30:35] [INFO] Processing token 1/1
-[19:30:35] [INFO] Buying email for this token...
-[19:30:35] [INFO] Buying email from API...
-[19:30:35] [ERROR] API returned error code: 1
-[19:30:35] [ERROR] Message: INSUFFICIENT QUANTITY IN STOCK
-[19:30:35] [ERROR] Failed to buy email, skipping this token
-[19:30:35] [SYSTEM] ==================================================
-[19:30:35] [SUCCESS] Completed! Successfully processed: 0/1 tokens
-[19:30:35] [SYSTEM] ==================================================
+_resize_monitor_active = False
+_banner_displayed = False
+_last_terminal_width = None
+_last_terminal_height = None
 
-C:\Users\user\Desktop\Discord Token Email verification>verify_email.py
-[19:31:30] [SYSTEM] ==================================================
-[19:31:30] [SYSTEM] Discord Account Claimer Tool v2.0
-[19:31:30] [SYSTEM] ==================================================
-[19:31:30] [SUCCESS] Loaded 1 tokens from tokens.txt
-[19:31:30] [SUCCESS] Found 1 tokens to process
+# البنر الجديد بكلمة SKYDOWN وتأثير السقوط
+BANNER = '''
+  ██████▒ ██  ██▒  ▓██   ██▓ ▓█████▄  ▒█████   █     █░ ███▄    █ 
+ ▓██   ▒  ██ ██▒   ▒██  ██▒  ▒██▀ ██▌▒██▒  ██▒▓█▒ ░ █░▒ ██ ▀█   █ 
+ ▒████ ░  ████░     ░██ ██░  ░██   █▌▒██░  ██▒▒█░ █ ░▒ ▓██  ▀█ ██▒
+  ░ ▒████ ██ ██░     ░███░   ░▓█▄   ▌▒██   ██░░█▀ ▀  ░ ▓██▒  ▐▌██▒
+ ▒     ██ ██  ██▒     ███    ░▒████▓ ░ ████▓▒░░█    █  ▒██░   ▓██░
+ ▓██████▒ ██▒  ██▒    ███    ▒▒▓  ▒  ░ ▒░▒░▒░ ░▓    ▓  ░ ██░   ▓██░
+  ▒ ░     ██░  ░██░   ███    ░ ▒  ▒    ░ ▒ ▒░  ▒    ▒  ░ ▒░   ▒ ▒ 
+  ░       ▒ ▒  ░░     ▒ ▒    ░ ░  ░  ░ ░ ░ ▒   ░    ░  ░ ░░   ░ ▒░
+          ░ ░         ░ ░      ░         ░ ░   ░    ░     ░   ░ ░ 
+          ░ ░         ░ ░    ░                                  
+          ░                                                     
+'''
 
-[19:31:30] [INFO] Processing token 1/1
-[19:31:30] [INFO] Buying email for this token...
-[19:31:30] [INFO] Buying email from API...
-[19:31:30] [SUCCESS] Successfully bought email: zuymloay997@hotmail.com
-[19:31:30] [SUCCESS] Using email: zuymloay997@hotmail.com
-[19:31:30] [INFO] ==================================================
-[19:31:30] [INFO] Processing account with email: zuymloay997@hotmail.com
-[19:31:30] [INFO] ==================================================
-[19:31:30] [BROWSER] Starting Chrome browser...
-[19:31:33] [SUCCESS] Browser started
-[19:31:33] [INFO] Opening Discord...
-[19:31:38] [ERROR] Login failed:
-exceptionId: 1
-text: Uncaught
-lineNumber: 2
-columnNumber: 16
-scriptId: 15
-exception:
-        type: object
-        subtype: error
-        className: ReferenceError
-        description: ReferenceError: localStorage is not defined
-    at <anonymous>:3:17
-    at <anonymous>:5:15
-        objectId: 3376260498594484945.1.2
+# الألوان المطلوبة (تدرج من الأبيض إلى النيلي الغامق)
+GRADIENT_COLORS = [
+    (255, 255, 255),  # أبيض
+    (240, 240, 255), 
+    (210, 180, 255), 
+    (180, 120, 255), 
+    (150, 80, 255), 
+    (120, 50, 220), 
+    (90, 30, 180),   
+    (60, 20, 140),   
+    (40, 10, 100),   
+    (20, 5, 70),     
+    (10, 0, 50)       # نيلي غامق جداً
+]
 
+def get_terminal_size():
+    try:
+        size = os.get_terminal_size()
+        return size.columns, size.lines
+    except (OSError, ValueError):
+        return 80, 24
 
-[19:31:38] [ERROR] ✗ Failed to process token 1
+def clear_screen():
+    os.system('cls' if os.name == 'nt' else 'clear')
 
-[19:31:38] [SYSTEM] ==================================================
-[19:31:38] [SUCCESS] Completed! Successfully processed: 0/1 tokens
-[19:31:38] [SYSTEM] ==================================================
-successfully removed temp profile C:\Users\user\AppData\Local\Temp\uc_6mmayfod
-Exception ignored in: <function BaseSubprocessTransport.__del__ at 0x00000146BEADFE20>
-Traceback (most recent call last):
-  File "C:\Users\user\AppData\Local\Programs\Python\Python311\Lib\asyncio\base_subprocess.py", line 126, in __del__
-  File "C:\Users\user\AppData\Local\Programs\Python\Python311\Lib\asyncio\base_subprocess.py", line 104, in close
-  File "C:\Users\user\AppData\Local\Programs\Python\Python311\Lib\asyncio\proactor_events.py", line 108, in close
-  File "C:\Users\user\AppData\Local\Programs\Python\Python311\Lib\asyncio\base_events.py", line 758, in call_soon
-  File "C:\Users\user\AppData\Local\Programs\Python\Python311\Lib\asyncio\base_events.py", line 519, in _check_closed
-RuntimeError: Event loop is closed
+def rgb_escape(r, g, b):
+    return f'\033[38;2;{r};{g};{b}m'
 
-C:\Users\user\Desktop\Discord Token Email verification>verify_email.py
+def print_centered_banner(text, width=None):
+    if width is None:
+        width, _ = get_terminal_size()
+
+    lines = [line for line in text.split('\n') if line.strip()]
+    for idx, line in enumerate(lines):
+        # اختيار اللون من المصفوفة بناءً على السطر
+        color_idx = min(idx, len(GRADIENT_COLORS) - 1)
+        r, g, b = GRADIENT_COLORS[color_idx]
+        
+        padding = max(0, (width - len(line)) // 2)
+        print(f"{' ' * padding}{rgb_escape(r, g, b)}{line}{Style.RESET_ALL}")
+
+def print_banner_content(width, height, browser_name=None):
+    clear_screen()
+    # حساب المسافة العمودية لتوسيط الكلام
+    content_lines = len(BANNER.split('\n')) + 4
+    vertical_margin = max(1, (height - content_lines) // 2)
+    print('\n' * vertical_margin)
+
+    print_centered_banner(BANNER, width=width)
+    print()
+
+    welcome_text = f'Welcome to SKYDOWN System'
+    padding = max(0, (width - len(welcome_text)) // 2)
+    print(f"{' ' * padding}{Fore.WHITE}{Style.BRIGHT}{welcome_text}{Style.RESET_ALL}")
+    
+    separator = "━" * min(width - 4, 100)
+    sep_padding = max(0, (width - len(separator)) // 2)
+    print(f"{' ' * sep_padding}{rgb_escape(60, 20, 140)}{separator}{Style.RESET_ALL}")
+
+def has_terminal_resized():
+    global _last_terminal_width, _last_terminal_height
+    current_width, current_height = get_terminal_size()
+    if _last_terminal_width != current_width or _last_terminal_height != current_height:
+        _last_terminal_width = current_width
+        _last_terminal_height = current_height
+        return True
+    return False
+
+def monitor_resize():
+    global _resize_monitor_active, _banner_displayed
+    while _resize_monitor_active and _banner_displayed:
+        try:
+            if has_terminal_resized():
+                width, height = get_terminal_size()
+                print_banner_content(width, height)
+            time.sleep(0.2)
+        except:
+            pass
+
+def print_banner(monitor_resize_enabled=True):
+    global _resize_monitor_active, _banner_displayed, _last_terminal_width, _last_terminal_height
+    width, height = get_terminal_size()
+    _last_terminal_width, _last_terminal_height = width, height
+    print_banner_content(width, height)
+    _banner_displayed = True
+    if monitor_resize_enabled and not _resize_monitor_active:
+        _resize_monitor_active = True
+        threading.Thread(target=monitor_resize, daemon=True).start()
+
+if __name__ == '__main__':
+    try:
+        print_banner()
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        _resize_monitor_active = False
+        print(f"\n{Fore.RED}Goodbye!{Style.RESET_ALL}")
+        sys.exit(0)
